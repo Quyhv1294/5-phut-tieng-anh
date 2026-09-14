@@ -386,6 +386,7 @@
   .quiz-opt {
     border: 3px solid var(--line);
     background: var(--surface);
+    color: var(--ink);
     border-radius: 20px;
     padding: 18px 8px;
     font-size: 50px;
