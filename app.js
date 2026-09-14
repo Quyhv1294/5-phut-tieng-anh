@@ -698,7 +698,7 @@
       const slot = document.querySelector('.puzzle-slot[data-topic-id="' + topicId + '"]');
       if (slot) {
         const r = slot.getBoundingClientRect();
-        const pad = 18;
+        const pad = 26;
         placed = x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad;
       }
     }
