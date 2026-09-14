@@ -1808,8 +1808,9 @@
   }
 
   // ---------- WEEKLY REVIEW DEEP LINK ----------
-  // Chia sẻ link dạng ...?week=2  (tuần 1 = family, tuần 2 = animals, tuần 3 = objects,
-  // tuần 4 = colors, tuần 5 quay lại family, v.v. — lặp vòng theo đúng 4 chủ đề hiện có).
+  // Chia sẻ link dạng ...?week=2 (tuần 1 = TOPICS[0], tuần 2 = TOPICS[1], v.v. — lặp vòng theo
+  // đúng số chủ đề hiện có trong TOPICS, kể cả các chủ đề đang khoá — nên khi đặt link tuần
+  // trên Fanpage, ưu tiên trỏ vào các chủ đề miễn phí để phụ huynh không gặp màn khoá bất ngờ).
   // hoặc dùng ...?topic=animals để trỏ thẳng vào 1 chủ đề cụ thể.
   function getWeeklyTopic() {
     const params = new URLSearchParams(window.location.search);
@@ -1829,6 +1830,8 @@
     document.getElementById('weeklyBadge').textContent = weekLabel;
     document.getElementById('weeklyEmoji').textContent = topic.emoji;
     document.getElementById('weeklyTitle').textContent = topic.label;
+    document.getElementById('weeklyDesc').textContent =
+      'Ba mẹ bấm bắt đầu để cùng bé ôn lại ' + topic.words.length + ' từ vựng tuần này qua flashcard và mini game nhé!';
     document.getElementById('weeklyStartBtn').onclick = () => startTopic(topic.id);
     showScreen('weekly');
   }
