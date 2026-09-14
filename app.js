@@ -947,8 +947,8 @@
       card.innerHTML =
         '<span class="sentence-emoji">' + w.emoji + '</span>' +
         '<span class="sentence-text">' +
-          '<span class="sentence-en">' + highlighted + '</span>' +
-          '<span class="sentence-vi">' + (w.exampleVi || '') + '</span>' +
+          '<span class="sentence-en"><span class="lang-flag">🇬🇧</span>' + highlighted + '</span>' +
+          '<span class="sentence-vi"><span class="lang-flag">🇻🇳</span>' + (w.exampleVi || '') + '</span>' +
         '</span>' +
         '<button class="sentence-listen-btn" aria-label="Nghe câu">🔊</button>';
       card.querySelector('.sentence-listen-btn').addEventListener('click', () => speak(w.example));

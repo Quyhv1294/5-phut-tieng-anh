@@ -523,9 +523,14 @@
   }
   .sentence-emoji { font-size: 34px; flex: none; }
   .sentence-text { flex: 1; min-width: 0; }
-  .sentence-en { font-family: 'Baloo 2'; font-weight: 700; font-size: 16px; line-height: 1.35; }
+  .sentence-en {
+    display: block; font-family: 'Baloo 2'; font-weight: 700; font-size: 16px; line-height: 1.35;
+  }
   .sentence-en .hl { color: var(--accent-ink); }
-  .sentence-vi { font-size: 13.5px; color: var(--ink-soft); font-weight: 600; margin-top: 2px; }
+  .sentence-vi {
+    display: block; font-size: 13.5px; color: var(--ink-soft); font-weight: 600; margin-top: 6px;
+  }
+  .sentence-en .lang-flag, .sentence-vi .lang-flag { margin-right: 5px; }
   .sentence-listen-btn {
     flex: none;
     width: 44px; height: 44px; border-radius: 50%;
