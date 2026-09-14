@@ -70,6 +70,8 @@
   const SPELLING_WORD_COUNT = 4; // Xếp chữ cũng chỉ lấy ngẫu nhiên 4 từ/lượt, cùng độ khó với Ghép tranh
   const SPEED_WORD_COUNT = 8; // Đố vui tính giờ: lấy tối đa 8 từ/lượt để có đủ thời gian "đua"
   const SPEED_TIME_LIMIT = 30; // giây cho mỗi lượt chơi
+  const REVERSE_WORD_COUNT = 6; // Đoán nghĩa: lấy tối đa 6 từ/lượt
+  const FILLBLANK_WORD_COUNT = 6; // Điền từ: lấy tối đa 6 câu/lượt
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
   // về đúng shape mong đợi, điền mặc định cho field thiếu.
   function normalizeProgress(p) {
@@ -80,6 +82,7 @@
       streak: { count: (p.streak && p.streak.count) || 0, lastDate: (p.streak && p.streak.lastDate) || null, best: (p.streak && p.streak.best) || 0 },
       perfectCount: p.perfectCount || 0,
       badges: p.badges || {},
+      wordStats: p.wordStats || {},
     };
   }
   function loadProgress() {
@@ -89,7 +92,74 @@
     } catch (e) { return blankProgress(); }
   }
   function blankProgress() {
-    return { stars: 0, doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {} };
+    return { stars: 0, doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {}, wordStats: {} };
+  }
+
+  // ---------- GHI NHỚ TỪ VỰNG (lặp lại ngắt quãng — spaced repetition) ----------
+  // Mỗi từ được theo dõi riêng: trả lời đúng thì giãn khoảng ôn tiếp theo ra xa hơn (1 → 3 → 7 →
+  // 14 → 30 ngày), trả lời sai thì quay về ôn lại ngay hôm sau — đúng lúc bé sắp quên thì mới nhắc
+  // ôn, hiệu quả hơn nhiều so với ôn ngẫu nhiên. Đồng thời đếm số lần sai để gom thành danh sách
+  // "từ hay sai" cho bé luyện trúng trọng tâm (xem getDueWords / getDifficultWords bên dưới).
+  const REVIEW_INTERVALS = [1, 3, 7, 14, 30];
+  const DIFFICULT_WRONG_THRESHOLD = 2;
+
+  const WORD_TO_TOPIC = new Map();
+  const WORD_BY_KEY = new Map();
+  TOPICS.forEach(topic => {
+    topic.words.forEach(w => {
+      WORD_TO_TOPIC.set(w, topic);
+      WORD_BY_KEY.set(topic.id + ':' + w.en, w);
+    });
+  });
+
+  function wordKey(word) {
+    const topic = WORD_TO_TOPIC.get(word);
+    return (topic ? topic.id : '?') + ':' + word.en;
+  }
+
+  // Ghi nhận 1 lần bé trả lời đúng/sai 1 từ (gọi từ Quiz, Tính giờ, Xếp chữ, Đoán nghĩa, Điền từ...).
+  // Chỉ cập nhật trong bộ nhớ, KHÔNG tự lưu/đồng bộ ở đây — màn hình gọi hàm này chịu trách nhiệm
+  // gọi saveProgress(progress) một lần duy nhất khi kết thúc cả lượt chơi.
+  function recordWordAnswer(word, isCorrect) {
+    const key = wordKey(word);
+    const stat = progress.wordStats[key] || { step: 0, wrongCount: 0, lastSeen: null, nextDue: null };
+    if (isCorrect) {
+      stat.step = Math.min(stat.step + 1, REVIEW_INTERVALS.length - 1);
+      stat.wrongCount = Math.max(0, stat.wrongCount - 1);
+    } else {
+      stat.step = 0;
+      stat.wrongCount += 1;
+    }
+    stat.lastSeen = toDateStr(new Date());
+    const due = new Date();
+    due.setDate(due.getDate() + REVIEW_INTERVALS[stat.step]);
+    stat.nextDue = toDateStr(due);
+    progress.wordStats[key] = stat;
+  }
+
+  // Các từ đã "đến hạn" ôn lại hôm nay (nextDue <= hôm nay), quá hạn lâu nhất lên trước.
+  function getDueWords(limit) {
+    const todayStr = toDateStr(new Date());
+    const due = [];
+    Object.keys(progress.wordStats).forEach(key => {
+      const stat = progress.wordStats[key];
+      const word = WORD_BY_KEY.get(key);
+      if (word && stat.nextDue && stat.nextDue <= todayStr) due.push({ word: word, nextDue: stat.nextDue });
+    });
+    due.sort((a, b) => (a.nextDue < b.nextDue ? -1 : 1));
+    return due.slice(0, limit || 12).map(d => d.word);
+  }
+
+  // Các từ bé hay trả lời sai (sai >= ngưỡng, chưa "gỡ" lại đủ bằng các lần đúng sau đó).
+  function getDifficultWords(limit) {
+    const list = [];
+    Object.keys(progress.wordStats).forEach(key => {
+      const stat = progress.wordStats[key];
+      const word = WORD_BY_KEY.get(key);
+      if (word && stat.wrongCount >= DIFFICULT_WRONG_THRESHOLD) list.push({ word: word, wrongCount: stat.wrongCount });
+    });
+    list.sort((a, b) => b.wrongCount - a.wrongCount);
+    return list.slice(0, limit || 12).map(d => d.word);
   }
   function saveProgress(p) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch (e) {}
@@ -116,6 +186,8 @@
     match: document.getElementById('screen-match'),
     spelling: document.getElementById('screen-spelling'),
     speed: document.getElementById('screen-speed'),
+    reverse: document.getElementById('screen-reverse'),
+    fillblank: document.getElementById('screen-fillblank'),
     weekly: document.getElementById('screen-weekly'),
     done: document.getElementById('screen-done'),
   };
@@ -442,6 +514,18 @@
     const mixedBtn = document.getElementById('mixedReviewBtn');
     mixedBtn.disabled = doneCount === 0;
     mixedBtn.title = doneCount === 0 ? 'Bé cần học xong ít nhất 1 chủ đề trước nhé!' : '';
+
+    const dueCount = getDueWords(999).length;
+    const smartBtn = document.getElementById('smartReviewBtn');
+    smartBtn.textContent = dueCount > 0 ? '🧠 Ôn tập thông minh (' + dueCount + ' từ)' : '🧠 Ôn tập thông minh';
+    smartBtn.disabled = dueCount === 0;
+    smartBtn.title = dueCount === 0 ? 'Chưa có từ nào đến hạn ôn lại, bé học tiếp đã nhé!' : '';
+
+    const difficultCount = getDifficultWords(999).length;
+    const difficultBtn = document.getElementById('difficultReviewBtn');
+    difficultBtn.textContent = difficultCount > 0 ? '📌 Luyện từ khó (' + difficultCount + ' từ)' : '📌 Luyện từ khó';
+    difficultBtn.disabled = difficultCount === 0;
+    difficultBtn.title = difficultCount === 0 ? 'Bé chưa có từ nào hay sai cả, giỏi quá!' : '';
 
     const list = document.getElementById('progressList');
     list.innerHTML = '';
@@ -914,22 +998,42 @@
   document.getElementById('gameModeSpeedBtn').addEventListener('click', () => setGamesMode('speed'));
 
   // ---------- SENTENCES TAB ----------
+  let sentencesMode = 'read'; // 'read' (đọc câu), 'reverse' (đoán nghĩa) hoặc 'fill' (điền từ)
   function renderSentencesScreen() {
     const grid = document.getElementById('sentencesTopicGrid');
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
       btn.className = 'topic-card ' + topic.cls + (isTopicLocked(topic) ? ' is-locked' : '');
+      const countText = isTopicLocked(topic) ? starsNeededText(topic) :
+        sentencesMode === 'read' ? topic.words.length + ' câu' :
+        sentencesMode === 'reverse' ? 'Đoán ' + Math.min(REVERSE_WORD_COUNT, topic.words.length) + ' từ' :
+        'Điền ' + Math.min(FILLBLANK_WORD_COUNT, topic.words.length) + ' câu';
       btn.innerHTML =
         (isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '') +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
-        '<span class="count">' + (isTopicLocked(topic) ? starsNeededText(topic) : topic.words.length + ' câu') + '</span></span>';
-      btn.addEventListener('click', () => startSentenceTopic(topic.id));
+        '<span class="count">' + countText + '</span></span>';
+      btn.addEventListener('click', () => {
+        if (sentencesMode === 'read') startSentenceTopic(topic.id);
+        else if (sentencesMode === 'reverse') startReverseQuiz(topic.id);
+        else startFillBlank(topic.id);
+      });
       grid.appendChild(btn);
     });
   }
   renderSentencesScreen();
+
+  function setSentencesMode(mode) {
+    sentencesMode = mode;
+    document.getElementById('sentenceModeReadBtn').classList.toggle('active', mode === 'read');
+    document.getElementById('sentenceModeReverseBtn').classList.toggle('active', mode === 'reverse');
+    document.getElementById('sentenceModeFillBtn').classList.toggle('active', mode === 'fill');
+    renderSentencesScreen();
+  }
+  document.getElementById('sentenceModeReadBtn').addEventListener('click', () => setSentencesMode('read'));
+  document.getElementById('sentenceModeReverseBtn').addEventListener('click', () => setSentencesMode('reverse'));
+  document.getElementById('sentenceModeFillBtn').addEventListener('click', () => setSentencesMode('fill'));
 
   function startSentenceTopic(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
@@ -959,6 +1063,161 @@
   }
 
   document.getElementById('backFromSentences').addEventListener('click', () => showScreen('sentences'));
+
+  // ---------- REVERSE QUIZ (Đoán nghĩa: cho nghĩa tiếng Việt, đoán đúng từ tiếng Anh) ----------
+  // Chiều ngược lại với Quiz thường (nghe Anh → chọn tranh) — nhớ 1 từ theo nhiều chiều thì nhớ
+  // sâu và lâu hơn. Luyện tập tự do (không tính sao) nhưng vẫn ghi nhận vào wordStats để phục vụ
+  // Ôn tập thông minh + Luyện từ khó.
+  let reverseWords = [];
+  let reverseIndex = 0;
+
+  function startReverseQuiz(topicId) {
+    const topic = TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    currentTopic = topic;
+    reverseWords = shuffle(topic.words).slice(0, Math.min(REVERSE_WORD_COUNT, topic.words.length));
+    reverseIndex = 0;
+    document.getElementById('reverseWrap').hidden = false;
+    document.getElementById('reverseDoneWrap').hidden = true;
+    renderReverseQuestion();
+    showScreen('reverse');
+  }
+
+  function renderReverseQuestion() {
+    const pct = (reverseIndex / reverseWords.length) * 100;
+    document.getElementById('reverseProgressFill').style.width = pct + '%';
+    document.getElementById('reverseFeedback').textContent = '';
+    document.getElementById('reverseFeedback').className = 'quiz-feedback';
+
+    const word = reverseWords[reverseIndex];
+    document.getElementById('reverseEmoji').textContent = word.emoji;
+    document.getElementById('reverseWord').textContent = word.vi;
+
+    const distractors = shuffle(currentTopic.words.filter(w => w !== word)).slice(0, 3);
+    const options = shuffle([word, ...distractors]);
+
+    const wrap = document.getElementById('reverseOptions');
+    wrap.innerHTML = '';
+    options.forEach(opt => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt text-opt';
+      b.textContent = opt.en;
+      b.addEventListener('click', () => handleReverseAnswer(b, opt.en === word.en));
+      wrap.appendChild(b);
+    });
+  }
+
+  function handleReverseAnswer(btn, isCorrect) {
+    const word = reverseWords[reverseIndex];
+    document.querySelectorAll('#reverseOptions .quiz-opt').forEach(o => o.disabled = true);
+    const fb = document.getElementById('reverseFeedback');
+    recordWordAnswer(word, isCorrect);
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.textContent = 'Chính xác! 🎉';
+      fb.className = 'quiz-feedback ok';
+      speak(word.en);
+    } else {
+      btn.classList.add('wrong');
+      fb.textContent = 'Chưa đúng, từ đúng là "' + word.en + '"';
+      fb.className = 'quiz-feedback no';
+    }
+    setTimeout(() => {
+      reverseIndex++;
+      if (reverseIndex >= reverseWords.length) {
+        document.getElementById('reverseProgressFill').style.width = '100%';
+        document.getElementById('reverseWrap').hidden = true;
+        document.getElementById('reverseDoneWrap').hidden = false;
+        saveProgress(progress);
+      } else {
+        renderReverseQuestion();
+      }
+    }, 1000);
+  }
+
+  document.getElementById('backFromReverse').addEventListener('click', () => showScreen('sentences'));
+  document.getElementById('reverseReplayBtn').addEventListener('click', () => startReverseQuiz(currentTopic.id));
+  document.getElementById('reverseOtherTopicBtn').addEventListener('click', () => showScreen('sentences'));
+
+  // ---------- FILL IN THE BLANK (Điền từ vào câu) ----------
+  // Cho câu ví dụ bị khuyết mất từ chính, bé phải tự nhớ lại đúng từ để chọn điền vào — luyện nhớ
+  // từ trong ngữ cảnh thay vì chỉ nhận diện thụ động như phần "Đọc câu". Cũng luyện tập tự do,
+  // vẫn ghi nhận vào wordStats.
+  let fillBlankWords = [];
+  let fillBlankIndex = 0;
+
+  function startFillBlank(topicId) {
+    const topic = TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    currentTopic = topic;
+    const withExamples = topic.words.filter(w => w.example);
+    fillBlankWords = shuffle(withExamples).slice(0, Math.min(FILLBLANK_WORD_COUNT, withExamples.length));
+    fillBlankIndex = 0;
+    document.getElementById('fillBlankWrap').hidden = false;
+    document.getElementById('fillBlankDoneWrap').hidden = true;
+    renderFillBlankQuestion();
+    showScreen('fillblank');
+  }
+
+  function renderFillBlankQuestion() {
+    const pct = (fillBlankIndex / fillBlankWords.length) * 100;
+    document.getElementById('fillBlankProgressFill').style.width = pct + '%';
+    document.getElementById('fillBlankFeedback').textContent = '';
+    document.getElementById('fillBlankFeedback').className = 'quiz-feedback';
+
+    const word = fillBlankWords[fillBlankIndex];
+    document.getElementById('fillBlankEmoji').textContent = word.emoji;
+    document.getElementById('fillBlankSentence').innerHTML = word.example.replace(word.en, '<span class="blank">____</span>');
+    document.getElementById('fillBlankVi').textContent = word.exampleVi || '';
+
+    const distractors = shuffle(currentTopic.words.filter(w => w !== word)).slice(0, 3);
+    const options = shuffle([word, ...distractors]);
+
+    const wrap = document.getElementById('fillBlankOptions');
+    wrap.innerHTML = '';
+    options.forEach(opt => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt text-opt';
+      b.textContent = opt.en;
+      b.addEventListener('click', () => handleFillBlankAnswer(b, opt.en === word.en));
+      wrap.appendChild(b);
+    });
+  }
+
+  function handleFillBlankAnswer(btn, isCorrect) {
+    const word = fillBlankWords[fillBlankIndex];
+    document.querySelectorAll('#fillBlankOptions .quiz-opt').forEach(o => o.disabled = true);
+    const fb = document.getElementById('fillBlankFeedback');
+    recordWordAnswer(word, isCorrect);
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.textContent = 'Chính xác! 🎉';
+      fb.className = 'quiz-feedback ok';
+      document.getElementById('fillBlankSentence').textContent = word.example;
+      speak(word.example);
+    } else {
+      btn.classList.add('wrong');
+      fb.textContent = 'Chưa đúng, từ đúng là "' + word.en + '"';
+      fb.className = 'quiz-feedback no';
+    }
+    setTimeout(() => {
+      fillBlankIndex++;
+      if (fillBlankIndex >= fillBlankWords.length) {
+        document.getElementById('fillBlankProgressFill').style.width = '100%';
+        document.getElementById('fillBlankWrap').hidden = true;
+        document.getElementById('fillBlankDoneWrap').hidden = false;
+        saveProgress(progress);
+      } else {
+        renderFillBlankQuestion();
+      }
+    }, 1200);
+  }
+
+  document.getElementById('backFromFillBlank').addEventListener('click', () => showScreen('sentences'));
+  document.getElementById('fillBlankReplayBtn').addEventListener('click', () => startFillBlank(currentTopic.id));
+  document.getElementById('fillBlankOtherTopicBtn').addEventListener('click', () => showScreen('sentences'));
 
   function renderHome() {
     const grid = document.getElementById('topicGrid');
@@ -1121,6 +1380,7 @@
   let quizOrder = [];
   let quizCorrectCount = 0;
   let isMixedReview = false;
+  let reviewKind = 'mixed'; // 'mixed' | 'smart' | 'difficult' — chọn tiêu đề/gợi ý phù hợp lúc kết thúc
   let quizCurrentWordIdx = null;
   // Trạng thái đúng/sai mới nhất của từng từ trong chủ đề (theo index trong currentTopic.words),
   // dùng để tổng kết cuối bài quiz + cho bé làm lại riêng các từ sai đến khi đúng hết.
@@ -1164,10 +1424,34 @@
     }
     currentTopic = { id: '__mixed__', label: 'Ôn tập tổng hợp', words: shuffle(pool).slice(0, Math.min(10, pool.length)) };
     isMixedReview = true;
+    reviewKind = 'mixed';
     startQuiz();
   }
 
   document.getElementById('mixedReviewBtn').addEventListener('click', startMixedReview);
+
+  // Ôn tập thông minh: chỉ hỏi lại đúng những từ đã "đến hạn" theo lịch ghi nhớ ngắt quãng
+  // (xem recordWordAnswer/getDueWords) — đúng lúc bé sắp quên, hiệu quả hơn ôn ngẫu nhiên.
+  function startSmartReview() {
+    const dueWords = getDueWords(12);
+    if (!dueWords.length) { showToast('Chưa có từ nào đến hạn ôn lại, bé học tiếp đã nhé!', '🧠'); return; }
+    currentTopic = { id: '__smart__', label: 'Ôn tập thông minh', words: dueWords };
+    isMixedReview = true;
+    reviewKind = 'smart';
+    startQuiz();
+  }
+  document.getElementById('smartReviewBtn').addEventListener('click', startSmartReview);
+
+  // Luyện riêng các từ bé hay trả lời sai (gộp từ mọi chế độ: Học, Tính giờ, Xếp chữ, Đoán nghĩa...).
+  function startDifficultReview() {
+    const words = getDifficultWords(12);
+    if (!words.length) { showToast('Bé chưa có từ nào hay sai cả, giỏi quá! 🎉', '📌'); return; }
+    currentTopic = { id: '__difficult__', label: 'Luyện từ khó', words: words };
+    isMixedReview = true;
+    reviewKind = 'difficult';
+    startQuiz();
+  }
+  document.getElementById('difficultReviewBtn').addEventListener('click', startDifficultReview);
 
   function renderQuiz() {
     document.getElementById('quizFeedback').textContent = '';
@@ -1200,6 +1484,7 @@
     allOpts.forEach(o => o.disabled = true);
     const fb = document.getElementById('quizFeedback');
     if (!isMixedReview) quizWordStatus[quizCurrentWordIdx] = isCorrect;
+    recordWordAnswer(currentTopic.words[quizCurrentWordIdx], isCorrect);
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
@@ -1215,7 +1500,7 @@
       if (quizIndex < quizOrder.length) {
         renderQuiz();
       } else if (isMixedReview) {
-        finishMixedReview();
+        finishReviewSession();
       } else {
         showQuizRecap();
       }
@@ -1462,6 +1747,7 @@
     const fb = document.getElementById('spellingFeedback');
     const slotBtns = document.querySelectorAll('.spelling-slot');
     if (assembled === word.en) {
+      recordWordAnswer(word, true);
       slotBtns.forEach(b => b.classList.add('is-correct'));
       fb.textContent = 'Chính xác! 🎉';
       fb.className = 'quiz-feedback ok';
@@ -1472,11 +1758,13 @@
           document.getElementById('spellingProgressFill').style.width = '100%';
           document.getElementById('spellingWrap').hidden = true;
           document.getElementById('spellingDoneWrap').hidden = false;
+          saveProgress(progress);
         } else {
           renderSpellingWord();
         }
       }, 900);
     } else {
+      recordWordAnswer(word, false);
       slotBtns.forEach(b => b.classList.add('is-wrong'));
       fb.textContent = 'Chưa đúng, thử lại nhé!';
       fb.className = 'quiz-feedback no';
@@ -1567,6 +1855,7 @@
     speedActive = false;
     document.querySelectorAll('#speedOptions .quiz-opt').forEach(o => o.disabled = true);
     btn.classList.add(isCorrect ? 'correct' : 'wrong');
+    recordWordAnswer(speedWords[speedIndex], isCorrect);
     if (isCorrect) speedCorrectCount++;
     renderSpeedStats();
     setTimeout(() => {
@@ -1656,7 +1945,9 @@
 
   // Ôn tập tổng hợp xong: tính sao, kiểm tra huy hiệu, nhưng không gắn với 1 chủ đề cụ thể
   // (không có chủ đề để "học lại"/in flashcard riêng, chỉ có thể ôn tập lại 1 bộ từ ngẫu nhiên khác).
-  function finishMixedReview() {
+  // Dùng chung cho cả 3 kiểu ôn tập không gắn với 1 chủ đề cụ thể: tổng hợp / thông minh / từ khó
+  // (không có chủ đề để "học lại"/in flashcard riêng, chỉ tính sao + cập nhật chuỗi ngày/huy hiệu).
+  function finishReviewSession() {
     const isPerfect = quizCorrectCount === quizOrder.length;
     const oldStars = progress.stars;
     progress.stars += quizCorrectCount;
@@ -1664,17 +1955,27 @@
     saveProgress(progress);
     updateStreakOnComplete();
 
-    document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : 'Ôn tập xong rồi!';
-    document.getElementById('doneSubtitle').textContent =
-      'Bé ôn tập đúng ' + quizCorrectCount + '/' + quizOrder.length + ' câu trong bài ôn tập tổng hợp.';
+    const titleByKind = {
+      mixed: 'Ôn tập xong rồi!',
+      smart: 'Ôn tập thông minh xong rồi!',
+      difficult: 'Luyện từ khó xong rồi!',
+    };
+    const tipByKind = {
+      mixed: '💬 Ba mẹ có thể cho bé ôn tập tổng hợp bất cứ lúc nào ở tab Tiến độ nhé!',
+      smart: '💬 App sẽ tự nhắc đúng lúc bé sắp quên — cứ ôn đều mỗi khi có từ đến hạn nhé!',
+      difficult: '💬 Những từ bé trả lời đúng liên tục sẽ tự rời khỏi danh sách "từ khó" này.',
+    };
+    const replayByKind = { mixed: startMixedReview, smart: startSmartReview, difficult: startDifficultReview };
+
+    document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : titleByKind[reviewKind];
+    document.getElementById('doneSubtitle').textContent = 'Bé ôn tập đúng ' + quizCorrectCount + '/' + quizOrder.length + ' câu.';
     document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, quizCorrectCount));
-    document.getElementById('parentTip').innerHTML =
-      '💬 Ba mẹ có thể cho bé ôn tập tổng hợp bất cứ lúc nào ở tab Tiến độ nhé!';
+    document.getElementById('parentTip').innerHTML = tipByKind[reviewKind];
 
     document.getElementById('printBtn').hidden = true;
     const replayBtn = document.getElementById('replayBtn');
     replayBtn.textContent = 'Ôn tập lại';
-    replayBtn.onclick = () => startMixedReview();
+    replayBtn.onclick = replayByKind[reviewKind];
 
     renderTotalStars();
     celebrate(isPerfect, oldStars);

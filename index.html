@@ -108,7 +108,12 @@
   <section class="screen" id="screen-sentences">
     <div class="home-hero">
       <h1>Nghe & đọc câu 💬</h1>
-      <p>Chọn 1 chủ đề để nghe những câu tiếng Anh đơn giản, ghép từ các từ vựng bé đã học.</p>
+      <p>Chọn 1 chế độ và 1 chủ đề để bé luyện nhớ từ vựng thật lâu!</p>
+    </div>
+    <div class="segment-toggle">
+      <button class="segment-btn active" id="sentenceModeReadBtn">📖 Đọc câu</button>
+      <button class="segment-btn" id="sentenceModeReverseBtn">🔄 Đoán nghĩa</button>
+      <button class="segment-btn" id="sentenceModeFillBtn">✏️ Điền từ</button>
     </div>
     <div class="topic-grid" id="sentencesTopicGrid"></div>
   </section>
@@ -166,7 +171,9 @@
       </div>
 
       <div class="progress-actions">
-        <button class="cta-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
+        <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
+        <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
+        <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
         <button class="ghost-btn" id="shareProgressBtn">📤 Chia sẻ tiến độ</button>
       </div>
 
@@ -336,6 +343,50 @@
     </div>
   </section>
 
+  <!-- ============ REVERSE QUIZ SCREEN (Đoán nghĩa) ============ -->
+  <section class="screen" id="screen-reverse">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromReverse" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="reverseProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap" id="reverseWrap">
+      <div class="quiz-prompt">Từ tiếng Anh nào có nghĩa là...</div>
+      <div class="reverse-emoji" id="reverseEmoji">🍎</div>
+      <div class="quiz-word" id="reverseWord">Quả táo</div>
+      <div class="quiz-options reverse-options" id="reverseOptions"></div>
+      <div class="quiz-feedback" id="reverseFeedback"></div>
+    </div>
+    <div class="match-done-wrap" id="reverseDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p>Bé đã đoán nghĩa hết các từ rồi đó!</p>
+      <button class="cta-btn" id="reverseReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn" id="reverseOtherTopicBtn">💬 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
+  <!-- ============ FILL-IN-THE-BLANK SCREEN (Điền từ) ============ -->
+  <section class="screen" id="screen-fillblank">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromFillBlank" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="fillBlankProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap" id="fillBlankWrap">
+      <div class="reverse-emoji" id="fillBlankEmoji">🍎</div>
+      <div class="fillblank-sentence" id="fillBlankSentence">I carry my ____.</div>
+      <div class="fillblank-vi" id="fillBlankVi">Con mang cặp sách.</div>
+      <div class="quiz-options reverse-options" id="fillBlankOptions"></div>
+      <div class="quiz-feedback" id="fillBlankFeedback"></div>
+    </div>
+    <div class="match-done-wrap" id="fillBlankDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p>Bé đã điền đúng hết các câu rồi đó!</p>
+      <button class="cta-btn" id="fillBlankReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn" id="fillBlankOtherTopicBtn">💬 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
   <!-- ============ MATCHING GAME SCREEN ============ -->
   <section class="screen" id="screen-match">
     <div class="card-topbar">
@@ -448,7 +499,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💬</span>
-        <span><strong>Câu</strong> — nghe và đọc những câu tiếng Anh đơn giản dùng từ bé đã học.</span>
+        <span><strong>Câu</strong> — chọn "Đọc câu", "Đoán nghĩa" hoặc "Điền từ" để luyện nhớ từ vựng qua câu ví dụ.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🏆</span>
@@ -456,7 +507,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📊</span>
-        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, ôn tập tổng hợp nhiều chủ đề và chia sẻ thành tích của bé.</span>
+        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, chia sẻ thành tích, và có "Ôn tập thông minh" (tự nhắc đúng lúc bé sắp quên) + "Luyện từ khó" (tập trung vào từ bé hay sai).</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
