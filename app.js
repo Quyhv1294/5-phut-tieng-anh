@@ -147,6 +147,7 @@
   }
 
   document.getElementById('tabHome').addEventListener('click', () => { renderHome(); showScreen('home'); });
+  document.getElementById('brandHomeBtn').addEventListener('click', () => { if (enforceGate()) goHome(); });
   document.getElementById('tabGames').addEventListener('click', () => { showScreen('games'); });
   document.getElementById('tabSentences').addEventListener('click', () => { showScreen('sentences'); });
   document.getElementById('tabBadges').addEventListener('click', () => { renderBadgesScreen(); showScreen('badges'); });

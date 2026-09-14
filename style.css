@@ -116,7 +116,12 @@
     gap: 12px;
     margin-bottom: 18px;
   }
-  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
+  .brand {
+    display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto;
+    border: none; background: transparent; padding: 0; text-align: left; cursor: pointer;
+    font-family: inherit; color: inherit;
+  }
+  .brand:active { transform: scale(0.98); }
   .brand .mascot {
     width: 46px; height: 46px; border-radius: 50%;
     background: var(--mint);
@@ -831,6 +836,8 @@
 
     .account-btn, .mute-btn, .donate-btn, .theme-btn, .icon-btn { transition: transform .15s ease; }
     .account-btn:hover, .mute-btn:hover, .donate-btn:hover, .theme-btn:hover, .icon-btn:hover { transform: translateY(-2px); }
+    .brand { transition: transform .15s ease; }
+    .brand:hover { transform: translateY(-2px); }
 
     .tab-btn { transition: transform .15s ease, color .15s ease; }
     .tab-btn:hover { transform: translateY(-2px); color: var(--accent-ink); }
