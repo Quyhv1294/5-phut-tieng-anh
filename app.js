@@ -93,6 +93,10 @@
   }
   function saveProgress(p) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch (e) {}
+    // Đồng bộ ngược lên Google Sheet mỗi khi tiến độ thay đổi, để thiết bị khác đăng nhập cùng
+    // email sau này lấy được đúng bản mới nhất (xem syncProgressToCloud, khai báo phía dưới —
+    // an toàn vì hàm này chỉ thực sự CHẠY từ các sự kiện người dùng, sau khi cả file đã nạp xong).
+    syncProgressToCloud(p);
   }
   let progress = loadProgress();
 
@@ -511,11 +515,24 @@
   });
 
   // ---------- EMAIL VERIFICATION (mã OTP gửi qua Google Apps Script) ----------
-  // Xác thực email là TÙY CHỌN và KHÔNG ảnh hưởng tới tiến trình học của bé — tiến trình luôn
-  // lưu trong localStorage y như trước (không có đồng bộ cloud). Việc xác thực chỉ để ghi nhận
-  // 1 email thật (gửi mã 6 số qua chính email/Gmail của fanpage, xem SHEETS_CONFIG) vào Google
-  // Sheet của ba mẹ, phục vụ chăm sóc khách hàng — không tạo phiên đăng nhập máy chủ thật sự,
-  // chỉ ghi nhớ cục bộ trên thiết bị này (localStorage) là đã xác thực để khỏi hỏi lại.
+  // Xác thực email là BẮT BUỘC trước khi vào học (xem enforceGate). Tiến trình học vẫn lưu
+  // chính ở localStorage của thiết bị (hoạt động offline bình thường), nhưng mỗi khi xác thực
+  // thành công app sẽ đồng bộ 2 chiều với Google Sheet theo đúng email đó (xem fetchCloudDataAndProceed
+  // + syncProgressToCloud) — nhờ vậy đăng nhập cùng email ở thiết bị khác sẽ khôi phục lại đúng
+  // hồ sơ + tiến độ đã học, và chỉ 1 thiết bị được coi là "đang hoạt động" tại 1 thời điểm
+  // (xem checkDeviceSession) để tránh 2 thiết bị ghi đè tiến độ lẫn nhau.
+  const DEVICE_ID_KEY = '5phut_device_id_v1';
+  function getDeviceId() {
+    let id = null;
+    try { id = localStorage.getItem(DEVICE_ID_KEY); } catch (e) {}
+    if (!id) {
+      id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem(DEVICE_ID_KEY, id); } catch (e) {}
+    }
+    return id;
+  }
+  const deviceId = getDeviceId();
+
   const VERIFIED_EMAIL_KEY = '5phut_verified_email_v1';
   let verifiedEmail = null;
   let pendingVerifyEmail = null;
@@ -608,8 +625,52 @@
       verifiedEmail = pendingVerifyEmail;
       try { localStorage.setItem(VERIFIED_EMAIL_KEY, verifiedEmail); } catch (e) {}
       showToast('Xác thực email thành công!', '✅');
-      if (enforceGate()) bootAfterGate();
+      fetchCloudDataAndProceed();
     }).catch(() => showEmailCodeError('Có lỗi xảy ra, vui lòng thử lại.'));
+  }
+
+  // Sau khi xác thực email trên 1 thiết bị (thiết bị mới, hoặc xác thực lại để giành quyền
+  // hoạt động), hỏi Google Sheet xem email này đã có hồ sơ + tiến độ lưu sẵn chưa. Có thì tự
+  // động khôi phục để dùng lại y như thiết bị cũ; đồng thời lệnh gọi này khiến thiết bị hiện tại
+  // trở thành thiết bị "đang hoạt động" của email đó (xem handleGetUserData ở Apps Script).
+  function fetchCloudDataAndProceed() {
+    if (!backendConfigured()) { if (enforceGate()) bootAfterGate(); return; }
+    const url = SHEETS_CONFIG.webAppUrl + '?action=getUserData&email=' + encodeURIComponent(verifiedEmail) + '&deviceId=' + encodeURIComponent(deviceId);
+    fetch(url).then(r => r.json()).then(data => {
+      if (data.ok && data.found) {
+        if (data.profile) { profile = data.profile; saveProfileLocal(profile); }
+        if (data.progress) { progress = normalizeProgress(data.progress); saveProgress(progress); renderTotalStars(); }
+        showToast('Đã khôi phục hồ sơ & tiến độ học trước đó!', '☁️');
+      }
+      if (enforceGate()) bootAfterGate();
+    }).catch(() => { if (enforceGate()) bootAfterGate(); });
+  }
+
+  // Đẩy tiến độ mới nhất lên Google Sheet (chỉ khi đã xác thực email — chưa xác thực thì tiến độ
+  // vẫn hoạt động bình thường, chỉ là không đồng bộ được sang thiết bị khác).
+  function syncProgressToCloud(p) {
+    if (!backendConfigured() || !verifiedEmail) return;
+    const url = SHEETS_CONFIG.webAppUrl + '?action=saveProgress'
+      + '&email=' + encodeURIComponent(verifiedEmail)
+      + '&deviceId=' + encodeURIComponent(deviceId)
+      + '&progress=' + encodeURIComponent(JSON.stringify(p));
+    fetch(url).catch(() => {});
+  }
+
+  // Kiểm tra âm thầm mỗi lần mở app (thiết bị đã đăng nhập từ trước): thiết bị này có còn là
+  // thiết bị "đang hoạt động" của email đó không, hay đã bị 1 thiết bị khác xác thực đè lên.
+  // Mất mạng thì bỏ qua hẳn, không chặn bé học offline.
+  function checkDeviceSession() {
+    if (!backendConfigured() || !verifiedEmail) return;
+    const url = SHEETS_CONFIG.webAppUrl + '?action=checkSession&email=' + encodeURIComponent(verifiedEmail) + '&deviceId=' + encodeURIComponent(deviceId);
+    fetch(url).then(r => r.json()).then(data => {
+      if (data.ok && data.active === false) {
+        verifiedEmail = null;
+        try { localStorage.removeItem(VERIFIED_EMAIL_KEY); } catch (e) {}
+        showToast('Tài khoản đang được đăng nhập ở thiết bị khác. Vui lòng đăng xuất ở thiết bị đó hoặc xác thực lại tại đây để tiếp tục.', '⚠️');
+        enforceGate();
+      }
+    }).catch(() => {});
   }
 
   function signOutEmail() {
@@ -756,7 +817,8 @@
       + '&name=' + encodeURIComponent(p.name)
       + '&age=' + encodeURIComponent(p.age)
       + '&avatar=' + encodeURIComponent(p.avatar)
-      + '&phone=' + encodeURIComponent(p.parentPhone);
+      + '&phone=' + encodeURIComponent(p.parentPhone)
+      + '&deviceId=' + encodeURIComponent(deviceId);
     fetch(url).catch(() => {});
   }
 
@@ -1806,7 +1868,10 @@
   }
 
   // Xác thực email + hồ sơ bé là bắt buộc trước khi vào học (xem enforceGate ở trên).
-  if (enforceGate()) bootAfterGate();
+  if (enforceGate()) {
+    bootAfterGate();
+    checkDeviceSession();
+  }
 
   // ---------- OFFLINE SUPPORT ----------
   // Đăng ký service worker để app + audio + icon dùng lại được kể cả khi mất mạng
