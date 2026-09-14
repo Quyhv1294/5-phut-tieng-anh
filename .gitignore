@@ -1,0 +1,6 @@
+# File bản nháp cũ, không còn được index.html/app.js tham chiếu tới — không cần đưa lên host công khai.
+5phut-app.html
+
+# Rác hệ điều hành
+.DS_Store
+Thumbs.db

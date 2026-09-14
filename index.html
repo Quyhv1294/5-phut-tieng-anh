@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>5 Phút Tiếng Anh</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icons/favicon.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#FF8A65">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="5 Phút TA">
+<script>
+  // Áp dụng giao diện đã lưu (sáng/tối) ngay trước khi trang vẽ, tránh bị nháy sai màu 1 khắc.
+  try {
+    const savedTheme = localStorage.getItem('5phut_theme_v1');
+    if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="mascot">🦊</div>
+      <div class="names">
+        <div class="app-name">5 Phút Tiếng Anh</div>
+        <div class="tagline">Học vui mỗi ngày cùng bé</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="donate-btn" id="donateBtn" aria-label="Ủng hộ">💚</button>
+      <button class="account-btn" id="accountBtn" aria-label="Tài khoản">👤</button>
+      <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌗</button>
+      <button class="mute-btn" id="muteBtn" aria-label="Tắt âm thanh">🔊</button>
+      <div class="stars-pill">⭐ <span id="totalStars">0</span> <span id="levelBadge"></span></div>
+    </div>
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="tab-btn active" id="tabHome" aria-label="Học">
+      <span class="tab-icon">🏠</span><span>Học</span>
+    </button>
+    <button class="tab-btn" id="tabGames" aria-label="Trò chơi">
+      <span class="tab-icon">🎮</span><span>Trò chơi</span>
+    </button>
+    <button class="tab-btn" id="tabSentences" aria-label="Câu">
+      <span class="tab-icon">🗣️</span><span>Câu</span>
+    </button>
+    <button class="tab-btn" id="tabBadges" aria-label="Bộ sưu tập">
+      <span class="tab-icon">🏆</span><span>Sưu tập</span>
+    </button>
+    <button class="tab-btn" id="tabProgress" aria-label="Tiến độ">
+      <span class="tab-icon">📊</span><span>Tiến độ</span>
+    </button>
+  </nav>
+
+  <!-- ============ HOME SCREEN ============ -->
+  <section class="screen active" id="screen-home">
+    <div class="home-hero">
+      <h1>Chào ba mẹ! 👋</h1>
+      <p>Chọn một chủ đề bên dưới, học cùng bé 4 từ mới, rồi chơi mini game ôn lại — chỉ mất khoảng 5 phút thôi ạ.</p>
+    </div>
+
+    <button class="week-banner" id="weekBanner" hidden>
+      <span class="wb-emoji" id="weekBannerEmoji">🗓️</span>
+      <span>
+        <span class="wb-eyebrow">Bài ôn tập tuần này</span><br>
+        <span class="wb-title" id="weekBannerTitle">Con vật</span>
+      </span>
+      <span class="wb-arrow">→</span>
+    </button>
+
+    <div class="reminder-banner" id="reminderBanner" hidden>
+      <span class="reminder-emoji">📚</span>
+      <span>Hôm nay bé chưa học bài nào — chọn 1 chủ đề bên dưới để bắt đầu nhé!</span>
+    </div>
+
+    <div class="streak-banner" id="streakBanner" hidden>
+      <span class="streak-emoji">🔥</span>
+      <span>Bé đã học <strong id="streakCount">0</strong> ngày liên tiếp — giỏi quá!</span>
+    </div>
+
+    <div class="section-label">10 chủ đề từ vựng</div>
+    <div class="topic-grid" id="topicGrid"></div>
+
+    <div class="home-footnote">"5 Phút Tiếng Anh Mỗi Ngày" 💚</div>
+  </section>
+
+  <!-- ============ GAMES SCREEN ============ -->
+  <section class="screen" id="screen-games">
+    <div class="home-hero">
+      <h1>Trò chơi 🎮</h1>
+      <p>Chọn 1 trò chơi và 1 chủ đề, bé luyện từ vựng thật vui — chơi lại bao nhiêu lần cũng được!</p>
+    </div>
+    <div class="segment-toggle">
+      <button class="segment-btn active" id="gameModeMatchBtn">🧩 Ghép tranh</button>
+      <button class="segment-btn" id="gameModeSpellBtn">🔤 Xếp chữ</button>
+      <button class="segment-btn" id="gameModeSpeedBtn">⏱️ Tính giờ</button>
+    </div>
+    <div class="topic-grid" id="gamesTopicGrid"></div>
+  </section>
+
+  <!-- ============ SENTENCES SCREEN ============ -->
+  <section class="screen" id="screen-sentences">
+    <div class="home-hero">
+      <h1>Nghe & đọc câu 🗣️</h1>
+      <p>Chọn 1 chủ đề để nghe những câu tiếng Anh đơn giản, ghép từ các từ vựng bé đã học.</p>
+    </div>
+    <div class="topic-grid" id="sentencesTopicGrid"></div>
+  </section>
+
+  <!-- ============ SENTENCE PRACTICE SCREEN ============ -->
+  <section class="screen" id="screen-sentence-practice">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSentences" aria-label="Quay lại">←</button>
+    </div>
+    <div class="sentence-wrap">
+      <div class="sentence-topic-title" id="sentenceTopicTitle">Gia đình</div>
+      <div class="sentence-list" id="sentenceList"></div>
+    </div>
+  </section>
+
+  <!-- ============ BADGES / STICKER SCREEN ============ -->
+  <section class="screen" id="screen-badges">
+    <div class="progress-wrap">
+      <h2>Bộ sưu tập của bé</h2>
+      <div class="segment-toggle">
+        <button class="segment-btn active" id="collectionBadgesBtn">🏆 Huy hiệu</button>
+        <button class="segment-btn" id="collectionStickersBtn">🎴 Sticker</button>
+      </div>
+      <p class="sticker-progress-label" id="stickerCountLabel" hidden></p>
+      <div class="badge-grid" id="badgeGrid"></div>
+      <div class="sticker-grid" id="stickerGrid" hidden></div>
+    </div>
+  </section>
+
+  <!-- ============ PROGRESS SCREEN ============ -->
+  <section class="screen" id="screen-progress">
+    <div class="progress-wrap">
+      <h2>Tiến độ học của bé</h2>
+      <div class="progress-summary">
+        <div class="summary-item">
+          <div class="summary-num" id="progressStars">0</div>
+          <div class="summary-label">⭐ Tổng số sao</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num" id="progressTopicsDone">0/10</div>
+          <div class="summary-label">📚 Chủ đề xong</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num" id="progressWords">0</div>
+          <div class="summary-label">🔤 Từ đã học</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-num" id="progressStreakBest">0</div>
+          <div class="summary-label">🔥 Kỷ lục chuỗi ngày</div>
+        </div>
+      </div>
+      <div class="level-card">
+        <span id="levelEmoji">🌱</span>
+        <span id="levelLabel">Mầm non</span>
+      </div>
+
+      <div class="progress-actions">
+        <button class="cta-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
+        <button class="ghost-btn" id="shareProgressBtn">📤 Chia sẻ tiến độ</button>
+      </div>
+
+      <div class="section-label">Chi tiết chủ đề</div>
+      <div class="progress-list" id="progressList"></div>
+      <button class="ghost-btn ghost-btn--muted" id="replayOnboardingBtn">📖 Xem lại hướng dẫn sử dụng</button>
+      <button class="ghost-btn ghost-btn--danger" id="resetProgressBtn">Đặt lại toàn bộ tiến độ học</button>
+    </div>
+  </section>
+
+  <!-- ============ ACCOUNT SCREEN ============ -->
+  <section class="screen" id="screen-account">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromAccount" aria-label="Quay lại">←</button>
+    </div>
+    <div class="account-wrap">
+      <div id="accountLoggedOut">
+        <div class="account-hero">
+          <div class="account-hero-emoji">📧</div>
+          <h2>Xác thực email</h2>
+          <p>Xác thực email để bắt đầu học — bé sẽ được tạo hồ sơ ngay sau khi xác thực xong. Việc này giúp chúng tôi liên hệ hỗ trợ khi cần.</p>
+        </div>
+
+        <form class="otp-form" id="emailEntryForm">
+          <label for="emailInput">Email của ba mẹ</label>
+          <input type="email" id="emailInput" autocomplete="email" placeholder="ten@gmail.com" required>
+          <button type="submit" class="account-primary-btn" id="emailSendCodeBtn">Gửi mã xác thực</button>
+          <p class="account-error" id="emailEntryError" role="alert" hidden></p>
+        </form>
+
+        <form class="otp-form" id="emailCodeForm" hidden>
+          <label for="codeInput">Nhập mã 6 số gửi tới <span id="emailCodeTarget"></span></label>
+          <input type="text" id="codeInput" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" required>
+          <button type="submit" class="account-primary-btn" id="emailConfirmCodeBtn">Xác nhận</button>
+          <button type="button" class="account-link-btn" id="emailChangeBtn">Đổi email khác</button>
+          <p class="account-note" id="emailResendHint"></p>
+          <p class="account-error" id="emailCodeError" role="alert" hidden></p>
+        </form>
+      </div>
+      <div id="accountLoggedIn" hidden>
+        <div class="account-profile">
+          <div class="account-avatar" id="accountAvatarDisplay">✅</div>
+          <div>
+            <div class="account-name" id="accountEmailDisplay">—</div>
+            <div class="account-email">Đã xác thực email</div>
+          </div>
+        </div>
+        <p class="account-note">Tiến trình học của bé vẫn lưu trên máy này. Việc xác thực chỉ dùng để chúng tôi liên hệ hỗ trợ khi cần.</p>
+        <button class="ghost-btn" id="editProfileBtn">✏️ Sửa hồ sơ của bé</button>
+        <button class="ghost-btn" id="emailSignOutBtn">Xác thực email khác</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DONATE SCREEN ============ -->
+  <section class="screen" id="screen-donate">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromDonate" aria-label="Quay lại">←</button>
+    </div>
+    <div class="account-wrap">
+      <div class="account-hero">
+        <div class="account-hero-emoji">❤️</div>
+        <h2>Ủng hộ phát triển app</h2>
+        <p class="donate-hero-text">Mỗi tấm lòng của ba mẹ là động lực để mình làm thêm thật nhiều bài học hay, giúp bé học tiếng Anh vui hơn mỗi ngày. Cảm ơn ba mẹ rất nhiều! ❤️</p>
+      </div>
+
+      <div class="donate-qr-card">
+        <img src="assets/QR.jpg" alt="Mã QR VietQR ủng hộ" class="donate-qr-img">
+      </div>
+
+      <div class="donate-info">
+        <div class="donate-info-row">
+          <span class="donate-info-label">Chủ tài khoản</span>
+          <span class="donate-info-value">HOANG VAN QUY</span>
+        </div>
+        <div class="donate-info-row">
+          <span class="donate-info-label">Số tài khoản</span>
+          <span class="donate-info-value" id="donateAccountNumber">1206959812</span>
+          <button class="donate-copy-btn" id="donateCopyBtn" aria-label="Sao chép số tài khoản">📋</button>
+        </div>
+        <div class="donate-info-row">
+          <span class="donate-info-label">Ngân hàng</span>
+          <span class="donate-info-value">BIDV - CN Sở Giao dịch 1</span>
+        </div>
+      </div>
+
+      <p class="donate-note">Nội dung chuyển khoản gợi ý: "Ung ho 5 Phut Tieng Anh"</p>
+      <p class="donate-note donate-note--thanks">💚 Cảm ơn ba mẹ đã đồng hành cùng bé mỗi ngày!</p>
+    </div>
+  </section>
+
+  <!-- ============ CREATE/EDIT PROFILE SCREEN ============ -->
+  <section class="screen" id="screen-profile-create">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromProfileCreate" aria-label="Quay lại" hidden>←</button>
+    </div>
+    <div class="account-wrap">
+      <div class="account-hero">
+        <div class="account-hero-emoji">🧒</div>
+        <h2 id="profileCreateTitle">Tạo hồ sơ cho bé</h2>
+        <p>Thông tin này giúp app cá nhân hoá trải nghiệm học và giúp ba mẹ liên hệ khi cần. Chỉ lưu trên máy này.</p>
+      </div>
+      <form class="otp-form" id="profileForm">
+        <label for="profileNameInput">Tên bé</label>
+        <input type="text" id="profileNameInput" autocomplete="off" maxlength="40" required>
+
+        <label for="profileAgeInput">Tuổi của bé</label>
+        <input type="number" id="profileAgeInput" inputmode="numeric" min="3" max="12" required>
+
+        <label>Chọn hình đại diện</label>
+        <div class="avatar-grid" id="avatarGrid"></div>
+
+        <label for="profilePhoneInput">Số điện thoại ba/mẹ</label>
+        <input type="tel" id="profilePhoneInput" inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxx" required>
+
+        <button type="submit" class="account-primary-btn" id="profileSaveBtn">Lưu hồ sơ</button>
+        <p class="account-error" id="profileFormError" role="alert" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ FLASHCARD SCREEN ============ -->
+  <section class="screen" id="screen-cards">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromCards" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="cardProgressFill"></div></div>
+    </div>
+    <div class="flash-wrap">
+      <div class="flashcard" id="flashcard">
+        <div class="big-emoji" id="cardEmoji">🍎</div>
+        <div class="word-en" id="cardWordEn">APPLE</div>
+        <div class="word-vi" id="cardWordVi">Quả táo</div>
+      </div>
+      <button class="speak-btn" id="speakBtn">🔊 Nghe phát âm</button>
+      <div class="nav-row">
+        <button class="nav-btn" id="prevCardBtn">← Trước</button>
+        <button class="nav-btn primary" id="nextCardBtn">Tiếp →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ SCREEN ============ -->
+  <section class="screen" id="screen-quiz">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromQuiz" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="quizProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap">
+      <div class="quiz-prompt">Đâu là...</div>
+      <div class="quiz-word" id="quizWord">CAT</div>
+      <div class="quiz-options" id="quizOptions"></div>
+      <div class="quiz-feedback" id="quizFeedback"></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ RECAP SCREEN (tổng kết đúng/sai) ============ -->
+  <section class="screen" id="screen-quiz-recap">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromQuizRecap" aria-label="Quay lại">←</button>
+    </div>
+    <div class="recap-wrap">
+      <h2>Kết quả của bé</h2>
+      <p class="recap-summary" id="recapSummary">Bé đã làm đúng 3/4 từ.</p>
+      <div class="recap-list" id="recapList"></div>
+      <button class="cta-btn" id="recapRetryBtn">🔁 Làm lại từ sai</button>
+      <button class="ghost-btn" id="recapContinueBtn">Học tiếp</button>
+    </div>
+  </section>
+
+  <!-- ============ MATCHING GAME SCREEN ============ -->
+  <section class="screen" id="screen-match">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromMatch" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="matchProgressFill"></div></div>
+    </div>
+    <div class="match-wrap" id="matchWrap">
+      <div class="match-prompt">Ghép từ với hình đúng nhé! 🧩</div>
+      <div class="match-grid" id="matchGrid"></div>
+    </div>
+    <div class="match-done-wrap" id="matchDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p>Bé đã ghép đúng hết cả 4 cặp rồi đó!</p>
+      <button class="cta-btn" id="matchReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn" id="matchOtherTopicBtn">🎮 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
+  <!-- ============ SPELLING GAME SCREEN ============ -->
+  <section class="screen" id="screen-spelling">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSpelling" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="spellingProgressFill"></div></div>
+    </div>
+    <div class="spelling-wrap" id="spellingWrap">
+      <div class="spelling-emoji" id="spellingEmoji">🍎</div>
+      <div class="spelling-vi" id="spellingVi">Quả táo</div>
+      <button class="ghost-btn spelling-listen-btn" id="spellingListenBtn">🔊 Nghe lại</button>
+      <div class="spelling-slots" id="spellingSlots"></div>
+      <div class="spelling-bank" id="spellingBank"></div>
+      <div class="quiz-feedback" id="spellingFeedback"></div>
+    </div>
+    <div class="match-done-wrap" id="spellingDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p>Bé đã xếp đúng hết các từ rồi đó!</p>
+      <button class="cta-btn" id="spellingReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn" id="spellingOtherTopicBtn">🎮 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
+  <!-- ============ SPEED QUIZ SCREEN (Ai nhanh hơn) ============ -->
+  <section class="screen" id="screen-speed">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSpeed" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="speedTimeFill"></div></div>
+    </div>
+    <div class="speed-wrap" id="speedWrap">
+      <div class="speed-stats">
+        <span class="speed-timer" id="speedTimer">⏱️ 30</span>
+        <span class="speed-score" id="speedScore">✅ 0</span>
+      </div>
+      <div class="quiz-prompt">Đâu là...</div>
+      <div class="quiz-word" id="speedWord">CAT</div>
+      <div class="quiz-options" id="speedOptions"></div>
+    </div>
+    <div class="match-done-wrap" id="speedDoneWrap" hidden>
+      <div class="big-star" id="speedDoneEmoji">🎉</div>
+      <h2 id="speedDoneTitle">Xong hết rồi!</h2>
+      <p id="speedDoneSubtitle">Bé trả lời đúng 6/6 từ, được +8 sao!</p>
+      <button class="cta-btn" id="speedReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn" id="speedOtherTopicBtn">🎮 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
+  <!-- ============ WEEKLY REVIEW INTRO SCREEN ============ -->
+  <section class="screen" id="screen-weekly">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromWeekly" aria-label="Quay lại">←</button>
+    </div>
+    <div class="weekly-wrap">
+      <span class="wk-badge" id="weeklyBadge">Bài ôn tập tuần 2</span>
+      <div class="wk-emoji" id="weeklyEmoji">🐾</div>
+      <h2 id="weeklyTitle">Con vật</h2>
+      <p>Ba mẹ bấm bắt đầu để cùng bé ôn lại 4 từ vựng tuần này qua flashcard và mini game nhé!</p>
+      <button class="cta-btn" id="weeklyStartBtn">Bắt đầu ôn tập</button>
+    </div>
+  </section>
+
+  <!-- ============ DONE SCREEN ============ -->
+  <section class="screen" id="screen-done">
+    <div class="done-wrap">
+      <div class="big-star">🎉</div>
+      <h2 id="doneTitle">Giỏi quá!</h2>
+      <p id="doneSubtitle">Bé đã học xong chủ đề này rồi đó ạ.</p>
+      <div class="earned-row" id="earnedStars"></div>
+      <div class="parent-tip" id="parentTip"></div>
+      <button class="cta-btn" id="backHomeBtn">Về trang chủ</button>
+      <button class="ghost-btn" id="replayBtn">Học lại chủ đề này</button>
+      <button class="ghost-btn" id="printBtn">🖨️ In flashcard chủ đề này</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="onboarding-overlay" id="onboardingOverlay" hidden>
+  <div class="onboarding-card">
+    <div class="onboarding-mascot">🦊</div>
+    <h2>Chào mừng ba mẹ và bé!</h2>
+    <p class="onboarding-intro">App có 5 khu vực chính, ba mẹ chỉ cần bấm vào thanh tab bên dưới để chuyển qua lại nhé:</p>
+    <div class="onboarding-steps">
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🏠</span>
+        <span><strong>Học</strong> — chọn chủ đề, học 4 từ vựng mới bằng flashcard rồi làm mini quiz.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🎮</span>
+        <span><strong>Trò chơi</strong> — chọn "Ghép tranh", "Xếp chữ" hoặc "Tính giờ" để ôn từ vựng; chế độ tính giờ càng nhanh càng được nhiều sao!</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🗣️</span>
+        <span><strong>Câu</strong> — nghe và đọc những câu tiếng Anh đơn giản dùng từ bé đã học.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🏆</span>
+        <span><strong>Sưu tập</strong> — xem huy hiệu đã mở khoá và sổ sticker: học xong 1 chủ đề là có ngay 1 sticker mới!</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">📊</span>
+        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, ôn tập tổng hợp nhiều chủ đề và chia sẻ thành tích của bé.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">👤</span>
+        <span><strong>Tài khoản</strong> — bấm biểu tượng người ở góc trên để xem hoặc sửa hồ sơ của bé (tên, tuổi, hình đại diện, số điện thoại ba mẹ) bất cứ lúc nào.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">💚</span>
+        <span><strong>Ủng hộ</strong> — bấm biểu tượng trái tim ở góc trên nếu ba mẹ muốn ủng hộ mình phát triển app tốt hơn.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🌗</span>
+        <span><strong>Giao diện sáng/tối</strong> — bấm biểu tượng mặt trăng ở góc trên để đổi giữa giao diện sáng, tối, hoặc theo máy.</span>
+      </div>
+    </div>
+    <button class="cta-btn" id="onboardingStartBtn">Bắt đầu học thôi!</button>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay" hidden>
+  <div class="confirm-card">
+    <p class="confirm-message" id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="ghost-btn" id="confirmCancelBtn">Huỷ</button>
+      <button class="confirm-ok-btn" id="confirmOkBtn">Đồng ý</button>
+    </div>
+  </div>
+</div>
+
+<div class="share-overlay" id="shareOverlay" hidden>
+  <div class="share-card">
+    <button class="icon-btn share-close" id="shareCloseBtn" aria-label="Đóng">✕</button>
+    <canvas id="shareCanvas" width="600" height="750"></canvas>
+    <div class="share-actions">
+      <button class="cta-btn" id="shareDownloadBtn">Lưu ảnh về máy</button>
+      <button class="ghost-btn" id="shareNativeBtn" hidden>Chia sẻ ngay</button>
+    </div>
+  </div>
+</div>
+
+<div class="print-area" id="printArea"></div>
+
+<script src="data/topics.js"></script>
+<script src="data/emoji-icons.js"></script>
+<script src="data/sheets-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
