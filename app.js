@@ -72,6 +72,39 @@
   const SPEED_TIME_LIMIT = 30; // giây cho mỗi lượt chơi
   const REVERSE_WORD_COUNT = 6; // Đoán nghĩa: lấy tối đa 6 từ/lượt
   const FILLBLANK_WORD_COUNT = 6; // Điền từ: lấy tối đa 6 câu/lượt
+
+  // ---------- GHÉP HÌNH (mảnh ghép tranh — thay cho sổ sticker cũ) ----------
+  // Chỉ dùng các chủ đề có thể mở khoá được ở bản hiện tại (bỏ 2 chủ đề khoá vĩnh viễn
+  // unlocksAt: Infinity) để bức tranh luôn có thể ghép trọn vẹn, không có mảnh không bao giờ có được.
+  const PUZZLE_TOPICS = TOPICS.filter(t => !t.unlocksAt || isFinite(t.unlocksAt));
+  const PUZZLE_COLS = 4;
+  const PUZZLE_ROWS = Math.ceil(PUZZLE_TOPICS.length / PUZZLE_COLS);
+  const PUZZLE_BG_SIZE = (PUZZLE_COLS * 100) + '% ' + (PUZZLE_ROWS * 100) + '%';
+  const PUZZLE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">' +
+    '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#BEE3F8"/><stop offset="1" stop-color="#FDF6EC"/>' +
+    '</linearGradient></defs>' +
+    '<rect x="0" y="0" width="400" height="200" fill="url(#sky)"/>' +
+    '<circle cx="55" cy="48" r="26" fill="#FFC97A"/>' +
+    '<g fill="#FFFFFF"><ellipse cx="185" cy="40" rx="26" ry="14"/><ellipse cx="205" cy="32" rx="20" ry="12"/>' +
+    '<ellipse cx="330" cy="55" rx="24" ry="13"/><ellipse cx="350" cy="48" rx="18" ry="10"/></g>' +
+    '<g fill="none" stroke-width="8" stroke-linecap="round">' +
+    '<path d="M240,150 A90,90 0 0 1 420,150" stroke="#F5A6C6"/>' +
+    '<path d="M252,150 A78,78 0 0 1 408,150" stroke="#FFC97A"/>' +
+    '<path d="M264,150 A66,66 0 0 1 396,150" stroke="#7FD1B9"/>' +
+    '<path d="M276,150 A54,54 0 0 1 384,150" stroke="#6FA8DC"/></g>' +
+    '<path d="M0,140 Q100,110 200,140 T400,140 V200 H0 Z" fill="#9BE0BE"/>' +
+    '<path d="M0,155 Q120,130 240,158 T400,150 V200 H0 Z" fill="#7FD1B9"/>' +
+    '<rect x="55" y="115" width="10" height="35" fill="#B5651D"/>' +
+    '<circle cx="60" cy="105" r="26" fill="#4FB0A5"/><circle cx="42" cy="118" r="18" fill="#4FB0A5"/>' +
+    '<circle cx="78" cy="118" r="18" fill="#4FB0A5"/>' +
+    '<rect x="290" y="130" width="70" height="55" fill="#FDF6EC"/>' +
+    '<polygon points="280,130 370,130 325,95" fill="#FF8A65"/>' +
+    '<rect x="315" y="150" width="18" height="35" fill="#B5651D"/>' +
+    '<rect x="340" y="145" width="16" height="16" fill="#6FA8DC"/>' +
+    '</svg>';
+  const PUZZLE_BG_URL = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(PUZZLE_SVG) + '")';
+
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
   // về đúng shape mong đợi, điền mặc định cho field thiếu.
   function normalizeProgress(p) {
@@ -83,6 +116,7 @@
       perfectCount: p.perfectCount || 0,
       badges: p.badges || {},
       wordStats: p.wordStats || {},
+      placedPieces: p.placedPieces || {},
     };
   }
   function loadProgress() {
@@ -92,7 +126,7 @@
     } catch (e) { return blankProgress(); }
   }
   function blankProgress() {
-    return { stars: 0, doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {}, wordStats: {} };
+    return { stars: 0, doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {} };
   }
 
   // ---------- GHI NHỚ TỪ VỰNG (lặp lại ngắt quãng — spaced repetition) ----------
@@ -429,26 +463,27 @@
   }
 
   // Gọi sau khi bé hoàn thành 1 lượt học/ôn tập: mở khoá huy hiệu (nếu có) + hiệu ứng ăn mừng.
-  function celebrate(isPerfect, oldStars, newSticker) {
+  function celebrate(isPerfect, oldStars, newPieceTopic) {
     const newBadges = checkNewBadges();
     const levelUp = checkLevelUp(oldStars);
-    if (isPerfect || newBadges.length || levelUp || newSticker) launchConfetti();
+    if (isPerfect || newBadges.length || levelUp || newPieceTopic) launchConfetti();
     showBadgeToasts(newBadges);
     const afterBadges = newBadges.length * 2900;
     if (levelUp) setTimeout(() => showLevelUpToast(levelUp), afterBadges);
     const afterLevelUp = afterBadges + (levelUp ? 3200 : 0);
-    if (newSticker) setTimeout(() => showStickerToast(newSticker), afterLevelUp);
+    if (newPieceTopic) setTimeout(() => showPuzzlePieceToast(newPieceTopic), afterLevelUp);
     renderTotalStars(); // huy hiệu chuỗi ngày có thể vừa cộng thêm sao thưởng, cập nhật lại topbar cho khớp
   }
 
-  // Thông báo có sticker mới (học xong 1 chủ đề lần đầu) — dùng lại khung .badge-toast,
+  // Thông báo có mảnh ghép tranh mới (học xong 1 chủ đề lần đầu) — dùng lại khung .badge-toast,
   // xếp hàng sau huy hiệu/lên cấp (nếu có) để không đè lên nhau.
-  function showStickerToast(topic) {
+  function showPuzzlePieceToast(topic) {
     const toast = document.createElement('div');
     toast.className = 'badge-toast';
     toast.innerHTML =
-      '<span class="badge-icon">' + topic.emoji + '</span>' +
-      '<span><span class="badge-eyebrow">🎴 Sticker mới!</span><br><span class="badge-label">' + topic.label + '</span></span>';
+      '<span class="badge-icon">🖼️</span>' +
+      '<span><span class="badge-eyebrow">Có mảnh ghép mới!</span><br><span class="badge-label">' + topic.label +
+      '</span><br><span class="badge-unlock">Vào mục Sưu tập để ghép vào bức tranh nhé!</span></span>';
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('is-visible'));
     setTimeout(() => {
@@ -541,8 +576,8 @@
     });
   }
 
-  // ---------- BADGES / STICKER COLLECTION SCREEN ----------
-  let collectionMode = 'badges'; // 'badges' | 'stickers'
+  // ---------- BADGES / PUZZLE COLLECTION SCREEN ----------
+  let collectionMode = 'badges'; // 'badges' | 'puzzle'
   function renderBadgesScreen() {
     const badgeGrid = document.getElementById('badgeGrid');
     badgeGrid.innerHTML = '';
@@ -559,34 +594,128 @@
       badgeGrid.appendChild(item);
     });
 
-    // Sổ sticker: mỗi chủ đề học xong (progress.doneTopics) tự động thành 1 sticker sưu tầm được,
-    // dùng lại đúng dữ liệu tiến độ đã có sẵn, không cần thêm state mới.
-    const stickerGrid = document.getElementById('stickerGrid');
-    stickerGrid.innerHTML = '';
-    let collectedCount = 0;
-    TOPICS.forEach(topic => {
-      const unlocked = !!progress.doneTopics[topic.id];
-      if (unlocked) collectedCount++;
-      const card = document.createElement('div');
-      card.className = 'sticker-card' + (unlocked ? ' ' + topic.cls : ' is-locked');
-      card.innerHTML =
-        '<span class="sticker-icon">' + (unlocked ? topic.emoji : '?') + '</span>' +
-        '<span class="sticker-label">' + (unlocked ? topic.label : '???') + '</span>';
-      stickerGrid.appendChild(card);
-    });
-    document.getElementById('stickerCountLabel').textContent = 'Đã sưu tầm ' + collectedCount + '/' + TOPICS.length + ' sticker';
+    renderPuzzleScreen();
   }
 
   function setCollectionMode(mode) {
     collectionMode = mode;
     document.getElementById('collectionBadgesBtn').classList.toggle('active', mode === 'badges');
-    document.getElementById('collectionStickersBtn').classList.toggle('active', mode === 'stickers');
+    document.getElementById('collectionPuzzleBtn').classList.toggle('active', mode === 'puzzle');
     document.getElementById('badgeGrid').hidden = mode !== 'badges';
-    document.getElementById('stickerGrid').hidden = mode !== 'stickers';
-    document.getElementById('stickerCountLabel').hidden = mode !== 'stickers';
+    document.getElementById('puzzleWrap').hidden = mode !== 'puzzle';
   }
   document.getElementById('collectionBadgesBtn').addEventListener('click', () => setCollectionMode('badges'));
-  document.getElementById('collectionStickersBtn').addEventListener('click', () => setCollectionMode('stickers'));
+  document.getElementById('collectionPuzzleBtn').addEventListener('click', () => setCollectionMode('puzzle'));
+
+  // ---------- GHÉP HÌNH: dựng bảng tranh + khay mảnh ghép, kéo-thả bằng Pointer Events ----------
+  // Mỗi chủ đề trong PUZZLE_TOPICS ứng với đúng 1 ô trên tranh (vị trí cố định theo thứ tự chủ đề).
+  // Học xong chủ đề (doneTopics) = "có" mảnh ghép (nằm trong khay); progress.placedPieces đánh dấu
+  // mảnh đã được bé kéo vào đúng ô trên tranh (mới thực sự hiện ra trên bảng).
+  let puzzleDragState = null;
+  function renderPuzzleScreen() {
+    const board = document.getElementById('puzzleBoard');
+    const tray = document.getElementById('puzzleTray');
+    board.innerHTML = '';
+    tray.innerHTML = '';
+    let placedCount = 0;
+    const trayPieces = [];
+
+    PUZZLE_TOPICS.forEach((topic, i) => {
+      const col = i % PUZZLE_COLS;
+      const row = Math.floor(i / PUZZLE_COLS);
+      const posX = PUZZLE_COLS === 1 ? 0 : (col / (PUZZLE_COLS - 1)) * 100;
+      const posY = PUZZLE_ROWS === 1 ? 0 : (row / (PUZZLE_ROWS - 1)) * 100;
+      const earned = !!progress.doneTopics[topic.id];
+      const placed = earned && !!progress.placedPieces[topic.id];
+      if (placed) placedCount++;
+
+      const slot = document.createElement('div');
+      slot.className = 'puzzle-slot' + (placed ? ' is-filled' : '');
+      slot.dataset.topicId = topic.id;
+      slot.style.backgroundImage = PUZZLE_BG_URL;
+      slot.style.backgroundSize = PUZZLE_BG_SIZE;
+      slot.style.backgroundPosition = posX + '% ' + posY + '%';
+      board.appendChild(slot);
+
+      if (earned && !placed) trayPieces.push({ topic: topic, posX: posX, posY: posY });
+    });
+
+    const trayLabel = document.getElementById('puzzleTrayLabel');
+    trayLabel.hidden = trayPieces.length === 0;
+    trayPieces.forEach(tp => {
+      const piece = document.createElement('div');
+      piece.className = 'puzzle-piece';
+      piece.dataset.topicId = tp.topic.id;
+      piece.title = tp.topic.label;
+      piece.style.backgroundImage = PUZZLE_BG_URL;
+      piece.style.backgroundSize = PUZZLE_BG_SIZE;
+      piece.style.backgroundPosition = tp.posX + '% ' + tp.posY + '%';
+      tray.appendChild(piece);
+      initPuzzlePieceDrag(piece);
+    });
+
+    document.getElementById('puzzleCountLabel').textContent =
+      'Đã ghép ' + placedCount + '/' + PUZZLE_TOPICS.length + ' mảnh tranh';
+  }
+
+  // Kéo-thả bằng Pointer Events (chạy được cả chuột lẫn cảm ứng, không cần thư viện ngoài).
+  // Khi thả, chỉ cần điểm thả nằm gần đúng ô của mảnh đó (có nới lỏng biên độ cho vừa tay bé)
+  // là ghép được — không cần thả chính xác tuyệt đối.
+  function initPuzzlePieceDrag(piece) {
+    piece.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const rect = piece.getBoundingClientRect();
+      puzzleDragState = {
+        topicId: piece.dataset.topicId,
+        el: piece,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+      };
+      piece.setPointerCapture(e.pointerId);
+      piece.classList.add('is-dragging');
+      document.body.appendChild(piece);
+      piece.style.position = 'fixed';
+      piece.style.width = rect.width + 'px';
+      piece.style.height = rect.height + 'px';
+      piece.style.left = rect.left + 'px';
+      piece.style.top = rect.top + 'px';
+      piece.style.zIndex = 500;
+    });
+    piece.addEventListener('pointermove', e => {
+      if (!puzzleDragState || puzzleDragState.el !== piece) return;
+      piece.style.left = (e.clientX - puzzleDragState.offsetX) + 'px';
+      piece.style.top = (e.clientY - puzzleDragState.offsetY) + 'px';
+    });
+    piece.addEventListener('pointerup', e => finishPuzzleDrag(piece, e.clientX, e.clientY));
+    piece.addEventListener('pointercancel', () => finishPuzzleDrag(piece, null, null));
+  }
+  function finishPuzzleDrag(piece, x, y) {
+    if (!puzzleDragState || puzzleDragState.el !== piece) return;
+    const topicId = puzzleDragState.topicId;
+    puzzleDragState = null;
+    let placed = false;
+    if (x !== null) {
+      const slot = document.querySelector('.puzzle-slot[data-topic-id="' + topicId + '"]');
+      if (slot) {
+        const r = slot.getBoundingClientRect();
+        const pad = 18;
+        placed = x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad;
+      }
+    }
+    if (placed) {
+      progress.placedPieces[topicId] = true;
+      saveProgress(progress);
+    }
+    renderPuzzleScreen(); // dựng lại toàn bộ khay+bảng theo state mới nhất — đơn giản, tránh lỗi vặt DOM
+    if (placed) checkPuzzleComplete();
+  }
+  function checkPuzzleComplete() {
+    const allPlaced = PUZZLE_TOPICS.every(t => progress.placedPieces[t.id]);
+    if (allPlaced) {
+      launchConfetti();
+      showToast('🖼️ Bé đã ghép xong bức tranh rồi, giỏi quá!', '🎉');
+    }
+  }
 
   document.getElementById('resetProgressBtn').addEventListener('click', () => {
     showConfirmDialog('Xoá toàn bộ số sao, chuỗi ngày học và các chủ đề đã học của bé? Không thể hoàn tác.', { danger: true, okLabel: 'Xoá hết' })
@@ -1939,7 +2068,7 @@
     replayBtn.onclick = () => startTopic(currentTopic.id);
 
     renderTotalStars();
-    celebrate(isPerfect, oldStars, isNewTopic ? currentTopic : null);
+    celebrate(isPerfect, oldStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null);
     showScreen('done');
   }
 

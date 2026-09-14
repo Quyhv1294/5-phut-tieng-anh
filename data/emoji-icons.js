@@ -77,6 +77,7 @@ const EMOJI_ICONS = {
   "🦊": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Fox/3D/fox_3d.png",
   "🧒": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Child/Default/3D/child_3d_default.png",
   "🧩": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Puzzle%20piece/3D/puzzle_piece_3d.png",
+  "🖼️": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Framed%20picture/3D/framed_picture_3d.png",
   "🪑": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Chair/3D/chair_3d.png",
 
   "👶": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Baby/Default/3D/baby_3d_default.png",
