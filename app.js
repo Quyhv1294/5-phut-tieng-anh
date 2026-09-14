@@ -921,8 +921,11 @@
     loggedOut.hidden = true;
     loggedIn.hidden = false;
     accountBtn.classList.add('is-logged-in');
-    document.getElementById('accountEmailDisplay').textContent = maskEmail(verifiedEmail);
     document.getElementById('accountAvatarDisplay').textContent = profile ? profile.avatar : '✅';
+    document.getElementById('accountChildName').textContent = profile ? profile.name : '—';
+    document.getElementById('accountChildAge').textContent = profile ? profile.age + ' tuổi' : '—';
+    document.getElementById('accountEmailDisplay').textContent = maskEmail(verifiedEmail);
+    document.getElementById('accountPhoneDisplay').textContent = profile ? profile.parentPhone : '—';
   }
 
   document.getElementById('accountBtn').addEventListener('click', () => {
