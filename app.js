@@ -546,22 +546,6 @@
     document.getElementById('levelEmoji').textContent = level.emoji;
     document.getElementById('levelLabel').textContent = level.label;
 
-    const mixedBtn = document.getElementById('mixedReviewBtn');
-    mixedBtn.disabled = doneCount === 0;
-    mixedBtn.title = doneCount === 0 ? 'Bé cần học xong ít nhất 1 chủ đề trước nhé!' : '';
-
-    const dueCount = getDueWords(999).length;
-    const smartBtn = document.getElementById('smartReviewBtn');
-    smartBtn.textContent = dueCount > 0 ? '🧠 Ôn tập thông minh (' + dueCount + ' từ)' : '🧠 Ôn tập thông minh';
-    smartBtn.disabled = dueCount === 0;
-    smartBtn.title = dueCount === 0 ? 'Chưa có từ nào đến hạn ôn lại, bé học tiếp đã nhé!' : '';
-
-    const difficultCount = getDifficultWords(999).length;
-    const difficultBtn = document.getElementById('difficultReviewBtn');
-    difficultBtn.textContent = difficultCount > 0 ? '📌 Luyện từ khó (' + difficultCount + ' từ)' : '📌 Luyện từ khó';
-    difficultBtn.disabled = difficultCount === 0;
-    difficultBtn.title = difficultCount === 0 ? 'Bé chưa có từ nào hay sai cả, giỏi quá!' : '';
-
     const list = document.getElementById('progressList');
     list.innerHTML = '';
     TOPICS.forEach(topic => {
@@ -1351,6 +1335,26 @@
   document.getElementById('fillBlankReplayBtn').addEventListener('click', () => startFillBlank(currentTopic.id));
   document.getElementById('fillBlankOtherTopicBtn').addEventListener('click', () => showScreen('sentences'));
 
+  // Cập nhật text/trạng thái disabled của 3 nút ôn tập (đặt ở màn Học) theo dữ liệu mới nhất.
+  function renderReviewButtons() {
+    const doneCount = TOPICS.filter(t => progress.doneTopics[t.id]).length;
+    const mixedBtn = document.getElementById('mixedReviewBtn');
+    mixedBtn.disabled = doneCount === 0;
+    mixedBtn.title = doneCount === 0 ? 'Bé cần học xong ít nhất 1 chủ đề trước nhé!' : '';
+
+    const dueCount = getDueWords(999).length;
+    const smartBtn = document.getElementById('smartReviewBtn');
+    smartBtn.textContent = dueCount > 0 ? '🧠 Ôn tập thông minh (' + dueCount + ' từ)' : '🧠 Ôn tập thông minh';
+    smartBtn.disabled = dueCount === 0;
+    smartBtn.title = dueCount === 0 ? 'Chưa có từ nào đến hạn ôn lại, bé học tiếp đã nhé!' : '';
+
+    const difficultCount = getDifficultWords(999).length;
+    const difficultBtn = document.getElementById('difficultReviewBtn');
+    difficultBtn.textContent = difficultCount > 0 ? '📌 Luyện từ khó (' + difficultCount + ' từ)' : '📌 Luyện từ khó';
+    difficultBtn.disabled = difficultCount === 0;
+    difficultBtn.title = difficultCount === 0 ? 'Bé chưa có từ nào hay sai cả, giỏi quá!' : '';
+  }
+
   function renderHome() {
     const grid = document.getElementById('topicGrid');
     grid.innerHTML = '';
@@ -1367,6 +1371,7 @@
     });
     renderTotalStars();
     renderHomeBanners();
+    renderReviewButtons();
   }
 
   // ---------- FLASHCARDS ----------
@@ -2206,7 +2211,9 @@
     ctx.fillText('Bản dùng thử miễn phí từ Fanpage', W / 2, H - 20);
   }
 
-  document.getElementById('shareProgressBtn').addEventListener('click', () => {
+  // "Chia sẻ" là 1 nút hành động trong thanh tab (mở overlay), không phải màn hình riêng —
+  // không đưa vào TOP_LEVEL_SCREENS/setActiveTab nên tab đang chọn trước đó vẫn giữ nguyên trạng thái active.
+  document.getElementById('tabShare').addEventListener('click', () => {
     document.getElementById('shareOverlay').hidden = false;
     (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(drawShareCard).catch(drawShareCard);
   });

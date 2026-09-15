@@ -56,6 +56,9 @@
     <button class="tab-btn" id="tabProgress" aria-label="Tiến độ">
       <span class="tab-icon">📊</span><span>Tiến độ</span>
     </button>
+    <button class="tab-btn" id="tabShare" aria-label="Chia sẻ tiến độ">
+      <span class="tab-icon">📤</span><span>Chia sẻ</span>
+    </button>
   </nav>
 
   <!-- ============ HOME SCREEN ============ -->
@@ -82,6 +85,13 @@
     <div class="streak-banner" id="streakBanner" hidden>
       <span class="streak-emoji">🔥</span>
       <span>Bé đã học <strong id="streakCount">0</strong> ngày liên tiếp — giỏi quá!</span>
+    </div>
+
+    <div class="section-label">🔁 Ôn tập</div>
+    <div class="progress-actions">
+      <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
+      <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
+      <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
     </div>
 
     <div class="section-label">10 chủ đề từ vựng</div>
@@ -172,13 +182,6 @@
       <div class="level-card">
         <span id="levelEmoji">🌱</span>
         <span id="levelLabel">Mầm non</span>
-      </div>
-
-      <div class="progress-actions">
-        <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
-        <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
-        <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
-        <button class="ghost-btn" id="shareProgressBtn">📤 Chia sẻ tiến độ</button>
       </div>
 
       <div class="section-label">Chi tiết chủ đề</div>
@@ -500,7 +503,7 @@
     <div class="onboarding-steps">
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📚</span>
-        <span><strong>Học</strong> — chọn chủ đề, học 10 từ vựng mới bằng flashcard rồi làm mini quiz; sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết.</span>
+        <span><strong>Học</strong> — chọn chủ đề, học 10 từ vựng mới bằng flashcard rồi làm mini quiz; sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết. Phía trên còn có "Ôn tập thông minh", "Luyện từ khó" và "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🎮</span>
@@ -516,7 +519,11 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📊</span>
-        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, chia sẻ thành tích, và có "Ôn tập thông minh" (tự nhắc đúng lúc bé sắp quên) + "Luyện từ khó" (tập trung vào từ bé hay sai).</span>
+        <span><strong>Tiến độ</strong> — xem số sao, cấp độ và chi tiết từng chủ đề bé đã học.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">📤</span>
+        <span><strong>Chia sẻ</strong> — tạo ảnh thành tích học tập đẹp mắt để ba mẹ lưu lại hoặc khoe với mọi người.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
