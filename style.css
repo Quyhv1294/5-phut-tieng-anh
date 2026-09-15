@@ -22,6 +22,7 @@
     --danger: #E15252;
     --danger-ink: #B23B3B;
     --shadow: 0 6px 0 rgba(74,63,53,0.12);
+    --bg-overlay: rgba(255,248,236,0.55);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -45,6 +46,7 @@
       --mint: #97DFC7;
       --mint-ink: #123D2D;
       --shadow: 0 6px 0 rgba(0,0,0,0.35);
+      --bg-overlay: rgba(24,19,14,0.88);
     }
   }
   :root[data-theme="dark"] {
@@ -67,12 +69,18 @@
     --mint: #97DFC7;
     --mint-ink: #123D2D;
     --shadow: 0 6px 0 rgba(0,0,0,0.35);
+    --bg-overlay: rgba(24,19,14,0.88);
   }
 
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: var(--bg);
+    background-color: var(--bg);
+    background-image: linear-gradient(var(--bg-overlay), var(--bg-overlay)), url('assets/Anh_bia.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     color: var(--ink);
     font-family: 'Quicksand', system-ui, sans-serif;
     font-size: 16px;
