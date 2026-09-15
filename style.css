@@ -99,7 +99,7 @@
   }
   /* ---------- TOP TAB BAR ---------- */
   .tabbar {
-    display: flex; gap: 2px;
+    display: flex; flex-wrap: wrap; gap: 6px;
     background: var(--surface);
     border: 2px solid var(--line);
     border-radius: 18px;
@@ -107,14 +107,13 @@
     margin-bottom: 18px;
   }
   .tab-btn {
-    flex: 1;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    flex: 1 1 22%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     border: none; background: transparent; color: var(--ink-soft);
     font-family: 'Baloo 2'; font-weight: 700; font-size: 13px;
-    line-height: 1.15;
-    padding: 8px 1px; border-radius: 13px; cursor: pointer;
+    padding: 9px 4px; border-radius: 13px; cursor: pointer;
   }
-  .tab-btn .tab-icon { font-size: 24px; }
+  .tab-btn .tab-icon { font-size: 26px; }
   .tab-btn.active { color: var(--accent-ink); background: var(--surface-2); }
 
   /* ---------- HEADER ---------- */

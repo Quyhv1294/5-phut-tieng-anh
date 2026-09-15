@@ -211,6 +211,7 @@
     sentencePractice: document.getElementById('screen-sentence-practice'),
     badges: document.getElementById('screen-badges'),
     progress: document.getElementById('screen-progress'),
+    settings: document.getElementById('screen-settings'),
     account: document.getElementById('screen-account'),
     donate: document.getElementById('screen-donate'),
     profileCreate: document.getElementById('screen-profile-create'),
@@ -225,7 +226,7 @@
     weekly: document.getElementById('screen-weekly'),
     done: document.getElementById('screen-done'),
   };
-  const TOP_LEVEL_SCREENS = ['home', 'games', 'sentences', 'badges', 'progress'];
+  const TOP_LEVEL_SCREENS = ['home', 'games', 'sentences', 'badges', 'progress', 'settings'];
 
   function showScreen(name) {
     // Rời màn "Ai nhanh hơn" giữa chừng thì phải dừng đồng hồ đếm giờ, không thì nó vẫn
@@ -250,6 +251,7 @@
     document.getElementById('tabSentences').classList.toggle('active', name === 'sentences');
     document.getElementById('tabBadges').classList.toggle('active', name === 'badges');
     document.getElementById('tabProgress').classList.toggle('active', name === 'progress');
+    document.getElementById('tabSettings').classList.toggle('active', name === 'settings');
   }
 
   document.getElementById('tabHome').addEventListener('click', () => { renderHome(); showScreen('home'); });
@@ -258,6 +260,7 @@
   document.getElementById('tabSentences').addEventListener('click', () => { showScreen('sentences'); });
   document.getElementById('tabBadges').addEventListener('click', () => { renderBadgesScreen(); showScreen('badges'); });
   document.getElementById('tabProgress').addEventListener('click', () => { renderProgressScreen(); showScreen('progress'); });
+  document.getElementById('tabSettings').addEventListener('click', () => { showScreen('settings'); });
 
   const LEVELS = [
     { min: 0, emoji: '🌱', label: 'Mầm non' },
