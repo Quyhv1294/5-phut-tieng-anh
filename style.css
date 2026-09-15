@@ -451,15 +451,15 @@
     background: var(--surface); border: 2px solid var(--line); border-radius: 18px;
     padding: 12px 8px; text-align: center;
   }
-  .summary-num { font-family: 'Baloo 2'; font-weight: 800; font-size: 23px; }
-  .summary-label { font-size: 12px; color: var(--ink-soft); font-weight: 700; margin-top: 2px; }
+  .summary-num { font-family: 'Baloo 2'; font-weight: 800; font-size: 27px; }
+  .summary-label { font-size: 14px; color: var(--ink-soft); font-weight: 700; margin-top: 2px; }
 
   .level-card {
     display: flex; align-items: center; justify-content: center; gap: 10px;
     background: var(--surface-2); border: 2px solid var(--line); border-radius: 18px;
-    padding: 14px; font-family: 'Baloo 2'; font-weight: 800; font-size: 18px;
+    padding: 14px; font-family: 'Baloo 2'; font-weight: 800; font-size: 20px;
   }
-  .level-card span:first-child { font-size: 28px; }
+  .level-card span:first-child { font-size: 34px; }
 
   .progress-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   @media (max-width: 380px) {
@@ -470,9 +470,9 @@
     background: var(--surface); border: 2px solid var(--line); border-radius: 14px;
     padding: 14px 8px;
   }
-  .progress-row .pr-emoji { font-size: 26px; }
-  .progress-row .pr-label { font-family: 'Baloo 2'; font-weight: 700; font-size: 12.5px; line-height: 1.25; }
-  .progress-row .pr-status { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
+  .progress-row .pr-emoji { font-size: 30px; }
+  .progress-row .pr-label { font-family: 'Baloo 2'; font-weight: 700; font-size: 14px; line-height: 1.25; }
+  .progress-row .pr-status { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
   .progress-row.is-done { border-color: var(--teal); }
   .progress-row.is-done .pr-status { color: var(--teal-ink); }
   .progress-row.is-locked { opacity: 0.65; }
@@ -480,16 +480,16 @@
   .progress-actions { display: flex; flex-direction: column; gap: 10px; }
   .progress-actions .ghost-btn { align-self: stretch; }
 
-  .badge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .badge-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .badge-item {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 14px;
     background: var(--surface); border: 2px solid var(--line); border-radius: 16px;
-    padding: 10px 12px;
+    padding: 12px 14px;
   }
-  .badge-item .badge-icon { font-size: 26px; flex: none; filter: grayscale(1); opacity: 0.4; }
-  .badge-item .badge-text { line-height: 1.25; }
-  .badge-item .badge-label { font-family: 'Baloo 2'; font-weight: 700; font-size: 13.5px; color: var(--ink-soft); }
-  .badge-item .badge-desc { font-size: 11.5px; color: var(--ink-soft); }
+  .badge-item .badge-icon { font-size: 36px; flex: none; filter: grayscale(1); opacity: 0.4; }
+  .badge-item .badge-text { line-height: 1.3; }
+  .badge-item .badge-label { font-family: 'Baloo 2'; font-weight: 700; font-size: 16px; color: var(--ink-soft); }
+  .badge-item .badge-desc { font-size: 13.5px; color: var(--ink-soft); }
   .badge-item.is-unlocked { border-color: var(--gold); background: var(--surface-2); }
   .badge-item.is-unlocked .badge-icon { filter: none; opacity: 1; }
   .badge-item.is-unlocked .badge-label { color: var(--ink); }
