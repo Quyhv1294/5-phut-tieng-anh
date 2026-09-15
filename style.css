@@ -267,10 +267,11 @@
 
   .home-footnote {
     margin-top: 22px;
-    font-size: 13.5px;
-    color: var(--ink-soft);
+    font-family: 'Baloo 2', 'Quicksand', system-ui, sans-serif;
+    font-size: 18px;
+    color: var(--ink);
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.6;
   }
 
