@@ -36,6 +36,7 @@
       <button class="account-btn" id="accountBtn" aria-label="Tài khoản">👤</button>
       <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌗</button>
       <button class="mute-btn" id="muteBtn" aria-label="Tắt âm thanh">🔊</button>
+      <button class="settings-btn" id="settingsBtn" aria-label="Cài đặt">⚙️</button>
       <div class="stars-pill">⭐ <span id="totalStars">0</span> <span id="levelBadge"></span></div>
     </div>
   </div>
@@ -58,9 +59,6 @@
     </button>
     <button class="tab-btn" id="tabShare" aria-label="Chia sẻ tiến độ">
       <span class="tab-icon">📤</span><span>Chia sẻ</span>
-    </button>
-    <button class="tab-btn" id="tabSettings" aria-label="Cài đặt">
-      <span class="tab-icon">⚙️</span><span>Cài đặt</span>
     </button>
   </nav>
 
@@ -194,6 +192,9 @@
 
   <!-- ============ SETTINGS SCREEN ============ -->
   <section class="screen" id="screen-settings">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSettings" aria-label="Quay lại">←</button>
+    </div>
     <div class="progress-wrap">
       <h2>Cài đặt</h2>
       <button class="ghost-btn ghost-btn--muted" id="replayOnboardingBtn">📖 Xem lại hướng dẫn sử dụng</button>
@@ -536,12 +537,12 @@
         <span><strong>Chia sẻ</strong> — tạo ảnh thành tích học tập đẹp mắt để ba mẹ lưu lại hoặc khoe với mọi người.</span>
       </div>
       <div class="onboarding-step">
-        <span class="onboarding-step-icon">⚙️</span>
-        <span><strong>Cài đặt</strong> — xem lại hướng dẫn sử dụng này bất cứ lúc nào, hoặc đặt lại toàn bộ tiến độ học của bé.</span>
-      </div>
-      <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
         <span><strong>Tài khoản</strong> — bấm biểu tượng người ở góc trên để xem hoặc sửa hồ sơ của bé (tên, tuổi, hình đại diện, số điện thoại ba mẹ) bất cứ lúc nào.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">⚙️</span>
+        <span><strong>Cài đặt</strong> — bấm biểu tượng bánh răng ở góc trên để xem lại hướng dẫn sử dụng này bất cứ lúc nào, hoặc đặt lại toàn bộ tiến độ học của bé.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💚</span>
