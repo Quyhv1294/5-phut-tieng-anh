@@ -1341,19 +1341,18 @@
     const mixedBtn = document.getElementById('mixedReviewBtn');
     mixedBtn.disabled = doneCount === 0;
     mixedBtn.title = doneCount === 0 ? 'Bé cần học xong ít nhất 1 chủ đề trước nhé!' : '';
-    document.getElementById('mixedReviewCount').textContent = doneCount === 0 ? 'Cần học xong 1 chủ đề' : 'Ôn lại từ đã học';
 
     const dueCount = getDueWords(999).length;
     const smartBtn = document.getElementById('smartReviewBtn');
+    smartBtn.textContent = dueCount > 0 ? '🧠 Ôn tập thông minh (' + dueCount + ' từ)' : '🧠 Ôn tập thông minh';
     smartBtn.disabled = dueCount === 0;
     smartBtn.title = dueCount === 0 ? 'Chưa có từ nào đến hạn ôn lại, bé học tiếp đã nhé!' : '';
-    document.getElementById('smartReviewCount').textContent = dueCount > 0 ? dueCount + ' từ đến hạn' : 'Chưa có từ đến hạn';
 
     const difficultCount = getDifficultWords(999).length;
     const difficultBtn = document.getElementById('difficultReviewBtn');
+    difficultBtn.textContent = difficultCount > 0 ? '📌 Luyện từ khó (' + difficultCount + ' từ)' : '📌 Luyện từ khó';
     difficultBtn.disabled = difficultCount === 0;
     difficultBtn.title = difficultCount === 0 ? 'Bé chưa có từ nào hay sai cả, giỏi quá!' : '';
-    document.getElementById('difficultReviewCount').textContent = difficultCount > 0 ? difficultCount + ' từ hay sai' : 'Chưa có từ khó';
   }
 
   function renderHome() {
