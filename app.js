@@ -2185,14 +2185,14 @@
       ctx.fillText(s.icon, cx, 420);
       ctx.font = '700 28px "Baloo 2", sans-serif';
       ctx.fillText(String(s.value), cx, 460);
-      ctx.font = '600 15px Quicksand, sans-serif';
+      ctx.font = '700 18px Quicksand, sans-serif';
       ctx.fillStyle = '#8A7B68';
-      ctx.fillText(s.label, cx, 484);
+      ctx.fillText(s.label, cx, 488);
     });
 
-    ctx.font = '600 16px Quicksand, sans-serif';
+    ctx.font = '700 20px Quicksand, sans-serif';
     ctx.fillStyle = '#8A7B68';
-    ctx.fillText('Huy hiệu đã đạt được', W / 2, 545);
+    ctx.fillText('Huy hiệu đã đạt được', W / 2, 548);
 
     const earnedBadges = BADGES.filter(b => progress.badges[b.id]);
     if (earnedBadges.length) {
@@ -2201,18 +2201,18 @@
       const startX = (W - totalW) / 2 + bw / 2;
       earnedBadges.forEach((b, i) => {
         ctx.font = '44px sans-serif';
-        ctx.fillText(b.icon, startX + i * bw, 595);
+        ctx.fillText(b.icon, startX + i * bw, 598);
       });
     } else {
-      ctx.font = '15px Quicksand, sans-serif';
-      ctx.fillText('Chưa có huy hiệu nào — cố lên nhé!', W / 2, 590);
+      ctx.font = '700 19px Quicksand, sans-serif';
+      ctx.fillText('Chưa có huy hiệu nào — cố lên nhé!', W / 2, 596);
     }
 
-    ctx.font = '600 16px "Baloo 2", sans-serif';
+    ctx.font = '700 18px "Baloo 2", sans-serif';
     ctx.fillStyle = '#8A7B68';
-    ctx.fillText('5 Phút Tiếng Anh Mỗi Ngày', W / 2, H - 40);
-    ctx.font = '600 12px Quicksand, sans-serif';
-    ctx.fillText('Bản dùng thử miễn phí từ Fanpage', W / 2, H - 20);
+    ctx.fillText('5 Phút Tiếng Anh Mỗi Ngày', W / 2, H - 42);
+    ctx.font = '700 15px Quicksand, sans-serif';
+    ctx.fillText('Bản dùng thử miễn phí từ Fanpage', W / 2, H - 18);
   }
 
   // "Chia sẻ" là 1 nút hành động trong thanh tab (mở overlay), không phải màn hình riêng —
