@@ -927,6 +927,27 @@
   .confirm-ok-btn:active, .confirm-actions .ghost-btn:active { transform: scale(0.96); }
   .confirm-ok-btn.is-danger { background: var(--danger); color: #fff; }
 
+  /* LOADING OVERLAY (chặn thao tác khác trong lúc chờ xác thực email/khôi phục dữ liệu) */
+  .loading-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(34, 27, 20, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 18px;
+  }
+  .loading-card {
+    background: var(--surface); border-radius: 22px;
+    padding: 30px 36px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    box-shadow: var(--shadow);
+  }
+  .loading-spinner {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 4px solid var(--surface-2); border-top-color: var(--accent);
+    animation: loading-spin .8s linear infinite;
+  }
+  @keyframes loading-spin { to { transform: rotate(360deg); } }
+  .loading-card p { margin: 0; font-family: 'Quicksand'; font-weight: 700; color: var(--ink); font-size: 15px; }
+
   /* SHARE PROGRESS CARD */
   .share-overlay {
     position: fixed; inset: 0; z-index: 100;

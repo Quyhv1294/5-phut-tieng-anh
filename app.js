@@ -926,14 +926,27 @@
     resendCooldownTimer = setInterval(tick, 1000);
   }
 
+  // Modal chặn thao tác (không cho bấm sang tab/màn khác) trong lúc chờ gửi mã, xác thực mã hoặc
+  // khôi phục dữ liệu từ cloud — các bước này chỉ mất 1-2 giây nhưng nếu không có gì báo hiệu, phụ
+  // huynh dễ tưởng app đứng rồi bấm lung tung sang chỗ khác giữa chừng.
+  function showLoading(msg) {
+    document.getElementById('loadingMessage').textContent = msg || 'Đang xử lý...';
+    document.getElementById('loadingOverlay').hidden = false;
+  }
+  function hideLoading() {
+    document.getElementById('loadingOverlay').hidden = true;
+  }
+
   function sendEmailCode(email) {
     showEmailEntryError('');
     if (!backendConfigured()) {
       showEmailEntryError('Tính năng đang được cấu hình, vui lòng quay lại sau.');
       return;
     }
+    showLoading('Đang gửi mã xác thực...');
     const url = SHEETS_CONFIG.webAppUrl + '?action=sendCode&email=' + encodeURIComponent(email);
     fetch(url).then(r => r.json()).then(data => {
+      hideLoading();
       if (!data.ok) { showEmailEntryError(mapBackendError(data.error)); return; }
       pendingVerifyEmail = email;
       document.getElementById('emailEntryForm').hidden = true;
@@ -942,20 +955,22 @@
       document.getElementById('codeInput').value = '';
       document.getElementById('codeInput').focus();
       startResendCooldown(60);
-    }).catch(() => showEmailEntryError('Không gửi được mã, vui lòng kiểm tra mạng và thử lại.'));
+    }).catch(() => { hideLoading(); showEmailEntryError('Không gửi được mã, vui lòng kiểm tra mạng và thử lại.'); });
   }
 
   function confirmEmailCode(code) {
     showEmailCodeError('');
+    showLoading('Đang xác thực mã...');
     const url = SHEETS_CONFIG.webAppUrl + '?action=verifyCode&email=' + encodeURIComponent(pendingVerifyEmail) + '&code=' + encodeURIComponent(code);
     fetch(url).then(r => r.json()).then(data => {
-      if (!data.ok) { showEmailCodeError(mapBackendError(data.error)); return; }
+      if (!data.ok) { hideLoading(); showEmailCodeError(mapBackendError(data.error)); return; }
       verifiedEmail = pendingVerifyEmail;
       profileResyncedForSession = false;
       try { localStorage.setItem(VERIFIED_EMAIL_KEY, verifiedEmail); } catch (e) {}
       showToast('Xác thực email thành công!', '✅');
-      fetchCloudDataAndProceed();
-    }).catch(() => showEmailCodeError('Có lỗi xảy ra, vui lòng thử lại.'));
+      showLoading('Đang khôi phục hồ sơ...');
+      fetchCloudDataAndProceed(); // tự tắt loading (hideLoading) khi xong, xem bên dưới
+    }).catch(() => { hideLoading(); showEmailCodeError('Có lỗi xảy ra, vui lòng thử lại.'); });
   }
 
   // Xoá sạch hồ sơ + tiến độ đang lưu trên MÁY này — KHÔNG đụng gì tới dữ liệu email vừa rời đi
@@ -976,7 +991,7 @@
   // động khôi phục để dùng lại y như thiết bị cũ; đồng thời lệnh gọi này khiến thiết bị hiện tại
   // trở thành thiết bị "đang hoạt động" của email đó (xem handleGetUserData ở Apps Script).
   function fetchCloudDataAndProceed() {
-    if (!backendConfigured()) { if (enforceGate()) bootAfterGate(); return; }
+    if (!backendConfigured()) { hideLoading(); if (enforceGate()) bootAfterGate(); return; }
     const url = SHEETS_CONFIG.webAppUrl + '?action=getUserData&email=' + encodeURIComponent(verifiedEmail) + '&deviceId=' + encodeURIComponent(deviceId);
     fetch(url).then(r => r.json()).then(data => {
       if (data.ok && data.found) {
@@ -988,8 +1003,9 @@
         // trước đó vừa dùng cho 1 bé/email khác) để bé mới bắt đầu từ đầu, không bị lẫn dữ liệu.
         resetLocalChildData();
       }
+      hideLoading();
       if (enforceGate()) bootAfterGate();
-    }).catch(() => { if (enforceGate()) bootAfterGate(); });
+    }).catch(() => { hideLoading(); if (enforceGate()) bootAfterGate(); });
   }
 
   // Đẩy tiến độ mới nhất lên Google Sheet (chỉ khi đã xác thực email — chưa xác thực thì tiến độ
