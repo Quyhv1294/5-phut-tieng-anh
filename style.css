@@ -659,12 +659,6 @@
     animation: puzzle-pop .4s ease;
   }
 
-  /* LỊCH CHUỖI NGÀY HỌC (màn Tiến độ) */
-  .streak-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 4px; }
-  .streak-day { aspect-ratio: 1; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
-  .streak-day.is-studied { background: var(--mint); border-color: var(--mint); }
-  .streak-day.is-today { box-shadow: 0 0 0 2px var(--accent); }
-
   .badge-toast {
     position: fixed; top: 18px; left: 50%; transform: translateX(-50%) translateY(-20px);
     background: var(--surface); border: 2px solid var(--gold); border-radius: 18px;
@@ -811,6 +805,30 @@
     background: var(--surface-2); border-radius: 999px; padding: 6px 16px;
   }
   .speed-timer.is-urgent { color: var(--danger-ink); background: color-mix(in srgb, var(--danger) 18%, var(--surface)); }
+
+  /* ĐỐ BA MẸ (bé đố ngược lại phụ huynh — chế độ 4 trong Trò chơi) */
+  .quizparent-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 0 6px; }
+  .quizparent-hint { margin: 0; color: var(--ink-soft); font-weight: 700; font-size: 14.5px; max-width: 300px; }
+  .quizparent-card {
+    background: var(--surface-2); border-radius: 22px; padding: 30px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    min-width: 220px;
+  }
+  .quizparent-emoji { font-size: 96px; }
+  .quizparent-answer { animation: puzzle-pop .4s ease; }
+  .quizparent-en { font-family: 'Baloo 2'; font-weight: 800; font-size: 26px; color: var(--accent-ink); }
+  .quizparent-vi { font-weight: 700; color: var(--ink-soft); font-size: 15px; margin-top: 2px; }
+  .quizparent-judge { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .quizparent-judge p { margin: 0; font-weight: 700; color: var(--ink-soft); }
+  .quizparent-judge-row { display: flex; gap: 10px; }
+  .judge-btn {
+    border: 3px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 14px; font-family: 'Baloo 2'; font-weight: 800; font-size: 15px;
+    padding: 12px 18px; cursor: pointer;
+  }
+  .judge-btn:active { transform: scale(0.96); }
+  .judge-btn.is-yes { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface)); }
+  .judge-btn.is-no { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 18%, var(--surface)); }
 
   .cta-btn {
     border: none; border-radius: 16px; background: var(--accent); color: var(--accent-ink);

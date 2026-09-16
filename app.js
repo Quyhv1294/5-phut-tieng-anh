@@ -70,6 +70,7 @@
   const SPELLING_WORD_COUNT = 4; // Xếp chữ cũng chỉ lấy ngẫu nhiên 4 từ/lượt, cùng độ khó với Ghép tranh
   const SPEED_WORD_COUNT = 8; // Đố vui tính giờ: lấy tối đa 8 từ/lượt để có đủ thời gian "đua"
   const SPEED_TIME_LIMIT = 30; // giây cho mỗi lượt chơi
+  const QUIZPARENT_WORD_COUNT = 8; // Đố ba mẹ: lấy tối đa 8 từ/lượt, đủ dài nhưng không quá dài
   const REVERSE_WORD_COUNT = 6; // Đoán nghĩa: lấy tối đa 6 từ/lượt
   const FILLBLANK_WORD_COUNT = 6; // Điền từ: lấy tối đa 6 câu/lượt
 
@@ -132,7 +133,6 @@
       badges: p.badges || {},
       wordStats: p.wordStats || {},
       placedPieces: p.placedPieces || {},
-      studyLog: p.studyLog || {},
       outfitsSeen: p.outfitsSeen || {},
       equippedOutfit: p.equippedOutfit || null,
     };
@@ -146,7 +146,7 @@
   function blankProgress() {
     return {
       stars: 0, doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
-      studyLog: {}, outfitsSeen: {}, equippedOutfit: null,
+      outfitsSeen: {}, equippedOutfit: null,
     };
   }
 
@@ -242,6 +242,7 @@
     match: document.getElementById('screen-match'),
     spelling: document.getElementById('screen-spelling'),
     speed: document.getElementById('screen-speed'),
+    quizparent: document.getElementById('screen-quizparent'),
     reverse: document.getElementById('screen-reverse'),
     fillblank: document.getElementById('screen-fillblank'),
     weekly: document.getElementById('screen-weekly'),
@@ -541,7 +542,6 @@
   // Gọi khi bé hoàn thành xong 1 chủ đề trong ngày (finishTopic).
   function updateStreakOnComplete() {
     const todayStr = toDateStr(new Date());
-    progress.studyLog[todayStr] = true; // ghi nhận ngày học, dùng để vẽ lịch chuỗi ngày (renderStreakCalendar)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = toDateStr(yesterday);
@@ -557,25 +557,6 @@
     }
     progress.streak.best = Math.max(progress.streak.best || 0, progress.streak.count);
     saveProgress(progress);
-  }
-
-  // Vẽ lưới 35 ô (5 tuần) thể hiện những ngày bé đã học, dựa trên progress.studyLog.
-  // Đơn giản hoá: chỉ hiện đúng/sai (có học/không học) chứ không phân mức đậm nhạt theo số lượt,
-  // đủ để ba mẹ thấy trực quan nhịp học của bé thay vì chỉ 1 con số chuỗi ngày.
-  const STREAK_CALENDAR_DAYS = 35;
-  function renderStreakCalendar() {
-    const grid = document.getElementById('streakCalendar');
-    grid.innerHTML = '';
-    const today = new Date();
-    for (let i = STREAK_CALENDAR_DAYS - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dateStr = toDateStr(d);
-      const cell = document.createElement('div');
-      cell.className = 'streak-day' + (progress.studyLog[dateStr] ? ' is-studied' : '') + (i === 0 ? ' is-today' : '');
-      cell.title = dateStr + (progress.studyLog[dateStr] ? ' — đã học' : '');
-      grid.appendChild(cell);
-    }
   }
 
   // Hiện banner nhắc học / banner streak trên trang chủ, dựa vào ngày học gần nhất.
@@ -608,8 +589,6 @@
     const level = getLevel(progress.stars);
     document.getElementById('levelEmoji').textContent = level.emoji;
     document.getElementById('levelLabel').textContent = level.label;
-
-    renderStreakCalendar();
 
     const list = document.getElementById('progressList');
     list.innerHTML = '';
@@ -1229,7 +1208,7 @@
   document.getElementById('replayOnboardingBtn').addEventListener('click', showOnboarding);
 
   // ---------- GAMES TAB ----------
-  let gamesMode = 'match'; // 'match' (ghép tranh), 'spell' (xếp chữ) hoặc 'speed' (đố vui tính giờ)
+  let gamesMode = 'match'; // 'match' (ghép tranh), 'spell' (xếp chữ), 'speed' (đố vui tính giờ) hoặc 'quizparent' (đố ba mẹ)
   function renderGamesScreen() {
     const grid = document.getElementById('gamesTopicGrid');
     grid.innerHTML = '';
@@ -1239,7 +1218,8 @@
       const countText = isTopicLocked(topic) ? starsNeededText(topic) :
         gamesMode === 'match' ? 'Ghép ' + Math.min(MATCH_PAIR_COUNT, topic.words.length) + ' cặp' :
         gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
-        'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's';
+        gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
+        'Đố ba mẹ ' + Math.min(QUIZPARENT_WORD_COUNT, topic.words.length) + ' từ';
       btn.innerHTML =
         (isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '') +
         '<span class="emoji">' + topic.emoji + '</span>' +
@@ -1248,7 +1228,8 @@
       btn.addEventListener('click', () => {
         if (gamesMode === 'match') startPracticeMatch(topic.id);
         else if (gamesMode === 'spell') startSpelling(topic.id);
-        else startSpeedQuiz(topic.id);
+        else if (gamesMode === 'speed') startSpeedQuiz(topic.id);
+        else startQuizParent(topic.id);
       });
       grid.appendChild(btn);
     });
@@ -1260,12 +1241,14 @@
     document.getElementById('gameModeMatchBtn').classList.toggle('active', mode === 'match');
     document.getElementById('gameModeSpellBtn').classList.toggle('active', mode === 'spell');
     document.getElementById('gameModeSpeedBtn').classList.toggle('active', mode === 'speed');
+    document.getElementById('gameModeQuizParentBtn').classList.toggle('active', mode === 'quizparent');
     renderGamesScreen();
     moveSegmentThumb(document.getElementById('gamesModeToggle'));
   }
   document.getElementById('gameModeMatchBtn').addEventListener('click', () => setGamesMode('match'));
   document.getElementById('gameModeSpellBtn').addEventListener('click', () => setGamesMode('spell'));
   document.getElementById('gameModeSpeedBtn').addEventListener('click', () => setGamesMode('speed'));
+  document.getElementById('gameModeQuizParentBtn').addEventListener('click', () => setGamesMode('quizparent'));
 
   // ---------- SENTENCES TAB ----------
   let sentencesMode = 'read'; // 'read' (đọc câu), 'reverse' (đoán nghĩa) hoặc 'fill' (điền từ)
@@ -2299,6 +2282,75 @@
   document.getElementById('speedReplayBtn').addEventListener('click', () => startSpeedQuiz(currentTopic.id));
   document.getElementById('speedOtherTopicBtn').addEventListener('click', () => showScreen('games'));
 
+  // ---------- BÉ ĐỐ BA MẸ (chế độ đảo ngược: bé đã học rồi tự đố lại ba mẹ) ----------
+  // Hiệu ứng "dạy lại để nhớ lâu hơn" (protégé effect): bé cầm máy đưa hình cho ba mẹ xem rồi đố
+  // ba mẹ đoán từ tiếng Anh, tự bấm chấm ba mẹ đúng/sai — ôn từ vựng chủ động và vui hơn hẳn so
+  // với tự làm quiz 1 mình. Không có khái niệm "bé sai" ở đây nên luôn thưởng 1 khoản sao cố định
+  // cho công sức ôn bài, không phụ thuộc vào việc ba mẹ đoán đúng bao nhiêu.
+  let quizParentWords = [];
+  let quizParentIndex = 0;
+  let quizParentScore = 0;
+
+  function startQuizParent(topicId) {
+    const topic = TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    currentTopic = topic;
+    quizParentWords = shuffle(topic.words).slice(0, Math.min(QUIZPARENT_WORD_COUNT, topic.words.length));
+    quizParentIndex = 0;
+    quizParentScore = 0;
+    document.getElementById('quizParentWrap').hidden = false;
+    document.getElementById('quizParentDoneWrap').hidden = true;
+    renderQuizParentQuestion();
+    showScreen('quizparent');
+  }
+
+  function renderQuizParentQuestion() {
+    const word = quizParentWords[quizParentIndex];
+    document.getElementById('quizParentFill').style.width = (quizParentIndex / quizParentWords.length * 100) + '%';
+    document.getElementById('quizParentEmoji').textContent = word.emoji;
+    document.getElementById('quizParentEn').textContent = word.en;
+    document.getElementById('quizParentVi').textContent = word.vi;
+    document.getElementById('quizParentAnswer').hidden = true;
+    document.getElementById('quizParentRevealBtn').hidden = false;
+    document.getElementById('quizParentJudge').hidden = true;
+  }
+
+  document.getElementById('quizParentRevealBtn').addEventListener('click', () => {
+    document.getElementById('quizParentAnswer').hidden = false;
+    document.getElementById('quizParentRevealBtn').hidden = true;
+    document.getElementById('quizParentJudge').hidden = false;
+  });
+
+  function judgeQuizParent(parentCorrect) {
+    if (parentCorrect) quizParentScore++;
+    quizParentIndex++;
+    if (quizParentIndex >= quizParentWords.length) endQuizParent();
+    else renderQuizParentQuestion();
+  }
+  document.getElementById('quizParentYesBtn').addEventListener('click', () => judgeQuizParent(true));
+  document.getElementById('quizParentNoBtn').addEventListener('click', () => judgeQuizParent(false));
+
+  function endQuizParent() {
+    const bonus = 2;
+    const oldStars = progress.stars;
+    progress.stars += bonus;
+    saveProgress(progress);
+    updateStreakOnComplete();
+
+    document.getElementById('quizParentFill').style.width = '100%';
+    document.getElementById('quizParentDoneSubtitle').textContent =
+      'Ba mẹ đoán đúng ' + quizParentScore + '/' + quizParentWords.length + ' từ — bé được thêm ' + bonus + ' sao vì đã ôn bài thật giỏi!';
+    document.getElementById('quizParentWrap').hidden = true;
+    document.getElementById('quizParentDoneWrap').hidden = false;
+
+    celebrate(quizParentScore === quizParentWords.length, oldStars);
+  }
+
+  document.getElementById('backFromQuizParent').addEventListener('click', () => showScreen('games'));
+  document.getElementById('quizParentReplayBtn').addEventListener('click', () => startQuizParent(currentTopic.id));
+  document.getElementById('quizParentOtherTopicBtn').addEventListener('click', () => showScreen('games'));
+
   // ---------- RƯƠNG MAY MẮN (thưởng ngẫu nhiên sau mỗi lượt học/ôn tập) ----------
   // Phần thưởng "không đoán trước được" luôn hấp dẫn hơn phần thưởng cố định (hiệu ứng tâm lý
   // dùng nhiều trong app cho trẻ em) — cộng thêm 1 khoản sao nhỏ, có xác suất trúng lớn hiếm gặp
@@ -2543,6 +2595,101 @@
       }, 'image/png');
     });
   }
+
+  // ---------- CHỨNG NHẬN THÀNH TÍCH ----------
+  // Vẽ 1 tờ "chứng nhận" bằng Canvas (cùng kỹ thuật với drawShareCard ở trên) để ba mẹ lưu về
+  // hoặc in ra làm kỷ niệm cho bé — ghi tên bé (lấy từ hồ sơ nếu có), cấp độ và số sao hiện tại.
+  function drawCertificate() {
+    const canvas = document.getElementById('certificateCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#FFF8EC');
+    grad.addColorStop(1, '#FFF1DA');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = '#D9A441';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(18, 18, W - 36, H - 36);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(30, 30, W - 60, H - 60);
+
+    ctx.textAlign = 'center';
+    ctx.font = '54px sans-serif';
+    ctx.fillText('🏆', W / 2, 108);
+
+    ctx.fillStyle = '#A6431E';
+    ctx.font = '700 30px "Baloo 2", sans-serif';
+    ctx.fillText('CHỨNG NHẬN THÀNH TÍCH', W / 2, 152);
+
+    ctx.fillStyle = '#8A7B68';
+    ctx.font = '700 16px Quicksand, sans-serif';
+    ctx.fillText('Trao tặng bé', W / 2, 195);
+
+    const childName = (profile && profile.name) ? profile.name : 'yêu quý';
+    ctx.fillStyle = '#4A3F35';
+    ctx.font = '700 40px "Baloo 2", sans-serif';
+    ctx.fillText(childName, W / 2, 246);
+
+    const level = getLevel(progress.stars);
+    const doneCount = TOPICS.filter(t => progress.doneTopics[t.id]).length;
+    ctx.fillStyle = '#4A3F35';
+    ctx.font = '700 20px Quicksand, sans-serif';
+    ctx.fillText('Đã đạt cấp độ', W / 2, 296);
+    ctx.font = '44px sans-serif';
+    ctx.fillText(level.emoji, W / 2, 350);
+    ctx.font = '700 24px "Baloo 2", sans-serif';
+    ctx.fillStyle = '#A6431E';
+    ctx.fillText(level.label, W / 2, 382);
+
+    const stats = [
+      { icon: '⭐', value: progress.stars, label: 'Sao' },
+      { icon: '📚', value: doneCount + '/' + TOPICS.length, label: 'Chủ đề' },
+      { icon: '🔥', value: progress.streak.best || 0, label: 'Kỷ lục chuỗi ngày' },
+    ];
+    const colW = W / stats.length;
+    stats.forEach((s, i) => {
+      const cx = colW * i + colW / 2;
+      ctx.font = '30px sans-serif';
+      ctx.fillStyle = '#4A3F35';
+      ctx.fillText(s.icon, cx, 424);
+      ctx.font = '700 22px "Baloo 2", sans-serif';
+      ctx.fillText(String(s.value), cx, 452);
+      ctx.font = '700 14px Quicksand, sans-serif';
+      ctx.fillStyle = '#8A7B68';
+      ctx.fillText(s.label, cx, 472);
+    });
+
+    const dateStr = new Date().toLocaleDateString('vi-VN');
+    ctx.font = '700 15px Quicksand, sans-serif';
+    ctx.fillStyle = '#8A7B68';
+    ctx.fillText('Ngày ' + dateStr, W / 2, H - 46);
+    ctx.font = '700 17px "Baloo 2", sans-serif';
+    ctx.fillText('5 Phút Tiếng Anh Mỗi Ngày', W / 2, H - 22);
+  }
+
+  document.getElementById('certificateBtn').addEventListener('click', () => {
+    document.getElementById('certificateOverlay').hidden = false;
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(drawCertificate).catch(drawCertificate);
+  });
+  document.getElementById('certificateCloseBtn').addEventListener('click', () => {
+    document.getElementById('certificateOverlay').hidden = true;
+  });
+  document.getElementById('certificateDownloadBtn').addEventListener('click', () => {
+    const canvas = document.getElementById('certificateCanvas');
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'chung-nhan-thanh-tich.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }, 'image/png');
+  });
 
   // ---------- WEEKLY REVIEW DEEP LINK ----------
   // Chia sẻ link dạng ...?week=2 (tuần 1 = TOPICS[0], tuần 2 = TOPICS[1], v.v. — lặp vòng theo

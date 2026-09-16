@@ -114,6 +114,7 @@
       <button class="segment-btn active" id="gameModeMatchBtn">🧩 Ghép tranh</button>
       <button class="segment-btn" id="gameModeSpellBtn">🔤 Xếp chữ</button>
       <button class="segment-btn" id="gameModeSpeedBtn">⏱️ Tính giờ</button>
+      <button class="segment-btn" id="gameModeQuizParentBtn">🎤 Đố ba mẹ</button>
     </div>
     <div class="topic-grid" id="gamesTopicGrid"></div>
   </section>
@@ -195,8 +196,8 @@
         <span id="levelLabel">Mầm non</span>
       </div>
 
-      <div class="section-label">📅 Lịch học của bé (5 tuần gần nhất)</div>
-      <div class="streak-calendar" id="streakCalendar"></div>
+      <div class="section-label">🎓 Chứng nhận thành tích</div>
+      <button class="cta-btn" id="certificateBtn">🎓 Xem & tải chứng nhận của bé</button>
 
       <div class="section-label">Chi tiết chủ đề</div>
       <div class="progress-list" id="progressList"></div>
@@ -491,6 +492,39 @@
     </div>
   </section>
 
+  <!-- ============ QUIZ PARENT SCREEN (Bé đố ba mẹ) ============ -->
+  <section class="screen" id="screen-quizparent">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromQuizParent" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="quizParentFill"></div></div>
+    </div>
+    <div class="quizparent-wrap" id="quizParentWrap">
+      <p class="quizparent-hint">Bé đưa màn hình cho ba mẹ xem hình rồi đố ba mẹ đoán từ tiếng Anh nhé!</p>
+      <div class="quizparent-card">
+        <div class="quizparent-emoji" id="quizParentEmoji">🐱</div>
+        <div class="quizparent-answer" id="quizParentAnswer" hidden>
+          <div class="quizparent-en" id="quizParentEn">CAT</div>
+          <div class="quizparent-vi" id="quizParentVi">Con mèo</div>
+        </div>
+      </div>
+      <button class="cta-btn" id="quizParentRevealBtn">👀 Xem đáp án</button>
+      <div class="quizparent-judge" id="quizParentJudge" hidden>
+        <p>Ba mẹ đoán đúng không nào?</p>
+        <div class="quizparent-judge-row">
+          <button class="judge-btn is-yes" id="quizParentYesBtn">✅ Đúng rồi</button>
+          <button class="judge-btn is-no" id="quizParentNoBtn">❌ Chưa đúng</button>
+        </div>
+      </div>
+    </div>
+    <div class="match-done-wrap" id="quizParentDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Đố vui xong rồi!</h2>
+      <p id="quizParentDoneSubtitle">Ba mẹ đoán đúng 5/8 từ — bé được thêm sao vì đã ôn bài thật giỏi!</p>
+      <button class="cta-btn" id="quizParentReplayBtn">🔁 Đố lại</button>
+      <button class="ghost-btn" id="quizParentOtherTopicBtn">🎮 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
   <!-- ============ WEEKLY REVIEW INTRO SCREEN ============ -->
   <section class="screen" id="screen-weekly">
     <div class="card-topbar">
@@ -537,7 +571,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🎮</span>
-        <span><strong>Trò chơi</strong> — chọn "Ghép tranh", "Xếp chữ" hoặc "Tính giờ" để ôn từ vựng; chế độ tính giờ càng nhanh càng được nhiều sao!</span>
+        <span><strong>Trò chơi</strong> — chọn "Ghép tranh", "Xếp chữ", "Tính giờ" hoặc "🎤 Đố ba mẹ" (bé đưa máy cho ba mẹ xem hình và đố ngược lại) để ôn từ vựng; chế độ tính giờ càng nhanh càng được nhiều sao!</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💬</span>
@@ -545,11 +579,11 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🏆</span>
-        <span><strong>Sưu tập</strong> — xem huy hiệu đã mở khoá; học xong 1 chủ đề là có ngay 1 mảnh ghép, kéo vào đúng ô để ghép thành bức tranh; dùng sao để mua "👕 Trang phục" cho chú cáo nữa nhé!</span>
+        <span><strong>Sưu tập</strong> — xem huy hiệu đã mở khoá; học xong 1 chủ đề là có ngay 1 mảnh ghép, kéo vào đúng ô để ghép thành bức tranh; đạt đủ mốc sao còn tự động mở khoá "👕 Trang phục" cho chú cáo nữa nhé!</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📊</span>
-        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, lịch những ngày bé đã học và chi tiết từng chủ đề.</span>
+        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, chi tiết từng chủ đề và nhận "🎓 chứng nhận thành tích" để lưu về hoặc in ra làm kỷ niệm cho bé.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📤</span>
@@ -593,6 +627,16 @@
     <div class="share-actions">
       <button class="cta-btn" id="shareDownloadBtn">Lưu ảnh về máy</button>
       <button class="ghost-btn" id="shareNativeBtn" hidden>Chia sẻ ngay</button>
+    </div>
+  </div>
+</div>
+
+<div class="share-overlay" id="certificateOverlay" hidden>
+  <div class="share-card">
+    <button class="icon-btn share-close" id="certificateCloseBtn" aria-label="Đóng">✕</button>
+    <canvas id="certificateCanvas" width="700" height="500"></canvas>
+    <div class="share-actions">
+      <button class="cta-btn" id="certificateDownloadBtn">🖨️ Lưu / In chứng nhận</button>
     </div>
   </div>
 </div>
