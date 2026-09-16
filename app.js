@@ -1544,7 +1544,10 @@
   // tiêu. Đây là cách khả thi duy nhất cho 1 app miễn phí không có backend riêng, vẫn tạo được
   // cảm giác "được chấm điểm khi đọc" cho bé. Tự ẩn nút nếu trình duyệt không hỗ trợ (VD Safari
   // cũ) để không có nút bấm vào không chạy gì.
-  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // TẠM ẨN theo yêu cầu (2026-09-16) — đổi READ_ALOUD_ENABLED = true để bật lại, không cần sửa
+  // gì khác trong khối này.
+  const READ_ALOUD_ENABLED = false;
+  const SpeechRecognitionCtor = READ_ALOUD_ENABLED ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
   const readAloudBtn = document.getElementById('readAloudBtn');
   const readFeedbackEl = document.getElementById('readFeedback');
   let readRecognition = null;
