@@ -253,11 +253,29 @@
     document.getElementById('tabProgress').classList.toggle('active', name === 'progress');
   }
 
+  // Trượt viên "thumb" của segment-toggle (kiểu iOS) tới đúng vị trí nút đang active.
+  // Gọi lại mỗi khi đổi chế độ HOẶC ngay khi màn chứa nó vừa hiện ra (trước đó display:none
+  // nên offsetLeft/offsetWidth đều = 0, không đo được).
+  function moveSegmentThumb(container) {
+    if (!container) return;
+    const active = container.querySelector('.segment-btn.active');
+    const thumb = container.querySelector('.segment-thumb');
+    if (!active || !thumb) return;
+    thumb.style.width = active.offsetWidth + 'px';
+    thumb.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+  }
+  window.addEventListener('resize', () => {
+    ['gamesModeToggle', 'sentencesModeToggle', 'collectionModeToggle'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.offsetParent !== null) moveSegmentThumb(el);
+    });
+  });
+
   document.getElementById('tabHome').addEventListener('click', () => { renderHome(); showScreen('home'); });
   document.getElementById('brandHomeBtn').addEventListener('click', () => { if (enforceGate()) goHome(); });
-  document.getElementById('tabGames').addEventListener('click', () => { showScreen('games'); });
-  document.getElementById('tabSentences').addEventListener('click', () => { showScreen('sentences'); });
-  document.getElementById('tabBadges').addEventListener('click', () => { renderBadgesScreen(); showScreen('badges'); });
+  document.getElementById('tabGames').addEventListener('click', () => { showScreen('games'); moveSegmentThumb(document.getElementById('gamesModeToggle')); });
+  document.getElementById('tabSentences').addEventListener('click', () => { showScreen('sentences'); moveSegmentThumb(document.getElementById('sentencesModeToggle')); });
+  document.getElementById('tabBadges').addEventListener('click', () => { renderBadgesScreen(); showScreen('badges'); moveSegmentThumb(document.getElementById('collectionModeToggle')); });
   document.getElementById('tabProgress').addEventListener('click', () => { renderProgressScreen(); showScreen('progress'); });
 
   const LEVELS = [
@@ -588,6 +606,7 @@
     document.getElementById('collectionPuzzleBtn').classList.toggle('active', mode === 'puzzle');
     document.getElementById('badgeGrid').hidden = mode !== 'badges';
     document.getElementById('puzzleWrap').hidden = mode !== 'puzzle';
+    moveSegmentThumb(document.getElementById('collectionModeToggle'));
   }
   document.getElementById('collectionBadgesBtn').addEventListener('click', () => setCollectionMode('badges'));
   document.getElementById('collectionPuzzleBtn').addEventListener('click', () => setCollectionMode('puzzle'));
@@ -1112,6 +1131,7 @@
     document.getElementById('gameModeSpellBtn').classList.toggle('active', mode === 'spell');
     document.getElementById('gameModeSpeedBtn').classList.toggle('active', mode === 'speed');
     renderGamesScreen();
+    moveSegmentThumb(document.getElementById('gamesModeToggle'));
   }
   document.getElementById('gameModeMatchBtn').addEventListener('click', () => setGamesMode('match'));
   document.getElementById('gameModeSpellBtn').addEventListener('click', () => setGamesMode('spell'));
@@ -1150,6 +1170,7 @@
     document.getElementById('sentenceModeReverseBtn').classList.toggle('active', mode === 'reverse');
     document.getElementById('sentenceModeFillBtn').classList.toggle('active', mode === 'fill');
     renderSentencesScreen();
+    moveSegmentThumb(document.getElementById('sentencesModeToggle'));
   }
   document.getElementById('sentenceModeReadBtn').addEventListener('click', () => setSentencesMode('read'));
   document.getElementById('sentenceModeReverseBtn').addEventListener('click', () => setSentencesMode('reverse'));

@@ -23,44 +23,46 @@
 <body>
 <div class="app">
 
-  <div class="topbar">
-    <button class="brand" id="brandHomeBtn" aria-label="Về trang chủ">
-      <div class="mascot">🦊</div>
-      <div class="names">
-        <div class="app-name">5 Phút Tiếng Anh</div>
-        <div class="tagline">Học vui mỗi ngày cùng bé</div>
+  <div class="app-header">
+    <div class="topbar">
+      <button class="brand" id="brandHomeBtn" aria-label="Về trang chủ">
+        <div class="mascot">🦊</div>
+        <div class="names">
+          <div class="app-name">5 Phút Tiếng Anh</div>
+          <div class="tagline">Học vui mỗi ngày cùng bé</div>
+        </div>
+      </button>
+      <div class="topbar-right">
+        <button class="donate-btn" id="donateBtn" aria-label="Ủng hộ">💚</button>
+        <button class="account-btn" id="accountBtn" aria-label="Tài khoản">👤</button>
+        <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌗</button>
+        <button class="mute-btn" id="muteBtn" aria-label="Tắt âm thanh">🔊</button>
+        <button class="settings-btn" id="settingsBtn" aria-label="Cài đặt">⚙️</button>
+        <div class="stars-pill">⭐ <span id="totalStars">0</span> <span id="levelBadge"></span></div>
       </div>
-    </button>
-    <div class="topbar-right">
-      <button class="donate-btn" id="donateBtn" aria-label="Ủng hộ">💚</button>
-      <button class="account-btn" id="accountBtn" aria-label="Tài khoản">👤</button>
-      <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌗</button>
-      <button class="mute-btn" id="muteBtn" aria-label="Tắt âm thanh">🔊</button>
-      <button class="settings-btn" id="settingsBtn" aria-label="Cài đặt">⚙️</button>
-      <div class="stars-pill">⭐ <span id="totalStars">0</span> <span id="levelBadge"></span></div>
     </div>
-  </div>
 
-  <nav class="tabbar" id="tabbar">
-    <button class="tab-btn active" id="tabHome" aria-label="Học">
-      <span class="tab-icon">📚</span><span>Học</span>
-    </button>
-    <button class="tab-btn" id="tabGames" aria-label="Trò chơi">
-      <span class="tab-icon">🎮</span><span>Trò chơi</span>
-    </button>
-    <button class="tab-btn" id="tabSentences" aria-label="Câu">
-      <span class="tab-icon">💬</span><span>Câu</span>
-    </button>
-    <button class="tab-btn" id="tabBadges" aria-label="Bộ sưu tập">
-      <span class="tab-icon">🏆</span><span>Sưu tập</span>
-    </button>
-    <button class="tab-btn" id="tabProgress" aria-label="Tiến độ">
-      <span class="tab-icon">📊</span><span>Tiến độ</span>
-    </button>
-    <button class="tab-btn" id="tabShare" aria-label="Chia sẻ tiến độ">
-      <span class="tab-icon">📤</span><span>Chia sẻ</span>
-    </button>
-  </nav>
+    <nav class="tabbar" id="tabbar">
+      <button class="tab-btn active" id="tabHome" aria-label="Học">
+        <span class="tab-icon">📚</span><span>Học</span>
+      </button>
+      <button class="tab-btn" id="tabGames" aria-label="Trò chơi">
+        <span class="tab-icon">🎮</span><span>Trò chơi</span>
+      </button>
+      <button class="tab-btn" id="tabSentences" aria-label="Câu">
+        <span class="tab-icon">💬</span><span>Câu</span>
+      </button>
+      <button class="tab-btn" id="tabBadges" aria-label="Bộ sưu tập">
+        <span class="tab-icon">🏆</span><span>Sưu tập</span>
+      </button>
+      <button class="tab-btn" id="tabProgress" aria-label="Tiến độ">
+        <span class="tab-icon">📊</span><span>Tiến độ</span>
+      </button>
+      <button class="tab-btn" id="tabShare" aria-label="Chia sẻ tiến độ">
+        <span class="tab-icon">📤</span><span>Chia sẻ</span>
+      </button>
+    </nav>
+  </div>
 
   <!-- ============ HOME SCREEN ============ -->
   <section class="screen active" id="screen-home">
@@ -107,7 +109,8 @@
       <h1>Trò chơi 🎮</h1>
       <p>Chọn 1 trò chơi và 1 chủ đề, bé luyện từ vựng thật vui — chơi lại bao nhiêu lần cũng được!</p>
     </div>
-    <div class="segment-toggle">
+    <div class="segment-toggle" id="gamesModeToggle">
+      <div class="segment-thumb"></div>
       <button class="segment-btn active" id="gameModeMatchBtn">🧩 Ghép tranh</button>
       <button class="segment-btn" id="gameModeSpellBtn">🔤 Xếp chữ</button>
       <button class="segment-btn" id="gameModeSpeedBtn">⏱️ Tính giờ</button>
@@ -121,7 +124,8 @@
       <h1>Nghe & đọc câu 💬</h1>
       <p>Chọn 1 chế độ và 1 chủ đề để bé luyện nhớ từ vựng thật lâu!</p>
     </div>
-    <div class="segment-toggle">
+    <div class="segment-toggle" id="sentencesModeToggle">
+      <div class="segment-thumb"></div>
       <button class="segment-btn active" id="sentenceModeReadBtn">📖 Đọc câu</button>
       <button class="segment-btn" id="sentenceModeReverseBtn">🔄 Đoán nghĩa</button>
       <button class="segment-btn" id="sentenceModeFillBtn">✏️ Điền từ</button>
@@ -144,7 +148,8 @@
   <section class="screen" id="screen-badges">
     <div class="progress-wrap">
       <h2>Bộ sưu tập của bé</h2>
-      <div class="segment-toggle">
+      <div class="segment-toggle" id="collectionModeToggle">
+        <div class="segment-thumb"></div>
         <button class="segment-btn active" id="collectionBadgesBtn">🏆 Huy hiệu</button>
         <button class="segment-btn" id="collectionPuzzleBtn">🖼️ Ghép hình</button>
       </div>
