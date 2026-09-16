@@ -956,6 +956,19 @@
     }).catch(() => showEmailCodeError('Có lỗi xảy ra, vui lòng thử lại.'));
   }
 
+  // Xoá sạch hồ sơ + tiến độ đang lưu trên MÁY này — KHÔNG đụng gì tới dữ liệu email vừa rời đi
+  // trên cloud (dữ liệu đó vẫn an toàn, tự khôi phục đủ khi xác thực lại đúng email đó). Gọi khi
+  // đăng xuất hoặc khi xác thực 1 email mới mà cloud báo chưa từng có dữ liệu, để tránh hồ sơ/tiến
+  // độ của bé dùng trước đó trên máy này bị lẫn/đồng bộ nhầm sang tài khoản mới.
+  function resetLocalChildData() {
+    profile = null;
+    try { localStorage.removeItem(PROFILE_KEY); } catch (e) {}
+    progress = blankProgress();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) {}
+    renderTotalStars();
+    renderMascotAccessory();
+  }
+
   // Sau khi xác thực email trên 1 thiết bị (thiết bị mới, hoặc xác thực lại để giành quyền
   // hoạt động), hỏi Google Sheet xem email này đã có hồ sơ + tiến độ lưu sẵn chưa. Có thì tự
   // động khôi phục để dùng lại y như thiết bị cũ; đồng thời lệnh gọi này khiến thiết bị hiện tại
@@ -968,6 +981,10 @@
         if (data.profile) { profile = data.profile; saveProfileLocal(profile); }
         if (data.progress) { progress = normalizeProgress(data.progress); saveProgress(progress); renderTotalStars(); }
         showToast('Đã khôi phục hồ sơ & tiến độ học trước đó!', '☁️');
+      } else if (data.ok && !data.found) {
+        // Email mới, cloud xác nhận chưa từng có dữ liệu: đảm bảo máy này đang sạch (phòng khi
+        // trước đó vừa dùng cho 1 bé/email khác) để bé mới bắt đầu từ đầu, không bị lẫn dữ liệu.
+        resetLocalChildData();
       }
       if (enforceGate()) bootAfterGate();
     }).catch(() => { if (enforceGate()) bootAfterGate(); });
@@ -1003,6 +1020,7 @@
   function signOutEmail() {
     verifiedEmail = null;
     try { localStorage.removeItem(VERIFIED_EMAIL_KEY); } catch (e) {}
+    resetLocalChildData();
     resetEmailForms();
     enforceGate();
   }
@@ -1082,7 +1100,7 @@
 
   document.getElementById('emailChangeBtn').addEventListener('click', resetEmailForms);
   document.getElementById('emailSignOutBtn').addEventListener('click', () => {
-    showConfirmDialog('Xác thực email khác? Bạn sẽ cần xác thực lại trước khi tiếp tục học.', { okLabel: 'Đồng ý' })
+    showConfirmDialog('Xác thực email khác? Hồ sơ và tiến độ hiện tại đã lưu an toàn trên hệ thống và sẽ được xoá khỏi máy này — xác thực lại đúng email cũ để khôi phục nhé.', { okLabel: 'Đồng ý' })
       .then(ok => { if (ok) signOutEmail(); });
   });
 
