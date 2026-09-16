@@ -406,6 +406,36 @@
   }
   .speak-btn:active { transform: translateY(3px); box-shadow: none; }
 
+  /* Đọc theo chấm điểm (Web Speech API) — chỉ so khớp văn bản nhận dạng được với từ mục
+     tiêu, KHÔNG phải chấm ngữ âm chuẩn xác, nhưng là cách khả thi cho app miễn phí không
+     có server riêng. Nút tự ẩn ở trình duyệt không hỗ trợ (xem app.js). */
+  .mic-btn {
+    border: none; border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: 'Baloo 2'; font-weight: 700; font-size: 17px;
+    padding: 13px 28px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    margin-top: -6px;
+  }
+  .mic-btn:active { transform: translateY(3px); box-shadow: none; }
+  .mic-btn.is-listening { animation: mic-pulse 1s ease-in-out infinite; }
+  @keyframes mic-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+
+  .read-feedback {
+    margin: -10px 0 0;
+    font-family: 'Baloo 2'; font-weight: 700; font-size: 15px;
+    text-align: center;
+  }
+  .read-feedback.is-good { color: var(--mint-ink); }
+  .read-feedback.is-okay { color: var(--gold-ink); }
+  .read-feedback.is-retry { color: var(--accent-ink); }
+
   .nav-row { display: flex; gap: 12px; width: 100%; max-width: 320px; }
   .nav-btn {
     flex: 1; border: 2px solid var(--line); background: var(--surface);

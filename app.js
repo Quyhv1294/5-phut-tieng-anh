@@ -1423,6 +1423,7 @@
     document.getElementById('cardProgressFill').style.width = pct + '%';
     document.getElementById('prevCardBtn').disabled = cardIndex === 0;
     document.getElementById('nextCardBtn').textContent = (cardIndex === currentTopic.words.length - 1) ? 'Ôn tập →' : 'Tiếp →';
+    resetReadAloud();
   }
 
   // ---------- MUTE TOGGLE ----------
@@ -1535,7 +1536,105 @@
       startQuiz();
     }
   });
-  document.getElementById('backFromCards').addEventListener('click', () => showScreen('home'));
+  document.getElementById('backFromCards').addEventListener('click', () => { resetReadAloud(); showScreen('home'); });
+
+  // ---------- ĐỌC THEO CHẤM ĐIỂM (Web Speech API) ----------
+  // LƯU Ý: đây KHÔNG phải chấm phát âm chuẩn ngữ âm học (cần AI/server riêng, tốn phí) — chỉ là
+  // nhận dạng giọng nói thành văn bản (SpeechRecognition của trình duyệt) rồi so khớp với từ mục
+  // tiêu. Đây là cách khả thi duy nhất cho 1 app miễn phí không có backend riêng, vẫn tạo được
+  // cảm giác "được chấm điểm khi đọc" cho bé. Tự ẩn nút nếu trình duyệt không hỗ trợ (VD Safari
+  // cũ) để không có nút bấm vào không chạy gì.
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const readAloudBtn = document.getElementById('readAloudBtn');
+  const readFeedbackEl = document.getElementById('readFeedback');
+  let readRecognition = null;
+  let isListeningRead = false;
+
+  function resetReadAloud() {
+    if (readRecognition) { try { readRecognition.abort(); } catch (e) {} }
+    isListeningRead = false;
+    readAloudBtn.classList.remove('is-listening');
+    readAloudBtn.textContent = '🎤 Bé đọc thử';
+    readFeedbackEl.hidden = true;
+  }
+
+  if (!SpeechRecognitionCtor) {
+    readAloudBtn.hidden = true;
+  } else {
+    function normalizeSpeech(s) {
+      return (s || '').toLowerCase().replace(/[^a-z\s]/g, '').trim();
+    }
+    // Khoảng cách Levenshtein — dùng để chấm "gần đúng" thay vì chỉ đúng/sai tuyệt đối,
+    // vì bé đọc gần chuẩn (thiếu/thừa 1-2 ký tự do nhận dạng chưa hoàn hảo) vẫn nên được khích lệ.
+    function levenshtein(a, b) {
+      const m = a.length, n = b.length;
+      const dp = [];
+      for (let i = 0; i <= m; i++) dp.push([i].concat(new Array(n).fill(0)));
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+        }
+      }
+      return dp[m][n];
+    }
+    function similarity(a, b) {
+      if (!a || !b) return 0;
+      return 1 - levenshtein(a, b) / Math.max(a.length, b.length);
+    }
+    function showReadFeedback(text, cls) {
+      readFeedbackEl.textContent = text;
+      readFeedbackEl.className = 'read-feedback ' + cls;
+      readFeedbackEl.hidden = false;
+    }
+    function scoreReading(transcript, target) {
+      const heard = normalizeSpeech(transcript);
+      const targetNorm = normalizeSpeech(target);
+      if (!heard) { showReadFeedback('😶 Chưa nghe rõ, bé đọc to hơn nhé!', 'is-retry'); return; }
+      if (heard === targetNorm || heard.split(' ').includes(targetNorm)) {
+        showReadFeedback('🌟 Xuất sắc! Đọc chuẩn quá!', 'is-good');
+        return;
+      }
+      if (similarity(heard, targetNorm) >= 0.55) {
+        showReadFeedback('👍 Khá đó! Đọc lại cho thật chuẩn nhé.', 'is-okay');
+      } else {
+        showReadFeedback('🔁 Chưa đúng, bé nghe lại rồi đọc theo nhé!', 'is-retry');
+      }
+    }
+
+    readAloudBtn.addEventListener('click', () => {
+      if (isListeningRead) return;
+      const word = currentTopic.words[cardIndex];
+      readRecognition = new SpeechRecognitionCtor();
+      readRecognition.lang = 'en-US';
+      readRecognition.interimResults = false;
+      readRecognition.maxAlternatives = 1;
+
+      isListeningRead = true;
+      readAloudBtn.classList.add('is-listening');
+      readAloudBtn.textContent = '🎤 Đang nghe...';
+      readFeedbackEl.hidden = true;
+
+      readRecognition.onresult = (e) => {
+        scoreReading(e.results[0][0].transcript, word.en);
+      };
+      readRecognition.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          showReadFeedback('🎙️ App cần quyền micro để nghe bé đọc nhé!', 'is-retry');
+        } else if (e.error === 'no-speech') {
+          showReadFeedback('😶 Chưa nghe thấy gì, bé thử đọc to hơn nhé!', 'is-retry');
+        } else if (e.error !== 'aborted') {
+          showReadFeedback('⚠️ Có lỗi khi nghe, bé thử lại nhé!', 'is-retry');
+        }
+      };
+      readRecognition.onend = () => {
+        isListeningRead = false;
+        readAloudBtn.classList.remove('is-listening');
+        readAloudBtn.textContent = '🎤 Bé đọc thử';
+      };
+      try { readRecognition.start(); } catch (e) {}
+    });
+  }
 
   // ---------- QUIZ ----------
   let quizIndex = 0;
