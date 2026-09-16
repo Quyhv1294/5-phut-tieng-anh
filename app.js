@@ -864,6 +864,7 @@
   let verifiedEmail = null;
   let pendingVerifyEmail = null;
   let resendCooldownTimer = null;
+  let profileResyncedForSession = false; // xem syncProgressToCloud — tự gửi lại hồ sơ 1 lần/phiên để "chữa lành" nếu lần lưu hồ sơ gốc từng lỗi ngầm
 
   try { verifiedEmail = localStorage.getItem(VERIFIED_EMAIL_KEY); } catch (e) {}
 
@@ -950,6 +951,7 @@
     fetch(url).then(r => r.json()).then(data => {
       if (!data.ok) { showEmailCodeError(mapBackendError(data.error)); return; }
       verifiedEmail = pendingVerifyEmail;
+      profileResyncedForSession = false;
       try { localStorage.setItem(VERIFIED_EMAIL_KEY, verifiedEmail); } catch (e) {}
       showToast('Xác thực email thành công!', '✅');
       fetchCloudDataAndProceed();
@@ -999,6 +1001,15 @@
       + '&deviceId=' + encodeURIComponent(deviceId)
       + '&progress=' + encodeURIComponent(JSON.stringify(p));
     fetch(url).catch(() => {});
+
+    // "Chữa lành" hồ sơ trên cloud: logProfileToSheet vốn gửi ngầm (fire-and-forget, không có báo
+    // lỗi/thử lại) đúng 1 lần lúc tạo hồ sơ — nếu lần đó mạng chập chờn thì hồ sơ bị thiếu trên
+    // Sheet vĩnh viễn dù tiến độ vẫn đồng bộ bình thường (khiến lần xác thực sau ở thiết bị khác bị
+    // bắt tạo lại hồ sơ dù email đã có dữ liệu). Gửi lại hồ sơ tối đa 1 lần/phiên xác thực để tự vá.
+    if (profile && !profileResyncedForSession) {
+      profileResyncedForSession = true;
+      logProfileToSheet(profile);
+    }
   }
 
   // Kiểm tra âm thầm mỗi lần mở app (thiết bị đã đăng nhập từ trước): thiết bị này có còn là
