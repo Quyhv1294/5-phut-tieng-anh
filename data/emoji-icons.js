@@ -79,6 +79,12 @@ const EMOJI_ICONS = {
   "🧩": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Puzzle%20piece/3D/puzzle_piece_3d.png",
   "🖼️": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Framed%20picture/3D/framed_picture_3d.png",
   "⚙️": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Gear/3D/gear_3d.png",
+  "🎩": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Top%20hat/3D/top_hat_3d.png",
+  "🕶️": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Sunglasses/3D/sunglasses_3d.png",
+  "🧣": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Scarf/3D/scarf_3d.png",
+  "👔": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Necktie/3D/necktie_3d.png",
+  "🎀": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Ribbon/3D/ribbon_3d.png",
+  "👑": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Crown/3D/crown_3d.png",
   "🪑": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Chair/3D/chair_3d.png",
 
   "👶": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Baby/Default/3D/baby_3d_default.png",

@@ -26,7 +26,7 @@
   <div class="app-header">
     <div class="topbar">
       <button class="brand" id="brandHomeBtn" aria-label="Về trang chủ">
-        <div class="mascot">🦊</div>
+        <div class="mascot">🦊<span class="mascot-accessory" id="mascotAccessory" hidden></span></div>
         <div class="names">
           <div class="app-name">5 Phút Tiếng Anh</div>
           <div class="tagline">Học vui mỗi ngày cùng bé</div>
@@ -152,6 +152,7 @@
         <div class="segment-thumb"></div>
         <button class="segment-btn active" id="collectionBadgesBtn">🏆 Huy hiệu</button>
         <button class="segment-btn" id="collectionPuzzleBtn">🖼️ Ghép hình</button>
+        <button class="segment-btn" id="collectionOutfitsBtn">👕 Trang phục</button>
       </div>
       <div class="badge-grid" id="badgeGrid"></div>
       <div class="puzzle-wrap" id="puzzleWrap" hidden>
@@ -159,6 +160,10 @@
         <div class="puzzle-board" id="puzzleBoard"></div>
         <p class="puzzle-tray-label" id="puzzleTrayLabel" hidden>🖼️ Kéo mảnh ghép vào đúng ô trên bức tranh nhé!</p>
         <div class="puzzle-tray" id="puzzleTray"></div>
+      </div>
+      <div class="outfit-wrap" id="outfitWrap" hidden>
+        <p class="puzzle-count-label" id="outfitCountLabel"></p>
+        <div class="outfit-grid" id="outfitGrid"></div>
       </div>
     </div>
   </section>
@@ -189,6 +194,9 @@
         <span id="levelEmoji">🌱</span>
         <span id="levelLabel">Mầm non</span>
       </div>
+
+      <div class="section-label">📅 Lịch học của bé (5 tuần gần nhất)</div>
+      <div class="streak-calendar" id="streakCalendar"></div>
 
       <div class="section-label">Chi tiết chủ đề</div>
       <div class="progress-list" id="progressList"></div>
@@ -504,6 +512,10 @@
       <h2 id="doneTitle">Giỏi quá!</h2>
       <p id="doneSubtitle">Bé đã học xong chủ đề này rồi đó ạ.</p>
       <div class="earned-row" id="earnedStars"></div>
+      <div class="chest-wrap" id="chestWrap">
+        <button class="chest-btn" id="chestBtn">🎁 Mở rương may mắn</button>
+        <div class="chest-reward" id="chestReward" hidden></div>
+      </div>
       <div class="parent-tip" id="parentTip"></div>
       <button class="cta-btn" id="backHomeBtn">Về trang chủ</button>
       <button class="ghost-btn" id="replayBtn">Học lại chủ đề này</button>
@@ -521,7 +533,7 @@
     <div class="onboarding-steps">
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📚</span>
-        <span><strong>Học</strong> — chọn chủ đề, học 10 từ vựng mới bằng flashcard rồi làm mini quiz; sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết. Mỗi thẻ từ có nút 🎤 để bé đọc theo, app sẽ chấm xem đọc chuẩn chưa. Phía trên màn Học còn có "Ôn tập thông minh", "Luyện từ khó" và "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
+        <span><strong>Học</strong> — chọn chủ đề, học 10 từ vựng mới bằng flashcard rồi làm mini quiz; sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết. Học/ôn xong còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "Ôn tập thông minh", "Luyện từ khó" và "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🎮</span>
@@ -533,11 +545,11 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🏆</span>
-        <span><strong>Sưu tập</strong> — xem huy hiệu đã mở khoá; học xong 1 chủ đề là có ngay 1 mảnh ghép, kéo vào đúng ô để ghép thành bức tranh nhé!</span>
+        <span><strong>Sưu tập</strong> — xem huy hiệu đã mở khoá; học xong 1 chủ đề là có ngay 1 mảnh ghép, kéo vào đúng ô để ghép thành bức tranh; dùng sao để mua "👕 Trang phục" cho chú cáo nữa nhé!</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📊</span>
-        <span><strong>Tiến độ</strong> — xem số sao, cấp độ và chi tiết từng chủ đề bé đã học.</span>
+        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, lịch những ngày bé đã học và chi tiết từng chủ đề.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📤</span>

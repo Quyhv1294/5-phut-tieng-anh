@@ -151,12 +151,18 @@
   }
   .brand:active { transform: scale(0.98); }
   .brand .mascot {
+    position: relative;
     width: 46px; height: 46px; border-radius: 50%;
     background: var(--mint);
     display: flex; align-items: center; justify-content: center;
     font-size: 25px;
     flex: none;
     box-shadow: var(--shadow);
+  }
+  .mascot-accessory {
+    position: absolute; top: -6px; right: -8px;
+    font-size: 18px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
   }
   .brand .names { line-height: 1.2; min-width: 0; overflow: hidden; }
   .brand .names .app-name {
@@ -602,6 +608,63 @@
   }
   .puzzle-piece.is-dragging { cursor: grabbing; box-shadow: 0 16px 28px rgba(74,63,53,0.3); opacity: 0.95; transform: scale(1.05); }
 
+  /* TỦ ĐỒ CHO CHÚ CÁO */
+  .outfit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .outfit-card {
+    position: relative;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 14px 8px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+  }
+  .outfit-card .emoji { font-size: 30px; }
+  .outfit-card .label { font-family: 'Baloo 2'; font-weight: 700; font-size: 13px; }
+  .outfit-card .count { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
+  .outfit-card.is-owned { border-color: var(--gold); background: var(--surface-2); }
+  .outfit-card.is-equipped { border-color: var(--accent); box-shadow: var(--shadow); }
+  .outfit-card .done-badge {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(255,255,255,0.75);
+    border-radius: 999px;
+    font-size: 10px; font-weight: 800;
+    padding: 2px 7px;
+  }
+
+  /* RƯƠNG MAY MẮN (màn Hoàn thành) */
+  .chest-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .chest-btn {
+    border: none; border-radius: 999px;
+    background: var(--gold); color: var(--gold-ink);
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 17px;
+    padding: 14px 26px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    animation: chest-wiggle 1.6s ease-in-out infinite;
+  }
+  .chest-btn:active { transform: translateY(3px); box-shadow: none; }
+  @keyframes chest-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    10% { transform: rotate(-4deg); }
+    20% { transform: rotate(4deg); }
+    30% { transform: rotate(-3deg); }
+    40% { transform: rotate(0deg); }
+  }
+  .chest-reward {
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 20px;
+    color: var(--accent-ink);
+    animation: puzzle-pop .4s ease;
+  }
+
+  /* LỊCH CHUỖI NGÀY HỌC (màn Tiến độ) */
+  .streak-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 4px; }
+  .streak-day { aspect-ratio: 1; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
+  .streak-day.is-studied { background: var(--mint); border-color: var(--mint); }
+  .streak-day.is-today { box-shadow: 0 0 0 2px var(--accent); }
+
   .badge-toast {
     position: fixed; top: 18px; left: 50%; transform: translateX(-50%) translateY(-20px);
     background: var(--surface); border: 2px solid var(--gold); border-radius: 18px;
@@ -986,6 +1049,10 @@
     .spelling-tile:hover { transform: translateY(-3px); border-color: var(--accent); }
     .puzzle-piece { transition: transform .15s ease, box-shadow .15s ease; }
     .puzzle-piece:not(.is-dragging):hover { transform: translateY(-3px) scale(1.05); }
+    .outfit-card { transition: transform .15s ease, box-shadow .15s ease; }
+    .outfit-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .chest-btn { transition: transform .15s ease; }
+    .chest-btn:hover { transform: translateY(-3px) scale(1.05); }
 
     .progress-row { transition: transform .2s ease, box-shadow .2s ease; }
     .progress-row:hover:not(.is-locked) { transform: translateY(-3px); box-shadow: var(--shadow); }

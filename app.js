@@ -105,6 +105,21 @@
     '</svg>';
   const PUZZLE_BG_URL = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(PUZZLE_SVG) + '")';
 
+  // ---------- TRANG PHỤC CHO CHÚ CÁO ----------
+  // Mở khoá theo MỐC SAO ĐÃ TỪNG ĐẠT (giống hệt cơ chế mở khoá chủ đề ở topics.js/unlocksAt),
+  // KHÔNG phải "mua" bằng cách trừ sao — vì progress.stars đang được dùng làm ngưỡng mở khoá chủ
+  // đề và lên cấp (isTopicLocked/getLevel) ở nơi khác trong app; nếu trừ sao thì tổng sao có thể
+  // tụt xuống dưới ngưỡng và làm 1 chủ đề đã mở khoá bị khoá lại / bé bị tụt cấp — một lỗi nghiêm
+  // trọng cần tránh. Trang phục vì vậy chỉ là mốc thành tích để "mặc thử", không tiêu tốn gì cả.
+  const OUTFITS = [
+    { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10 },
+    { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25 },
+    { id: 'hat', emoji: '🎩', label: 'Mũ chóp', unlocksAt: 50 },
+    { id: 'glasses', emoji: '🕶️', label: 'Kính râm', unlocksAt: 100 },
+    { id: 'necktie', emoji: '👔', label: 'Cà vạt', unlocksAt: 150 },
+    { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250 },
+  ];
+
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
   // về đúng shape mong đợi, điền mặc định cho field thiếu.
   function normalizeProgress(p) {
@@ -117,6 +132,9 @@
       badges: p.badges || {},
       wordStats: p.wordStats || {},
       placedPieces: p.placedPieces || {},
+      studyLog: p.studyLog || {},
+      outfitsSeen: p.outfitsSeen || {},
+      equippedOutfit: p.equippedOutfit || null,
     };
   }
   function loadProgress() {
@@ -126,7 +144,10 @@
     } catch (e) { return blankProgress(); }
   }
   function blankProgress() {
-    return { stars: 0, doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {} };
+    return {
+      stars: 0, doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
+      studyLog: {}, outfitsSeen: {}, equippedOutfit: null,
+    };
   }
 
   // ---------- GHI NHỚ TỪ VỰNG (lặp lại ngắt quãng — spaced repetition) ----------
@@ -485,12 +506,15 @@
   function celebrate(isPerfect, oldStars, newPieceTopic) {
     const newBadges = checkNewBadges();
     const levelUp = checkLevelUp(oldStars);
-    if (isPerfect || newBadges.length || levelUp || newPieceTopic) launchConfetti();
+    const newOutfits = checkNewOutfitUnlocks(oldStars);
+    if (isPerfect || newBadges.length || levelUp || newPieceTopic || newOutfits.length) launchConfetti();
     showBadgeToasts(newBadges);
     const afterBadges = newBadges.length * 2900;
     if (levelUp) setTimeout(() => showLevelUpToast(levelUp), afterBadges);
     const afterLevelUp = afterBadges + (levelUp ? 3200 : 0);
     if (newPieceTopic) setTimeout(() => showPuzzlePieceToast(newPieceTopic), afterLevelUp);
+    const afterPiece = afterLevelUp + (newPieceTopic ? 2600 : 0);
+    newOutfits.forEach((o, i) => setTimeout(() => showOutfitUnlockToast(o), afterPiece + i * 2600));
     renderTotalStars(); // huy hiệu chuỗi ngày có thể vừa cộng thêm sao thưởng, cập nhật lại topbar cho khớp
   }
 
@@ -517,6 +541,7 @@
   // Gọi khi bé hoàn thành xong 1 chủ đề trong ngày (finishTopic).
   function updateStreakOnComplete() {
     const todayStr = toDateStr(new Date());
+    progress.studyLog[todayStr] = true; // ghi nhận ngày học, dùng để vẽ lịch chuỗi ngày (renderStreakCalendar)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = toDateStr(yesterday);
@@ -532,6 +557,25 @@
     }
     progress.streak.best = Math.max(progress.streak.best || 0, progress.streak.count);
     saveProgress(progress);
+  }
+
+  // Vẽ lưới 35 ô (5 tuần) thể hiện những ngày bé đã học, dựa trên progress.studyLog.
+  // Đơn giản hoá: chỉ hiện đúng/sai (có học/không học) chứ không phân mức đậm nhạt theo số lượt,
+  // đủ để ba mẹ thấy trực quan nhịp học của bé thay vì chỉ 1 con số chuỗi ngày.
+  const STREAK_CALENDAR_DAYS = 35;
+  function renderStreakCalendar() {
+    const grid = document.getElementById('streakCalendar');
+    grid.innerHTML = '';
+    const today = new Date();
+    for (let i = STREAK_CALENDAR_DAYS - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = toDateStr(d);
+      const cell = document.createElement('div');
+      cell.className = 'streak-day' + (progress.studyLog[dateStr] ? ' is-studied' : '') + (i === 0 ? ' is-today' : '');
+      cell.title = dateStr + (progress.studyLog[dateStr] ? ' — đã học' : '');
+      grid.appendChild(cell);
+    }
   }
 
   // Hiện banner nhắc học / banner streak trên trang chủ, dựa vào ngày học gần nhất.
@@ -564,6 +608,8 @@
     const level = getLevel(progress.stars);
     document.getElementById('levelEmoji').textContent = level.emoji;
     document.getElementById('levelLabel').textContent = level.label;
+
+    renderStreakCalendar();
 
     const list = document.getElementById('progressList');
     list.innerHTML = '';
@@ -598,18 +644,22 @@
     });
 
     renderPuzzleScreen();
+    renderOutfitShop();
   }
 
   function setCollectionMode(mode) {
     collectionMode = mode;
     document.getElementById('collectionBadgesBtn').classList.toggle('active', mode === 'badges');
     document.getElementById('collectionPuzzleBtn').classList.toggle('active', mode === 'puzzle');
+    document.getElementById('collectionOutfitsBtn').classList.toggle('active', mode === 'outfits');
     document.getElementById('badgeGrid').hidden = mode !== 'badges';
     document.getElementById('puzzleWrap').hidden = mode !== 'puzzle';
+    document.getElementById('outfitWrap').hidden = mode !== 'outfits';
     moveSegmentThumb(document.getElementById('collectionModeToggle'));
   }
   document.getElementById('collectionBadgesBtn').addEventListener('click', () => setCollectionMode('badges'));
   document.getElementById('collectionPuzzleBtn').addEventListener('click', () => setCollectionMode('puzzle'));
+  document.getElementById('collectionOutfitsBtn').addEventListener('click', () => setCollectionMode('outfits'));
 
   // ---------- GHÉP HÌNH: dựng bảng tranh + khay mảnh ghép, kéo-thả bằng Pointer Events ----------
   // Mỗi chủ đề trong PUZZLE_TOPICS ứng với đúng 1 ô trên tranh (vị trí cố định theo thứ tự chủ đề).
@@ -721,6 +771,84 @@
     }
   }
 
+  // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
+  // Cập nhật icon phụ kiện đang "mặc" hiển thị đè lên mascot ở góc trên — gọi lại mỗi khi
+  // equippedOutfit đổi hoặc lúc khởi động app.
+  function renderMascotAccessory() {
+    const el = document.getElementById('mascotAccessory');
+    const outfit = OUTFITS.find(o => o.id === progress.equippedOutfit);
+    if (outfit) {
+      el.textContent = outfit.emoji;
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
+  }
+  renderMascotAccessory();
+
+  function renderOutfitShop() {
+    const grid = document.getElementById('outfitGrid');
+    grid.innerHTML = '';
+    let unlockedCount = 0;
+    OUTFITS.forEach(outfit => {
+      const unlocked = progress.stars >= outfit.unlocksAt;
+      const equipped = progress.equippedOutfit === outfit.id;
+      if (unlocked) unlockedCount++;
+      const card = document.createElement('button');
+      card.className = 'outfit-card' + (unlocked ? ' is-owned' : '') + (equipped ? ' is-equipped' : '');
+      card.innerHTML =
+        (equipped ? '<span class="done-badge">✓ Đang mặc</span>' : '') +
+        '<span class="emoji">' + outfit.emoji + '</span>' +
+        '<span class="label">' + outfit.label + '</span>' +
+        '<span class="count">' + (unlocked ? (equipped ? 'Bấm để cởi ra' : 'Bấm để mặc vào') : 'Cần thêm ' + (outfit.unlocksAt - progress.stars) + ' sao') + '</span>';
+      card.addEventListener('click', () => handleOutfitClick(outfit));
+      grid.appendChild(card);
+    });
+    document.getElementById('outfitCountLabel').textContent = 'Đã mở khoá ' + unlockedCount + '/' + OUTFITS.length + ' trang phục';
+  }
+
+  // Mặc/cởi chỉ đổi sở thích hiển thị (equippedOutfit), không tiêu tốn hay ảnh hưởng gì tới sao.
+  function handleOutfitClick(outfit) {
+    if (progress.stars < outfit.unlocksAt) {
+      showToast('🔒 Cần thêm ' + (outfit.unlocksAt - progress.stars) + ' sao để mở khoá "' + outfit.label + '"!', '🔒');
+      return;
+    }
+    progress.equippedOutfit = progress.equippedOutfit === outfit.id ? null : outfit.id;
+    saveProgress(progress);
+    renderMascotAccessory();
+    renderOutfitShop();
+  }
+
+  // Kiểm tra sau mỗi lần cộng sao xem có vừa đủ mốc mở khoá trang phục mới không (giống
+  // checkLevelUp) — progress.outfitsSeen chỉ dùng để tránh báo lại 1 trang phục nhiều lần,
+  // KHÔNG dùng để khoá/mở trang phục (việc đó luôn tính trực tiếp từ progress.stars).
+  function checkNewOutfitUnlocks(oldStars) {
+    if (typeof oldStars !== 'number') return [];
+    const newly = [];
+    OUTFITS.forEach(o => {
+      if (!progress.outfitsSeen[o.id] && progress.stars >= o.unlocksAt) {
+        progress.outfitsSeen[o.id] = true;
+        newly.push(o);
+      }
+    });
+    if (newly.length) saveProgress(progress);
+    return newly;
+  }
+  function showOutfitUnlockToast(outfit) {
+    const toast = document.createElement('div');
+    toast.className = 'badge-toast';
+    toast.innerHTML =
+      '<span class="badge-icon">' + outfit.emoji + '</span>' +
+      '<span><span class="badge-eyebrow">Mở khoá trang phục!</span><br><span class="badge-label">' + outfit.label +
+      '</span><br><span class="badge-unlock">Vào mục Sưu tập để mặc cho chú cáo nhé!</span></span>';
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    setTimeout(() => {
+      toast.classList.remove('is-visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 2600);
+  }
+
   document.getElementById('resetProgressBtn').addEventListener('click', () => {
     showConfirmDialog('Xoá toàn bộ số sao, chuỗi ngày học và các chủ đề đã học của bé? Không thể hoàn tác.', { danger: true, okLabel: 'Xoá hết' })
       .then(ok => {
@@ -729,6 +857,8 @@
         saveProgress(progress);
         renderProgressScreen();
         renderTotalStars();
+        renderMascotAccessory();
+        renderOutfitShop();
       });
   });
 
@@ -2169,6 +2299,44 @@
   document.getElementById('speedReplayBtn').addEventListener('click', () => startSpeedQuiz(currentTopic.id));
   document.getElementById('speedOtherTopicBtn').addEventListener('click', () => showScreen('games'));
 
+  // ---------- RƯƠNG MAY MẮN (thưởng ngẫu nhiên sau mỗi lượt học/ôn tập) ----------
+  // Phần thưởng "không đoán trước được" luôn hấp dẫn hơn phần thưởng cố định (hiệu ứng tâm lý
+  // dùng nhiều trong app cho trẻ em) — cộng thêm 1 khoản sao nhỏ, có xác suất trúng lớn hiếm gặp
+  // để tạo bất ngờ, nhưng trung bình không lớn để không phá vỡ nhịp mở khoá chủ đề theo sao.
+  const CHEST_REWARD_TABLE = [
+    { chance: 0.40, stars: 1 },
+    { chance: 0.30, stars: 2 },
+    { chance: 0.15, stars: 3 },
+    { chance: 0.10, stars: 5 },
+    { chance: 0.05, stars: 10 },
+  ];
+  function rollChestReward() {
+    let r = Math.random();
+    for (const tier of CHEST_REWARD_TABLE) {
+      if (r < tier.chance) return tier.stars;
+      r -= tier.chance;
+    }
+    return 1;
+  }
+  function resetChest() {
+    document.getElementById('chestBtn').hidden = false;
+    document.getElementById('chestBtn').disabled = false;
+    document.getElementById('chestReward').hidden = true;
+  }
+  document.getElementById('chestBtn').addEventListener('click', () => {
+    const btn = document.getElementById('chestBtn');
+    const rewardEl = document.getElementById('chestReward');
+    btn.disabled = true;
+    const bonus = rollChestReward();
+    progress.stars += bonus;
+    saveProgress(progress);
+    renderTotalStars();
+    btn.hidden = true;
+    rewardEl.hidden = false;
+    rewardEl.textContent = bonus >= 10 ? '🎉 Trúng lớn! +' + bonus + ' sao!' : '✨ +' + bonus + ' sao may mắn!';
+    if (bonus >= 5) launchConfetti();
+  });
+
   // ---------- DONE ----------
   function finishTopic() {
     // Tính theo trạng thái mới nhất của từng từ (quizWordStatus) chứ không phải quizCorrectCount/quizOrder,
@@ -2204,6 +2372,7 @@
 
     renderTotalStars();
     celebrate(isPerfect, oldStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null);
+    resetChest();
     showScreen('done');
   }
 
@@ -2243,6 +2412,7 @@
 
     renderTotalStars();
     celebrate(isPerfect, oldStars);
+    resetChest();
     isMixedReview = false;
     showScreen('done');
   }
