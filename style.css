@@ -830,6 +830,12 @@
   .judge-btn:active { transform: scale(0.96); }
   .judge-btn.is-yes { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface)); }
   .judge-btn.is-no { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 18%, var(--surface)); }
+  #screen-quizparent .match-done-wrap .ghost-btn {
+    border: none; background: var(--blue); color: var(--blue-ink);
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 15.5px;
+    padding: 13px 22px; box-shadow: var(--shadow);
+  }
+  #screen-quizparent .match-done-wrap .ghost-btn:active { transform: translateY(3px); box-shadow: none; }
 
   .cta-btn {
     border: none; border-radius: 16px; background: var(--accent); color: var(--accent-ink);
