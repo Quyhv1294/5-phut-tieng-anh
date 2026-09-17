@@ -739,6 +739,7 @@
       progress.placedPieces[topicId] = true;
       saveProgress(progress);
     }
+    piece.remove(); // piece đã bị chuyển ra document.body lúc bắt đầu kéo nên renderPuzzleScreen() không tự dọn được
     renderPuzzleScreen(); // dựng lại toàn bộ khay+bảng theo state mới nhất — đơn giản, tránh lỗi vặt DOM
     if (placed) checkPuzzleComplete();
   }
