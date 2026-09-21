@@ -79,14 +79,14 @@
         { en: 'BREAD', vi: 'Bánh mì', emoji: '🍞', example: 'I like BREAD.', exampleVi: 'Con thích bánh mì.' },
         { en: 'EGG', vi: 'Trứng', emoji: '🥚', example: 'I eat an EGG.', exampleVi: 'Con ăn một quả trứng.' },
       ] },
-    { id: 'body', label: 'Cơ thể bé', emoji: '🧒', cls: 't-mint', unlocksAt: Infinity,
+    { id: 'body', label: 'Cơ thể bé', emoji: '🧒', cls: 't-mint',
       words: [
         { en: 'EYE', vi: 'Mắt', emoji: '👁️', example: 'This is my EYE.', exampleVi: 'Đây là mắt con.' },
         { en: 'HAND', vi: 'Bàn tay', emoji: '✋', example: 'Wave your HAND.', exampleVi: 'Vẫy tay con.' },
         { en: 'NOSE', vi: 'Mũi', emoji: '👃', example: 'This is my NOSE.', exampleVi: 'Đây là mũi con.' },
         { en: 'MOUTH', vi: 'Miệng', emoji: '👄', example: 'Open your MOUTH.', exampleVi: 'Mở miệng con ra.' },
       ] },
-    { id: 'transport', label: 'Phương tiện', emoji: '🚗', cls: 't-accent', unlocksAt: Infinity,
+    { id: 'transport', label: 'Phương tiện', emoji: '🚗', cls: 't-accent',
       words: [
         { en: 'CAR', vi: 'Ô tô', emoji: '🚗', example: 'I ride in a CAR.', exampleVi: 'Con đi ô tô.' },
         { en: 'BUS', vi: 'Xe buýt', emoji: '🚌', example: 'I go by BUS.', exampleVi: 'Con đi xe buýt.' },
