@@ -654,8 +654,17 @@
   .progress-row.is-done .pr-status { color: var(--teal-ink); }
   .progress-row.is-locked { opacity: 0.65; }
 
-  .progress-actions { display: flex; flex-direction: column; gap: 10px; }
-  .progress-actions .ghost-btn { align-self: stretch; }
+  /* 3 nút ôn tập xếp thành 3 cột thay vì 3 hàng riêng biệt, đỡ phải kéo chuột nhiều — chữ có thể
+     dài (VD "Ôn tập thông minh (12 từ)") nên giảm cỡ chữ/padding riêng cho nhóm này và cho phép
+     xuống dòng thay vì tràn ra ngoài cột. */
+  .progress-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .progress-actions .cta-btn,
+  .progress-actions .ghost-btn {
+    padding: 12px 6px;
+    font-size: 12px;
+    line-height: 1.3;
+    text-align: center;
+  }
 
   .badge-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .badge-item {
