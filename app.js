@@ -402,7 +402,9 @@
     { id: 'streak_14', icon: '🔥', label: '2 tuần kiên trì', desc: 'Học liên tiếp 14 ngày (+20 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 20, freeze: 1, check: p => p.streak.count >= 14 },
     { id: 'streak_30', icon: '🔥', label: 'Bền bỉ cả tháng', desc: 'Học liên tiếp 30 ngày (+40 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 40, freeze: 1, check: p => p.streak.count >= 30 },
     { id: 'perfect_5', icon: '🥇', label: 'Ngôi sao xuất sắc', desc: 'Đạt điểm tuyệt đối 5 lần', check: p => (p.perfectCount || 0) >= 5 },
-    { id: 'all_topics', icon: '🏆', label: 'Bậc thầy tí hon', desc: 'Hoàn thành tất cả chủ đề', check: p => TOPICS.every(t => p.doneTopics[t.id]) },
+    // Huy hiệu này còn quyết định lúc nào rương kho báu trên trang chủ mở ra (xem renderHome) —
+    // nên cần có phần thưởng thật sự tương xứng, không chỉ là 1 huy hiệu để khoe.
+    { id: 'all_topics', icon: '🏆', label: 'Bậc thầy tí hon', desc: 'Hoàn thành tất cả chủ đề (+50 sao, mở kho báu bí mật!)', bonus: 50, check: p => TOPICS.every(t => p.doneTopics[t.id]) },
   ];
 
   // Kiểm tra sau mỗi lần hoàn thành bài học xem có mở khoá huy hiệu mới không.
