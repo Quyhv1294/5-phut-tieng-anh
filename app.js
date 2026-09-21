@@ -114,17 +114,13 @@
   // progress.lifetimeStars — 1 số ẩn, không hiển thị, chỉ tăng chứ không bao giờ giảm, để mua đồ
   // không bao giờ làm bé bị "tụt cấp" (xem addStars). (Chủ đề học ở Tap "Học" KHÔNG dùng cơ chế
   // mua này — xem isTopicLocked, mở tuần tự theo điểm quiz, không liên quan sao.)
-  // slot = vị trí mặc trên người chú cáo toàn thân (xem .mascot-slot trong style.css) — mỗi vị
-  // trí chỉ mặc được 1 món tại 1 thời điểm (mua mới ở cùng vị trí sẽ tự thay món cũ), nhưng bé mặc
-  // được NHIỀU món cùng lúc nếu khác vị trí (VD vừa đội mũ vừa quàng khăn vừa đeo kính) — xem
-  // progress.equippedOutfits (object theo slot) và handleOutfitClick.
   const OUTFITS = [
-    { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10, slot: 'neck' },
-    { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25, slot: 'head' },
-    { id: 'hat', emoji: '🎩', label: 'Mũ chóp', unlocksAt: 50, slot: 'head' },
-    { id: 'glasses', emoji: '🕶️', label: 'Kính râm', unlocksAt: 100, slot: 'eyes' },
-    { id: 'necktie', emoji: '👔', label: 'Cà vạt', unlocksAt: 150, slot: 'neck' },
-    { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250, slot: 'head' },
+    { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10 },
+    { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25 },
+    { id: 'hat', emoji: '🎩', label: 'Mũ chóp', unlocksAt: 50 },
+    { id: 'glasses', emoji: '🕶️', label: 'Kính râm', unlocksAt: 100 },
+    { id: 'necktie', emoji: '👔', label: 'Cà vạt', unlocksAt: 150 },
+    { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250 },
   ];
 
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
@@ -184,15 +180,6 @@
     if (!p.topicsSeen) {
       TOPICS.forEach(t => { if (t.unlocksAt && stars >= t.unlocksAt) topicsSeen[t.id] = true; });
     }
-    // Di trú 1 lần cho equippedOutfits (progress cũ trước khi chú cáo mặc được NHIỀU món cùng
-    // lúc): trước đây chỉ có 1 trường equippedOutfit duy nhất (VD đang đội mũ thì không quàng khăn
-    // được) — giữ nguyên món đang mặc đó, đặt vào đúng slot của nó, để không đột nhiên "cởi đồ" chú
-    // cáo khi bé mở lại app sau bản cập nhật này.
-    const equippedOutfits = p.equippedOutfits || {};
-    if (!p.equippedOutfits && p.equippedOutfit) {
-      const prevOutfit = OUTFITS.find(o => o.id === p.equippedOutfit);
-      if (prevOutfit) equippedOutfits[prevOutfit.slot] = prevOutfit.id;
-    }
     return {
       stars: stars,
       lifetimeStars: lifetimeStars,
@@ -209,7 +196,7 @@
       placedPieces: p.placedPieces || {},
       outfitsSeen: p.outfitsSeen || {},
       topicsSeen: topicsSeen,
-      equippedOutfits: equippedOutfits,
+      equippedOutfit: p.equippedOutfit || null,
     };
   }
   function loadProgress() {
@@ -224,7 +211,7 @@
       doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
-      outfitsSeen: {}, topicsSeen: {}, equippedOutfits: {},
+      outfitsSeen: {}, topicsSeen: {}, equippedOutfit: null,
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -1001,22 +988,17 @@
   }
 
   // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
-  // Cập nhật icon phụ kiện đang "mặc" hiển thị đè lên chú cáo toàn thân — cả ở góc trên (nhỏ) lẫn
-  // màn Trang phục (to) cùng lúc, mỗi nơi có bộ 3 "slot" riêng (đầu/mắt/cổ) trong HTML. Gọi lại mỗi
-  // khi equippedOutfits đổi hoặc lúc khởi động app.
-  const MASCOT_SLOTS = ['head', 'eyes', 'neck'];
+  // Cập nhật icon phụ kiện đang "mặc" hiển thị đè lên mascot ở góc trên — gọi lại mỗi khi
+  // equippedOutfit đổi hoặc lúc khởi động app.
   function renderMascotAccessory() {
-    MASCOT_SLOTS.forEach(slot => {
-      const outfitId = progress.equippedOutfits[slot];
-      const outfit = outfitId ? OUTFITS.find(o => o.id === outfitId) : null;
-      const suffix = slot.charAt(0).toUpperCase() + slot.slice(1);
-      ['mascotSlot' + suffix, 'shopMascotSlot' + suffix].forEach(elId => {
-        const el = document.getElementById(elId);
-        if (!el) return;
-        if (outfit) { el.textContent = outfit.emoji; el.hidden = false; }
-        else { el.hidden = true; }
-      });
-    });
+    const el = document.getElementById('mascotAccessory');
+    const outfit = OUTFITS.find(o => o.id === progress.equippedOutfit);
+    if (outfit) {
+      el.textContent = outfit.emoji;
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
   }
   renderMascotAccessory();
 
@@ -1027,7 +1009,7 @@
     OUTFITS.forEach(outfit => {
       const owned = !!progress.purchasedOutfits[outfit.id];
       const buyable = !owned && progress.stars >= outfit.unlocksAt;
-      const equipped = progress.equippedOutfits[outfit.slot] === outfit.id;
+      const equipped = progress.equippedOutfit === outfit.id;
       if (owned) ownedCount++;
       const card = document.createElement('button');
       card.className = 'outfit-card' + (owned ? ' is-owned' : '') + (equipped ? ' is-equipped' : '') + (buyable ? ' is-buyable' : '');
@@ -1070,11 +1052,7 @@
       renderTotalStars();
       return;
     }
-    // Mỗi slot (đầu/mắt/cổ) chỉ giữ 1 món — bấm 1 món đang mặc thì cởi ra (null), bấm 1 món khác
-    // slot thì mặc song song (không đụng các slot khác), bấm 1 món CÙNG slot với món đang mặc thì
-    // tự động thay luôn, không cần cởi món cũ ra trước.
-    const slot = outfit.slot;
-    progress.equippedOutfits[slot] = progress.equippedOutfits[slot] === outfit.id ? null : outfit.id;
+    progress.equippedOutfit = progress.equippedOutfit === outfit.id ? null : outfit.id;
     saveProgress(progress);
     renderMascotAccessory();
     renderOutfitShop();

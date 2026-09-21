@@ -155,30 +155,20 @@
     font-family: inherit; color: inherit;
   }
   .brand:active { transform: scale(0.98); }
-  /* CHÚ CÁO TOÀN THÂN — 1 hình SVG dùng chung (xem <symbol id="foxMascotSymbol"> đầu trang), phụ
-     kiện đang mặc là các emoji đặt đè lên đúng "vị trí" trên người (đầu/mắt/cổ — xem .mascot-slot
-     và renderMascotAccessory trong app.js). Container giữ đúng tỉ lệ khung vẽ 200:260 để phụ kiện
-     luôn rơi đúng chỗ dù phóng to/nhỏ theo ngữ cảnh (góc trên nhỏ, màn Trang phục to). */
-  .mascot-figure { position: relative; flex: none; }
-  .mascot-fox { display: block; width: 100%; height: 100%; }
-  .mascot-slot {
-    position: absolute;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    line-height: 1;
-    pointer-events: none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+  .brand .mascot {
+    position: relative;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--mint);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 29px;
+    flex: none;
+    box-shadow: var(--shadow);
   }
-  .mascot-slot--head { top: 13%; }
-  .mascot-slot--eyes { top: 28%; }
-  .mascot-slot--neck { top: 50%; }
-  .mascot-figure--header { width: 46px; height: 60px; }
-  .mascot-figure--header .mascot-slot { font-size: 15px; }
-  .mascot-figure--shop {
-    width: 130px; height: 169px;
-    margin: 0 auto 16px;
+  .mascot-accessory {
+    position: absolute; top: -6px; right: -8px;
+    font-size: 20.5px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
   }
-  .mascot-figure--shop .mascot-slot { font-size: 42px; }
   .brand .names { line-height: 1.2; min-width: 0; overflow: hidden; }
   .brand .names .app-name {
     font-family: 'Baloo 2'; font-weight: 800; font-size: 22px;
