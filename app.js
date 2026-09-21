@@ -134,6 +134,12 @@
   // từng có topicPassed, coi các chủ đề đã từng hoàn thành (doneTopics) là đã "đạt" luôn — không
   // có dữ liệu điểm số cũ để biết chính xác có đạt 80% hay không, nên cho qua hết, ưu tiên không
   // khoá lại nội dung bé đã học qua hơn là siết chặt hồi tố.
+  //
+  // Di trú 1 lần cho purchasedTopics (Trò chơi/Câu dùng riêng cơ chế mua bằng sao — xem
+  // isTopicLockedForPractice, khác với isTopicLocked tuần tự dùng cho Tap "Học"): nếu chưa từng
+  // có purchasedTopics, coi mọi chủ đề bé ĐÃ đạt (topicPassed) hoặc đã học qua (doneTopics) tại
+  // thời điểm này là "đã mua" luôn, để không đột nhiên khoá lại nội dung Trò chơi/Câu bé đang
+  // chơi được (chỉ chủ đề bé CHƯA từng chạm tới mới thực sự cần mua từ đây trở đi).
   function normalizeProgress(p) {
     p = p || {};
     const stars = p.stars || 0;
@@ -145,10 +151,15 @@
     if (!p.topicPassed) {
       Object.keys(p.doneTopics || {}).forEach(id => { topicPassed[id] = true; });
     }
+    const purchasedTopics = p.purchasedTopics || {};
+    if (!p.purchasedTopics) {
+      TOPICS.forEach(t => { if (topicPassed[t.id] || (p.doneTopics && p.doneTopics[t.id])) purchasedTopics[t.id] = true; });
+    }
     return {
       stars: stars,
       wallet: p.wallet || 0,
       purchasedOutfits: purchasedOutfits,
+      purchasedTopics: purchasedTopics,
       doneTopics: p.doneTopics || {},
       topicPassed: topicPassed,
       streak: { count: (p.streak && p.streak.count) || 0, lastDate: (p.streak && p.streak.lastDate) || null, best: (p.streak && p.streak.best) || 0 },
@@ -170,7 +181,7 @@
   }
   function blankProgress() {
     return {
-      stars: 0, wallet: 0, purchasedOutfits: {},
+      stars: 0, wallet: 0, purchasedOutfits: {}, purchasedTopics: {},
       doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
@@ -389,6 +400,29 @@
   function topicLockBadgeHtml(topic) {
     return isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '';
   }
+
+  // Chủ đề trong Tap "Trò chơi" và "Câu" KHÔNG dùng khoá tuần tự ở trên — 2 tab này giữ cơ chế
+  // mua bằng sao cũ: đủ mốc sao (topic.unlocksAt) chỉ mở ra CƠ HỘI mua, bé phải tự bấm mua (trừ
+  // progress.wallet) mới thực sự chơi được, độc lập với việc chủ đề đó đã mở ở Tap "Học" hay
+  // chưa. 4 chủ đề đầu (không có unlocksAt) luôn miễn phí ở mọi tab.
+  function isTopicLockedForPractice(topic) {
+    return !!topic.unlocksAt && !progress.purchasedTopics[topic.id];
+  }
+  function isTopicBuyable(topic) {
+    return isTopicLockedForPractice(topic) && progress.stars >= topic.unlocksAt;
+  }
+  function practiceLockReasonText(topic) {
+    if (progress.stars < topic.unlocksAt) return 'Cần thêm ' + Math.max(0, topic.unlocksAt - progress.stars) + ' sao';
+    return 'Mua ngay · ' + topic.unlocksAt + '⭐ (đang có ' + progress.wallet + ')';
+  }
+  function practiceLockClasses(topic) {
+    if (!isTopicLockedForPractice(topic)) return '';
+    return isTopicBuyable(topic) ? ' is-locked is-buyable' : ' is-locked';
+  }
+  function practiceLockBadgeHtml(topic) {
+    if (!isTopicLockedForPractice(topic)) return '';
+    return isTopicBuyable(topic) ? '<span class="buy-badge">🛒 Mua</span>' : '<span class="lock-badge">🔒</span>';
+  }
   function renderTotalStars() {
     document.getElementById('totalStars').textContent = progress.stars;
     document.getElementById('levelBadge').textContent = getLevel(progress.stars).emoji;
@@ -427,14 +461,16 @@
     return newlyUnlocked;
   }
 
-  // So sánh cấp độ trước/sau khi cộng sao — trả về { level } nếu vừa lên cấp, hoặc null nếu chưa
-  // đủ lên cấp. (Chủ đề không còn mở theo mốc sao nữa — xem isTopicLocked.)
+  // So sánh cấp độ trước/sau khi cộng sao — trả về { level, buyableTopics } nếu vừa lên cấp, hoặc
+  // null nếu chưa đủ lên cấp. buyableTopics chỉ là các chủ đề Trò chơi/Câu VỪA ĐỦ MỐC SAO để mua
+  // (chưa tự động mở khoá — bé vẫn phải tự bấm mua). Tap "Học" không dùng mốc sao (xem isTopicLocked).
   function checkLevelUp(oldStars) {
     if (typeof oldStars !== 'number') return null;
     const oldLevel = getLevel(oldStars);
     const newLevel = getLevel(progress.stars);
     if (newLevel === oldLevel) return null;
-    return { level: newLevel };
+    const buyableTopics = TOPICS.filter(t => t.unlocksAt && t.unlocksAt > oldStars && t.unlocksAt <= progress.stars && !progress.purchasedTopics[t.id]);
+    return { level: newLevel, buyableTopics: buyableTopics };
   }
 
   // ---------- CONFETTI (hiệu ứng ăn mừng, không cần thư viện ngoài) ----------
@@ -504,13 +540,16 @@
   }
 
   // Thông báo lên cấp — dùng lại khung .badge-toast (viền vàng, giống huy hiệu) vì đây cũng
-  // là 1 cột mốc thành tích.
+  // là 1 cột mốc thành tích. Nếu có chủ đề Trò chơi/Câu vừa đủ sao để mua thì hiện thêm dòng thứ 2.
   function showLevelUpToast(levelUp) {
     const toast = document.createElement('div');
     toast.className = 'badge-toast';
+    const unlockLine = levelUp.buyableTopics.length
+      ? '<br><span class="badge-unlock">🛒 Đủ sao để mua ở Trò chơi/Câu: ' + levelUp.buyableTopics.map(t => t.label).join(', ') + '</span>'
+      : '';
     toast.innerHTML =
       '<span class="badge-icon">' + levelUp.level.emoji + '</span>' +
-      '<span><span class="badge-eyebrow">Lên cấp!</span><br><span class="badge-label">' + levelUp.level.label + '</span></span>';
+      '<span><span class="badge-eyebrow">Lên cấp!</span><br><span class="badge-label">' + levelUp.level.label + '</span>' + unlockLine + '</span>';
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('is-visible'));
     setTimeout(() => {
@@ -541,6 +580,33 @@
       return;
     }
     showToast('🔒 ' + topicLockReasonText(topic) + '!', '🔒');
+  }
+
+  // Bấm vào 1 chủ đề đang khoá trong Tap "Trò chơi"/"Câu": nếu chưa đủ mốc sao thì chỉ báo còn
+  // thiếu bao nhiêu; nếu đã đủ mốc thì cho bé chọn có muốn MUA (trừ progress.wallet) hay không —
+  // không tự động mở khoá dù đã đủ sao (xem isTopicLockedForPractice).
+  async function showLockedPracticeTopicNotice(topic) {
+    if (progress.stars < topic.unlocksAt) {
+      showToast('🔒 ' + practiceLockReasonText(topic) + ' để mở khoá "' + topic.label + '"!', '🔒');
+      return;
+    }
+    const cost = topic.unlocksAt;
+    if (progress.wallet < cost) {
+      showToast('💰 Bé cần để dành đủ ' + cost + ' sao (đang có ' + progress.wallet + ') để mua chủ đề "' + topic.label + '"!', '💰');
+      return;
+    }
+    const ok = await showConfirmDialog(
+      'Dùng ' + cost + ' sao để mua chủ đề "' + topic.label + '" cho Trò chơi & Câu? (còn lại ' + (progress.wallet - cost) + ' sao sau khi mua)',
+      { okLabel: 'Mua ngay' }
+    );
+    if (!ok) return;
+    progress.wallet -= cost;
+    progress.purchasedTopics[topic.id] = true;
+    saveProgress(progress);
+    showToast('🎉 Đã mua chủ đề "' + topic.label + '"!', '🎉');
+    launchConfetti();
+    renderGamesScreen();
+    renderSentencesScreen();
   }
 
   // Hộp thoại xác nhận theo giao diện app (thay cho window.confirm() mặc định của trình duyệt,
@@ -1428,14 +1494,14 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      btn.className = 'topic-card ' + topic.cls + topicLockClasses(topic);
-      const countText = isTopicLocked(topic) ? topicLockReasonText(topic) :
+      btn.className = 'topic-card ' + topic.cls + practiceLockClasses(topic);
+      const countText = isTopicLockedForPractice(topic) ? practiceLockReasonText(topic) :
         gamesMode === 'match' ? 'Ghép ' + Math.min(MATCH_PAIR_COUNT, topic.words.length) + ' cặp' :
         gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
         gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
         'Đố ba mẹ ' + Math.min(QUIZPARENT_WORD_COUNT, topic.words.length) + ' từ';
       btn.innerHTML =
-        topicLockBadgeHtml(topic) +
+        practiceLockBadgeHtml(topic) +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + countText + '</span></span>';
@@ -1471,13 +1537,13 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      btn.className = 'topic-card ' + topic.cls + topicLockClasses(topic);
-      const countText = isTopicLocked(topic) ? topicLockReasonText(topic) :
+      btn.className = 'topic-card ' + topic.cls + practiceLockClasses(topic);
+      const countText = isTopicLockedForPractice(topic) ? practiceLockReasonText(topic) :
         sentencesMode === 'read' ? topic.words.length + ' câu' :
         sentencesMode === 'reverse' ? 'Đoán ' + Math.min(REVERSE_WORD_COUNT, topic.words.length) + ' từ' :
         'Điền ' + Math.min(FILLBLANK_WORD_COUNT, topic.words.length) + ' câu';
       btn.innerHTML =
-        topicLockBadgeHtml(topic) +
+        practiceLockBadgeHtml(topic) +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + countText + '</span></span>';
@@ -1506,7 +1572,7 @@
   function startSentenceTopic(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     document.getElementById('sentenceTopicTitle').textContent = topic.label;
 
     const list = document.getElementById('sentenceList');
@@ -1542,7 +1608,7 @@
   function startReverseQuiz(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     reverseWords = shuffle(topic.words).slice(0, Math.min(REVERSE_WORD_COUNT, topic.words.length));
     reverseIndex = 0;
@@ -1618,7 +1684,7 @@
   function startFillBlank(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     const withExamples = topic.words.filter(w => w.example);
     fillBlankWords = shuffle(withExamples).slice(0, Math.min(FILLBLANK_WORD_COUNT, withExamples.length));
@@ -2182,7 +2248,7 @@
   function startPracticeMatch(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     matchMode = 'practice';
     startMatchGame();
@@ -2286,7 +2352,7 @@
   function startSpelling(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     spellingWords = shuffle(topic.words).slice(0, Math.min(SPELLING_WORD_COUNT, topic.words.length));
     spellingIndex = 0;
@@ -2417,7 +2483,7 @@
   function startSpeedQuiz(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     speedWords = shuffle(topic.words).slice(0, Math.min(SPEED_WORD_COUNT, topic.words.length));
     speedIndex = 0;
@@ -2576,7 +2642,7 @@
   function startQuizParent(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     quizParentWords = shuffle(topic.words).slice(0, Math.min(QUIZPARENT_WORD_COUNT, topic.words.length));
     quizParentIndex = 0;
