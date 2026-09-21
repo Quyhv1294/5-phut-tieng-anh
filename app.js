@@ -75,36 +75,17 @@
   const FILLBLANK_WORD_COUNT = 6; // Điền từ: lấy tối đa 6 câu/lượt
 
   // ---------- GHÉP HÌNH (mảnh ghép tranh — thay cho sổ sticker cũ) ----------
-  // Chỉ dùng các chủ đề có thể mở khoá được ở bản hiện tại (bỏ 2 chủ đề khoá vĩnh viễn
-  // unlocksAt: Infinity) để bức tranh luôn có thể ghép trọn vẹn, không có mảnh không bao giờ có được.
+  // Dùng TẤT CẢ chủ đề hiện có (không còn chủ đề nào khoá vĩnh viễn unlocksAt: Infinity nữa) để
+  // bức tranh luôn có thể ghép trọn vẹn.
   const PUZZLE_TOPICS = TOPICS.filter(t => !t.unlocksAt || isFinite(t.unlocksAt));
   const PUZZLE_COLS = 4;
   const PUZZLE_ROWS = Math.ceil(PUZZLE_TOPICS.length / PUZZLE_COLS);
   const PUZZLE_BG_SIZE = (PUZZLE_COLS * 100) + '% ' + (PUZZLE_ROWS * 100) + '%';
-  const PUZZLE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">' +
-    '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0" stop-color="#BEE3F8"/><stop offset="1" stop-color="#FDF6EC"/>' +
-    '</linearGradient></defs>' +
-    '<rect x="0" y="0" width="400" height="200" fill="url(#sky)"/>' +
-    '<circle cx="55" cy="48" r="26" fill="#FFC97A"/>' +
-    '<g fill="#FFFFFF"><ellipse cx="185" cy="40" rx="26" ry="14"/><ellipse cx="205" cy="32" rx="20" ry="12"/>' +
-    '<ellipse cx="330" cy="55" rx="24" ry="13"/><ellipse cx="350" cy="48" rx="18" ry="10"/></g>' +
-    '<g fill="none" stroke-width="8" stroke-linecap="round">' +
-    '<path d="M240,150 A90,90 0 0 1 420,150" stroke="#F5A6C6"/>' +
-    '<path d="M252,150 A78,78 0 0 1 408,150" stroke="#FFC97A"/>' +
-    '<path d="M264,150 A66,66 0 0 1 396,150" stroke="#7FD1B9"/>' +
-    '<path d="M276,150 A54,54 0 0 1 384,150" stroke="#6FA8DC"/></g>' +
-    '<path d="M0,140 Q100,110 200,140 T400,140 V200 H0 Z" fill="#9BE0BE"/>' +
-    '<path d="M0,155 Q120,130 240,158 T400,150 V200 H0 Z" fill="#7FD1B9"/>' +
-    '<rect x="55" y="115" width="10" height="35" fill="#B5651D"/>' +
-    '<circle cx="60" cy="105" r="26" fill="#4FB0A5"/><circle cx="42" cy="118" r="18" fill="#4FB0A5"/>' +
-    '<circle cx="78" cy="118" r="18" fill="#4FB0A5"/>' +
-    '<rect x="290" y="130" width="70" height="55" fill="#FDF6EC"/>' +
-    '<polygon points="280,130 370,130 325,95" fill="#FF8A65"/>' +
-    '<rect x="315" y="150" width="18" height="35" fill="#B5651D"/>' +
-    '<rect x="340" y="145" width="16" height="16" fill="#6FA8DC"/>' +
-    '</svg>';
-  const PUZZLE_BG_URL = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(PUZZLE_SVG) + '")';
+  // Ảnh tranh ghép — ảnh thật (assets/anh_ghep.jpeg, 1376x768) do người dùng cung cấp, thay cho
+  // cảnh minh hoạ vẽ tay bằng SVG trước đây. LƯU Ý: .puzzle-board trong style.css có
+  // aspect-ratio khớp ĐÚNG tỉ lệ khung hình của ảnh này (1376/768) — đổi ảnh khác thì phải đổi
+  // luôn aspect-ratio đó theo tỉ lệ khung hình mới, không thì các mảnh ghép sẽ bị méo.
+  const PUZZLE_BG_URL = 'url("assets/anh_ghep.jpeg")';
 
   // ---------- TRANG PHỤC CHO CHÚ CÁO ----------
   // unlocksAt = mốc SỐ SAO (progress.stars) cần CÓ ĐỦ để mua — đúng 1 số sao duy nhất bé nhìn
