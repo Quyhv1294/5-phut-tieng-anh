@@ -107,13 +107,13 @@
   const PUZZLE_BG_URL = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(PUZZLE_SVG) + '")';
 
   // ---------- TRANG PHỤC CHO CHÚ CÁO ----------
-  // unlocksAt = mốc TỔNG SAO TRỌN ĐỜI (progress.stars) cần đạt để ĐỦ ĐIỀU KIỆN mua — không phải
-  // giá tiền trừ trực tiếp vào progress.stars, vì progress.stars còn dùng làm ngưỡng lên cấp
-  // (getLevel) và không được phép tụt xuống. Giá mua thật sự trừ vào progress.wallet — 1 số dư
-  // "sao để dành" riêng, cộng dồn song song với progress.stars mỗi khi bé được thưởng sao (xem
-  // addStars) và chỉ giảm khi bé bấm mua trang phục. Nhờ tách 2 biến này, đủ mốc sao chỉ mở ra CƠ
-  // HỘI mua (is-buyable) chứ không tự động cấp — bé phải tự bấm mua mới thực sự sở hữu. (Chủ đề
-  // học KHÔNG dùng cơ chế mua này nữa — xem isTopicLocked, mở tuần tự theo điểm quiz.)
+  // unlocksAt = mốc SỐ SAO (progress.stars) cần CÓ ĐỦ để mua — đúng 1 số sao duy nhất bé nhìn
+  // thấy, kiếm được và tiêu được, không tách "ví" riêng (mua thật sự trừ thẳng vào progress.stars).
+  // Đủ mốc sao chỉ mở ra CƠ HỘI mua (is-buyable) chứ không tự động cấp — bé phải tự bấm mua mới
+  // thực sự sở hữu. Cấp độ (getLevel) KHÔNG dùng progress.stars này (vì nó giảm khi tiêu) mà dùng
+  // progress.lifetimeStars — 1 số ẩn, không hiển thị, chỉ tăng chứ không bao giờ giảm, để mua đồ
+  // không bao giờ làm bé bị "tụt cấp" (xem addStars). (Chủ đề học ở Tap "Học" KHÔNG dùng cơ chế
+  // mua này — xem isTopicLocked, mở tuần tự theo điểm quiz, không liên quan sao.)
   const OUTFITS = [
     { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10 },
     { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25 },
@@ -126,9 +126,19 @@
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
   // về đúng shape mong đợi, điền mặc định cho field thiếu.
   //
+  // ĐỔI TÊN (gộp sao, không tách ví nữa): trước đây có 2 số — "stars" (tổng trọn đời, không giảm,
+  // dùng để lên cấp) và "wallet" (để dành, giảm khi mua). Theo yêu cầu, giờ chỉ còn 1 số "stars"
+  // DUY NHẤT bé nhìn thấy — kiếm được thì cộng, mua gì thì trừ thẳng vào đây, không còn khái niệm
+  // "ví" riêng. Để cấp độ không bị tụt khi bé mua đồ, tổng sao trọn đời được giữ lại dưới tên ẩn
+  // "lifetimeStars" — không hiển thị ở đâu cả, chỉ dùng ngầm cho getLevel.
+  // Di trú: progress cũ (đã từng có "wallet") thì "stars" mới = "wallet" cũ (đúng số sao bé đang
+  // thực sự tiêu được), "lifetimeStars" mới = "stars" cũ. Progress cũ hơn nữa (trước khi có "wallet",
+  // tức trước khi có cơ chế mua) thì chưa từng tiêu gì nên "stars" mới = "lifetimeStars" mới =
+  // đúng "stars" cũ (khi đó 2 khái niệm này vốn là 1).
+  //
   // Di trú 1 lần cho trang phục (progress cũ trước khi có cơ chế "mua" thủ công): nếu chưa từng
   // có purchasedOutfits, giữ nguyên các trang phục đã đủ mốc sao tại thời điểm này coi như "đã
-  // mua" (không trừ ví) để không đột nhiên khoá lại thứ bé đã có.
+  // mua" (không trừ sao) để không đột nhiên khoá lại thứ bé đã có.
   //
   // Di trú 1 lần cho chủ đề (progress cũ trước khi có cơ chế mở tuần tự theo điểm quiz): nếu chưa
   // từng có topicPassed, coi các chủ đề đã từng hoàn thành (doneTopics) là đã "đạt" luôn — không
@@ -142,10 +152,17 @@
   // chơi được (chỉ chủ đề bé CHƯA từng chạm tới mới thực sự cần mua từ đây trở đi).
   function normalizeProgress(p) {
     p = p || {};
-    const stars = p.stars || 0;
+    // "p" có thể ở 1 trong 3 dạng: (a) đã ở schema mới (có sẵn lifetimeStars, VD mọi lần tải lại
+    // SAU lần di trú đầu tiên) — giữ nguyên; (b) đang ở schema cũ (có wallet, chưa có lifetimeStars,
+    // đúng lúc vừa deploy đổi tên này) — di trú 1 lần; (c) rất cũ (chưa từng có wallet lẫn
+    // lifetimeStars) — 2 số vốn là 1 nên dùng chung "stars" cũ. TUYỆT ĐỐI không được lấy
+    // lifetimeStars từ p.stars khi p.lifetimeStars đã tồn tại, vì p.stars ở dạng (a) là số ĐÃ BỊ
+    // TRỪ khi mua đồ — lấy nhầm sẽ khiến cấp độ tụt theo mỗi lần tải lại trang.
+    const lifetimeStars = p.lifetimeStars !== undefined ? (p.lifetimeStars || 0) : (p.stars || 0);
+    const stars = p.wallet !== undefined ? (p.wallet || 0) : (p.stars || 0);
     const purchasedOutfits = p.purchasedOutfits || {};
     if (!p.purchasedOutfits) {
-      OUTFITS.forEach(o => { if (stars >= o.unlocksAt) purchasedOutfits[o.id] = true; });
+      OUTFITS.forEach(o => { if (lifetimeStars >= o.unlocksAt) purchasedOutfits[o.id] = true; });
     }
     const topicPassed = p.topicPassed || {};
     if (!p.topicPassed) {
@@ -156,16 +173,16 @@
       TOPICS.forEach(t => { if (topicPassed[t.id] || (p.doneTopics && p.doneTopics[t.id])) purchasedTopics[t.id] = true; });
     }
     // Di trú 1 lần cho topicsSeen (chỉ dùng để tránh báo lại toast "đủ sao để mua chủ đề" nhiều
-    // lần — xem checkNewPracticeTopicUnlocks): nếu chưa từng có, coi các chủ đề bé ĐÃ đủ sao từ
-    // trước rồi là "đã thấy" luôn, để không dội 1 loạt toast dồn dập cho những mốc bé đã vượt qua
-    // từ lâu trước khi tính năng này tồn tại.
+    // lần — xem checkNewPracticeTopicUnlocks): nếu chưa từng có, coi các chủ đề bé ĐÃ đủ sao (số
+    // sao tiêu được, không phải tổng trọn đời) từ trước rồi là "đã thấy" luôn, để không dội 1 loạt
+    // toast dồn dập cho những mốc bé đã vượt qua từ lâu trước khi tính năng này tồn tại.
     const topicsSeen = p.topicsSeen || {};
     if (!p.topicsSeen) {
       TOPICS.forEach(t => { if (t.unlocksAt && stars >= t.unlocksAt) topicsSeen[t.id] = true; });
     }
     return {
       stars: stars,
-      wallet: p.wallet || 0,
+      lifetimeStars: lifetimeStars,
       purchasedOutfits: purchasedOutfits,
       purchasedTopics: purchasedTopics,
       doneTopics: p.doneTopics || {},
@@ -190,22 +207,22 @@
   }
   function blankProgress() {
     return {
-      stars: 0, wallet: 0, purchasedOutfits: {}, purchasedTopics: {},
+      stars: 0, lifetimeStars: 0, purchasedOutfits: {}, purchasedTopics: {},
       doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
       outfitsSeen: {}, topicsSeen: {}, equippedOutfit: null,
     };
   }
-  // Cộng sao: tăng cả tổng sao trọn đời (progress.stars, dùng cho lên cấp) lẫn số sao để dành
-  // (progress.wallet, dùng để mua trang phục) — 2 số luôn cộng dồn song song, chỉ wallet
-  // mới bị trừ khi mua. Đồng thời báo cho nhiệm vụ hằng ngày biết vừa kiếm thêm sao (xem
-  // bumpDailyMission — hàm này có thể gọi ngược lại addStars() để phát sao thưởng khi bé vừa
-  // hoàn thành đủ nhiệm vụ, nhưng không lặp vô hạn vì bumpDailyMission luôn đánh dấu "đã phát
-  // thưởng hôm nay" TRƯỚC khi gọi addStars cho phần thưởng đó).
+  // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
+  // (progress.lifetimeStars, chỉ dùng cho lên cấp — xem getLevel) — 2 số luôn cộng dồn song song,
+  // chỉ progress.stars mới bị trừ khi mua đồ, lifetimeStars không bao giờ giảm. Đồng thời báo cho
+  // nhiệm vụ hằng ngày biết vừa kiếm thêm sao (xem bumpDailyMission — hàm này có thể gọi ngược lại
+  // addStars() để phát sao thưởng khi bé vừa hoàn thành đủ nhiệm vụ, nhưng không lặp vô hạn vì
+  // bumpDailyMission luôn đánh dấu "đã phát thưởng hôm nay" TRƯỚC khi gọi addStars cho phần thưởng đó).
   function addStars(amount) {
     progress.stars += amount;
-    progress.wallet += amount;
+    progress.lifetimeStars += amount;
     bumpDailyMission('starsEarned', amount);
   }
 
@@ -412,8 +429,8 @@
 
   // Chủ đề trong Tap "Trò chơi" và "Câu" KHÔNG dùng khoá tuần tự ở trên — 2 tab này giữ cơ chế
   // mua bằng sao cũ: đủ mốc sao (topic.unlocksAt) chỉ mở ra CƠ HỘI mua, bé phải tự bấm mua (trừ
-  // progress.wallet) mới thực sự chơi được, độc lập với việc chủ đề đó đã mở ở Tap "Học" hay
-  // chưa. 4 chủ đề đầu (không có unlocksAt) luôn miễn phí ở mọi tab.
+  // thẳng vào progress.stars) mới thực sự chơi được, độc lập với việc chủ đề đó đã mở ở Tap "Học"
+  // hay chưa. 4 chủ đề đầu (không có unlocksAt) luôn miễn phí ở mọi tab.
   function isTopicLockedForPractice(topic) {
     return !!topic.unlocksAt && !progress.purchasedTopics[topic.id];
   }
@@ -422,7 +439,7 @@
   }
   function practiceLockReasonText(topic) {
     if (progress.stars < topic.unlocksAt) return 'Cần thêm ' + Math.max(0, topic.unlocksAt - progress.stars) + ' sao';
-    return 'Mua ngay · ' + topic.unlocksAt + '⭐ (đang có ' + progress.wallet + ')';
+    return 'Mua ngay · ' + topic.unlocksAt + '⭐ (đang có ' + progress.stars + ')';
   }
   function practiceLockClasses(topic) {
     if (!isTopicLockedForPractice(topic)) return '';
@@ -434,7 +451,7 @@
   }
   function renderTotalStars() {
     document.getElementById('totalStars').textContent = progress.stars;
-    document.getElementById('levelBadge').textContent = getLevel(progress.stars).emoji;
+    document.getElementById('levelBadge').textContent = getLevel(progress.lifetimeStars).emoji;
   }
 
   // ---------- BADGES (huy hiệu cột mốc) ----------
@@ -471,13 +488,15 @@
   }
 
   // So sánh cấp độ trước/sau khi cộng sao — trả về { level } nếu vừa lên cấp, hoặc null nếu chưa
-  // đủ lên cấp. (Thông báo "đủ sao để mua chủ đề Trò chơi/Câu" KHÔNG ăn theo lên cấp nữa — xem
-  // checkNewPracticeTopicUnlocks bên dưới — vì mốc sao mua chủ đề có thể vượt quá cấp cao nhất
-  // trong LEVELS, lúc đó checkLevelUp luôn trả về null nên thông báo sẽ không bao giờ hiện.)
-  function checkLevelUp(oldStars) {
-    if (typeof oldStars !== 'number') return null;
-    const oldLevel = getLevel(oldStars);
-    const newLevel = getLevel(progress.stars);
+  // đủ lên cấp. Dùng lifetimeStars (không phải progress.stars) vì stars có thể GIẢM khi bé mua đồ
+  // — cấp độ không được phép tụt theo, phải tính trên tổng sao TỪNG kiếm được. (Thông báo "đủ sao
+  // để mua chủ đề Trò chơi/Câu" KHÔNG ăn theo lên cấp — xem checkNewPracticeTopicUnlocks bên dưới
+  // — vì mốc sao mua chủ đề có thể vượt quá cấp cao nhất trong LEVELS, lúc đó checkLevelUp luôn
+  // trả về null nên thông báo sẽ không bao giờ hiện.)
+  function checkLevelUp(oldLifetimeStars) {
+    if (typeof oldLifetimeStars !== 'number') return null;
+    const oldLevel = getLevel(oldLifetimeStars);
+    const newLevel = getLevel(progress.lifetimeStars);
     if (newLevel === oldLevel) return null;
     return { level: newLevel };
   }
@@ -588,31 +607,28 @@
     showToast('🔒 ' + topicLockReasonText(topic) + '!', '🔒');
   }
 
-  // Bấm vào 1 chủ đề đang khoá trong Tap "Trò chơi"/"Câu": nếu chưa đủ mốc sao thì chỉ báo còn
-  // thiếu bao nhiêu; nếu đã đủ mốc thì cho bé chọn có muốn MUA (trừ progress.wallet) hay không —
+  // Bấm vào 1 chủ đề đang khoá trong Tap "Trò chơi"/"Câu": nếu chưa đủ sao thì chỉ báo còn thiếu
+  // bao nhiêu; nếu đã đủ thì cho bé chọn có muốn MUA (trừ thẳng vào progress.stars) hay không —
   // không tự động mở khoá dù đã đủ sao (xem isTopicLockedForPractice).
   async function showLockedPracticeTopicNotice(topic) {
-    if (progress.stars < topic.unlocksAt) {
+    const cost = topic.unlocksAt;
+    if (progress.stars < cost) {
       showToast('🔒 ' + practiceLockReasonText(topic) + ' để mở khoá "' + topic.label + '"!', '🔒');
       return;
     }
-    const cost = topic.unlocksAt;
-    if (progress.wallet < cost) {
-      showToast('💰 Bé cần để dành đủ ' + cost + ' sao (đang có ' + progress.wallet + ') để mua chủ đề "' + topic.label + '"!', '💰');
-      return;
-    }
     const ok = await showConfirmDialog(
-      'Dùng ' + cost + ' sao để mua chủ đề "' + topic.label + '" cho Trò chơi & Câu? (còn lại ' + (progress.wallet - cost) + ' sao sau khi mua)',
+      'Dùng ' + cost + ' sao để mua chủ đề "' + topic.label + '" cho Trò chơi & Câu? (còn lại ' + (progress.stars - cost) + ' sao sau khi mua)',
       { okLabel: 'Mua ngay' }
     );
     if (!ok) return;
-    progress.wallet -= cost;
+    progress.stars -= cost;
     progress.purchasedTopics[topic.id] = true;
     saveProgress(progress);
     showToast('🎉 Đã mua chủ đề "' + topic.label + '"!', '🎉');
     launchConfetti();
     renderGamesScreen();
     renderSentencesScreen();
+    renderTotalStars();
   }
 
   // Hộp thoại xác nhận theo giao diện app (thay cho window.confirm() mặc định của trình duyệt,
@@ -643,9 +659,12 @@
   }
 
   // Gọi sau khi bé hoàn thành 1 lượt học/ôn tập: mở khoá huy hiệu (nếu có) + hiệu ứng ăn mừng.
-  function celebrate(isPerfect, oldStars, newPieceTopic) {
+  // oldStars/oldLifetimeStars phải chụp lại TRƯỚC khi addStars() chạy ở nơi gọi — 2 số khác nhau
+  // (stars có thể đã bị bé tiêu trước đó, lifetimeStars thì không) nên không thể suy ra số này từ
+  // số kia, phải truyền cả 2 vào riêng.
+  function celebrate(isPerfect, oldStars, oldLifetimeStars, newPieceTopic) {
     const newBadges = checkNewBadges();
-    const levelUp = checkLevelUp(oldStars);
+    const levelUp = checkLevelUp(oldLifetimeStars);
     const newOutfits = checkNewOutfitUnlocks(oldStars);
     const newPracticeTopics = checkNewPracticeTopicUnlocks(oldStars);
     if (isPerfect || newBadges.length || levelUp || newPieceTopic || newOutfits.length || newPracticeTopics.length) launchConfetti();
@@ -803,7 +822,7 @@
     document.getElementById('progressWords').textContent = doneWords;
     document.getElementById('progressStreakBest').textContent = progress.streak.best || 0;
 
-    const level = getLevel(progress.stars);
+    const level = getLevel(progress.lifetimeStars);
     document.getElementById('levelEmoji').textContent = level.emoji;
     document.getElementById('levelLabel').textContent = level.label;
 
@@ -995,7 +1014,7 @@
       const card = document.createElement('button');
       card.className = 'outfit-card' + (owned ? ' is-owned' : '') + (equipped ? ' is-equipped' : '') + (buyable ? ' is-buyable' : '');
       const countText = owned ? (equipped ? 'Bấm để cởi ra' : 'Bấm để mặc vào') :
-        buyable ? 'Mua ngay · ' + outfit.unlocksAt + '⭐ (đang có ' + progress.wallet + ')' :
+        buyable ? 'Mua ngay · ' + outfit.unlocksAt + '⭐ (đang có ' + progress.stars + ')' :
         'Cần thêm ' + (outfit.unlocksAt - progress.stars) + ' sao';
       card.innerHTML =
         (equipped ? '<span class="done-badge">✓ Đang mặc</span>' : buyable ? '<span class="buy-badge">🛒 Mua</span>' : '') +
@@ -1008,32 +1027,29 @@
     document.getElementById('outfitCountLabel').textContent = 'Đã mua ' + ownedCount + '/' + OUTFITS.length + ' trang phục';
   }
 
-  // Chưa mua: đủ mốc sao chỉ mở ra cơ hội mua — bấm vào sẽ hỏi có muốn dùng sao để dành
-  // (progress.wallet) mua hẳn hay không, không tự động cấp. Đã mua rồi: bấm chỉ để mặc/cởi,
-  // không tiêu tốn hay ảnh hưởng gì tới sao.
+  // Chưa mua: đủ mốc sao chỉ mở ra cơ hội mua — bấm vào sẽ hỏi có muốn dùng sao (trừ thẳng vào
+  // progress.stars) mua hẳn hay không, không tự động cấp. Đã mua rồi: bấm chỉ để mặc/cởi, không
+  // tiêu tốn hay ảnh hưởng gì tới sao.
   async function handleOutfitClick(outfit) {
     const owned = !!progress.purchasedOutfits[outfit.id];
     if (!owned) {
-      if (progress.stars < outfit.unlocksAt) {
-        showToast('🔒 Cần thêm ' + (outfit.unlocksAt - progress.stars) + ' sao để mở khoá "' + outfit.label + '"!', '🔒');
-        return;
-      }
       const cost = outfit.unlocksAt;
-      if (progress.wallet < cost) {
-        showToast('💰 Bé cần để dành đủ ' + cost + ' sao (đang có ' + progress.wallet + ') để mua "' + outfit.label + '"!', '💰');
+      if (progress.stars < cost) {
+        showToast('🔒 Cần thêm ' + (cost - progress.stars) + ' sao để mua "' + outfit.label + '"!', '🔒');
         return;
       }
       const ok = await showConfirmDialog(
-        'Dùng ' + cost + ' sao để mua trang phục "' + outfit.label + '"? (còn lại ' + (progress.wallet - cost) + ' sao sau khi mua)',
+        'Dùng ' + cost + ' sao để mua trang phục "' + outfit.label + '"? (còn lại ' + (progress.stars - cost) + ' sao sau khi mua)',
         { okLabel: 'Mua ngay' }
       );
       if (!ok) return;
-      progress.wallet -= cost;
+      progress.stars -= cost;
       progress.purchasedOutfits[outfit.id] = true;
       saveProgress(progress);
       showToast('🎉 Đã mua "' + outfit.label + '"!', '🎉');
       launchConfetti();
       renderOutfitShop();
+      renderTotalStars();
       return;
     }
     progress.equippedOutfit = progress.equippedOutfit === outfit.id ? null : outfit.id;
@@ -2608,6 +2624,7 @@
     const bonus = finishedAll ? Math.min(3, Math.ceil(speedTimeLeft / 10)) : 0;
     const starsEarned = speedCorrectCount + bonus;
     const oldStars = progress.stars;
+    const oldLifetimeStars = progress.lifetimeStars;
     addStars(starsEarned);
     bumpDailyMission('games');
     saveProgress(progress);
@@ -2623,7 +2640,7 @@
     document.getElementById('speedWrap').hidden = true;
     document.getElementById('speedDoneWrap').hidden = false;
 
-    celebrate(finishedAll && speedCorrectCount === speedWords.length, oldStars, null);
+    celebrate(finishedAll && speedCorrectCount === speedWords.length, oldStars, oldLifetimeStars, null);
   }
 
   document.getElementById('backFromSpeed').addEventListener('click', () => {
@@ -2728,6 +2745,7 @@
     stopQuizParentTimer();
     const bonus = 2;
     const oldStars = progress.stars;
+    const oldLifetimeStars = progress.lifetimeStars;
     addStars(bonus);
     bumpDailyMission('games');
     saveProgress(progress);
@@ -2739,7 +2757,7 @@
     document.getElementById('quizParentWrap').hidden = true;
     document.getElementById('quizParentDoneWrap').hidden = false;
 
-    celebrate(quizParentScore === quizParentWords.length, oldStars);
+    celebrate(quizParentScore === quizParentWords.length, oldStars, oldLifetimeStars);
   }
 
   document.getElementById('backFromQuizParent').addEventListener('click', () => { stopQuizParentTimer(); showScreen('games'); });
@@ -2800,6 +2818,7 @@
     const passed = correctCount >= requiredCorrect;
     const starsEarned = correctCount;
     const oldStars = progress.stars;
+    const oldLifetimeStars = progress.lifetimeStars;
     const isNewTopic = !progress.doneTopics[currentTopic.id];
     if (isNewTopic) {
       addStars(starsEarned);
@@ -2829,7 +2848,7 @@
     replayBtn.onclick = () => startTopic(currentTopic.id);
 
     renderTotalStars();
-    celebrate(isPerfect, oldStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null);
+    celebrate(isPerfect, oldStars, oldLifetimeStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null);
     resetChest();
     showScreen('done');
   }
@@ -2841,6 +2860,7 @@
   function finishReviewSession() {
     const isPerfect = quizCorrectCount === quizOrder.length;
     const oldStars = progress.stars;
+    const oldLifetimeStars = progress.lifetimeStars;
     addStars(quizCorrectCount);
     if (isPerfect) progress.perfectCount = (progress.perfectCount || 0) + 1;
     saveProgress(progress);
@@ -2869,7 +2889,7 @@
     replayBtn.onclick = replayByKind[reviewKind];
 
     renderTotalStars();
-    celebrate(isPerfect, oldStars);
+    celebrate(isPerfect, oldStars, oldLifetimeStars);
     resetChest();
     isMixedReview = false;
     showScreen('done');
@@ -2914,7 +2934,7 @@
     ctx.font = '700 32px "Baloo 2", sans-serif';
     ctx.fillText('Bảng thành tích học tiếng Anh', W / 2, 195);
 
-    const level = getLevel(progress.stars);
+    const level = getLevel(progress.lifetimeStars);
     const doneCount = TOPICS.filter(t => progress.doneTopics[t.id]).length;
 
     ctx.font = '58px sans-serif';
@@ -3039,7 +3059,7 @@
     ctx.font = '700 40px "Baloo 2", sans-serif';
     ctx.fillText(childName, W / 2, 246);
 
-    const level = getLevel(progress.stars);
+    const level = getLevel(progress.lifetimeStars);
     const doneCount = TOPICS.filter(t => progress.doneTopics[t.id]).length;
     ctx.fillStyle = '#4A3F35';
     ctx.font = '700 20px Quicksand, sans-serif';
