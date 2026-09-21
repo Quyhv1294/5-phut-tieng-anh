@@ -367,16 +367,6 @@
     font-size: 14px;
     padding: 3px 9px;
   }
-  /* Đủ sao để mua nhưng chưa mua — KHÔNG được trông xám xịt/mờ như "còn khoá hẳn", nếu không
-     bé/ba mẹ dễ bỏ qua cơ hội mua vì tưởng vẫn đang khoá như cũ. */
-  .topic-card.is-locked.is-buyable { filter: none; opacity: 1; box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
-  .topic-card .buy-badge {
-    position: absolute; top: 10px; right: 10px;
-    background: var(--accent); color: var(--accent-ink);
-    border-radius: 999px;
-    font-size: 11.5px; font-weight: 800;
-    padding: 3px 9px;
-  }
 
   .t-pink { background: var(--pink); color: var(--pink-ink); }
   .t-blue { background: var(--blue); color: var(--blue-ink); }
@@ -653,8 +643,6 @@
   .progress-row.is-done { border-color: var(--teal); }
   .progress-row.is-done .pr-status { color: var(--teal-ink); }
   .progress-row.is-locked { opacity: 0.65; }
-  .progress-row.is-locked.is-buyable { opacity: 1; border-color: var(--accent); }
-  .progress-row.is-locked.is-buyable .pr-status { color: var(--accent-ink); }
 
   .progress-actions { display: flex; flex-direction: column; gap: 10px; }
   .progress-actions .ghost-btn { align-self: stretch; }

@@ -111,8 +111,9 @@
   // giá tiền trừ trực tiếp vào progress.stars, vì progress.stars còn dùng làm ngưỡng lên cấp
   // (getLevel) và không được phép tụt xuống. Giá mua thật sự trừ vào progress.wallet — 1 số dư
   // "sao để dành" riêng, cộng dồn song song với progress.stars mỗi khi bé được thưởng sao (xem
-  // addStars) và chỉ giảm khi bé bấm mua chủ đề/trang phục. Nhờ tách 2 biến này, đủ mốc sao chỉ
-  // mở ra CƠ HỘI mua (is-buyable) chứ không tự động cấp — bé phải tự bấm mua mới thực sự sở hữu.
+  // addStars) và chỉ giảm khi bé bấm mua trang phục. Nhờ tách 2 biến này, đủ mốc sao chỉ mở ra CƠ
+  // HỘI mua (is-buyable) chứ không tự động cấp — bé phải tự bấm mua mới thực sự sở hữu. (Chủ đề
+  // học KHÔNG dùng cơ chế mua này nữa — xem isTopicLocked, mở tuần tự theo điểm quiz.)
   const OUTFITS = [
     { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10 },
     { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25 },
@@ -125,27 +126,31 @@
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
   // về đúng shape mong đợi, điền mặc định cho field thiếu.
   //
-  // Di trú 1 lần cho progress cũ (trước khi có cơ chế "mua" thủ công): nếu chưa từng có
-  // purchasedTopics/purchasedOutfits (progress được lưu từ bản cũ, lúc đó đủ sao là tự mở),
-  // giữ nguyên các chủ đề/trang phục đã đủ mốc sao tại thời điểm này coi như "đã mua" (không
-  // trừ ví) để không đột nhiên khoá lại thứ bé đã có — nhưng KHÔNG chạy lại lần nữa sau đó,
-  // nên từ giờ về sau đủ sao chỉ mở ra cơ hội mua chứ không tự cấp.
+  // Di trú 1 lần cho trang phục (progress cũ trước khi có cơ chế "mua" thủ công): nếu chưa từng
+  // có purchasedOutfits, giữ nguyên các trang phục đã đủ mốc sao tại thời điểm này coi như "đã
+  // mua" (không trừ ví) để không đột nhiên khoá lại thứ bé đã có.
+  //
+  // Di trú 1 lần cho chủ đề (progress cũ trước khi có cơ chế mở tuần tự theo điểm quiz): nếu chưa
+  // từng có topicPassed, coi các chủ đề đã từng hoàn thành (doneTopics) là đã "đạt" luôn — không
+  // có dữ liệu điểm số cũ để biết chính xác có đạt 80% hay không, nên cho qua hết, ưu tiên không
+  // khoá lại nội dung bé đã học qua hơn là siết chặt hồi tố.
   function normalizeProgress(p) {
     p = p || {};
     const stars = p.stars || 0;
-    const isLegacy = !p.purchasedTopics && !p.purchasedOutfits;
-    const purchasedTopics = p.purchasedTopics || {};
     const purchasedOutfits = p.purchasedOutfits || {};
-    if (isLegacy) {
-      TOPICS.forEach(t => { if (t.unlocksAt && isFinite(t.unlocksAt) && stars >= t.unlocksAt) purchasedTopics[t.id] = true; });
+    if (!p.purchasedOutfits) {
       OUTFITS.forEach(o => { if (stars >= o.unlocksAt) purchasedOutfits[o.id] = true; });
+    }
+    const topicPassed = p.topicPassed || {};
+    if (!p.topicPassed) {
+      Object.keys(p.doneTopics || {}).forEach(id => { topicPassed[id] = true; });
     }
     return {
       stars: stars,
       wallet: p.wallet || 0,
-      purchasedTopics: purchasedTopics,
       purchasedOutfits: purchasedOutfits,
       doneTopics: p.doneTopics || {},
+      topicPassed: topicPassed,
       streak: { count: (p.streak && p.streak.count) || 0, lastDate: (p.streak && p.streak.lastDate) || null, best: (p.streak && p.streak.best) || 0 },
       streakFreezes: p.streakFreezes || 0,
       dailyMissions: { date: (p.dailyMissions && p.dailyMissions.date) || null, claimed: !!(p.dailyMissions && p.dailyMissions.claimed), stats: (p.dailyMissions && p.dailyMissions.stats) || null },
@@ -165,15 +170,15 @@
   }
   function blankProgress() {
     return {
-      stars: 0, wallet: 0, purchasedTopics: {}, purchasedOutfits: {},
-      doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
+      stars: 0, wallet: 0, purchasedOutfits: {},
+      doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
       outfitsSeen: {}, equippedOutfit: null,
     };
   }
   // Cộng sao: tăng cả tổng sao trọn đời (progress.stars, dùng cho lên cấp) lẫn số sao để dành
-  // (progress.wallet, dùng để mua chủ đề/trang phục) — 2 số luôn cộng dồn song song, chỉ wallet
+  // (progress.wallet, dùng để mua trang phục) — 2 số luôn cộng dồn song song, chỉ wallet
   // mới bị trừ khi mua. Đồng thời báo cho nhiệm vụ hằng ngày biết vừa kiếm thêm sao (xem
   // bumpDailyMission — hàm này có thể gọi ngược lại addStars() để phát sao thưởng khi bé vừa
   // hoàn thành đủ nhiệm vụ, nhưng không lặp vô hạn vì bumpDailyMission luôn đánh dấu "đã phát
@@ -332,8 +337,11 @@
 
   document.getElementById('tabHome').addEventListener('click', () => { renderHome(); showScreen('home'); });
   document.getElementById('brandHomeBtn').addEventListener('click', () => { if (enforceGate()) goHome(); });
-  document.getElementById('tabGames').addEventListener('click', () => { showScreen('games'); moveSegmentThumb(document.getElementById('gamesModeToggle')); });
-  document.getElementById('tabSentences').addEventListener('click', () => { showScreen('sentences'); moveSegmentThumb(document.getElementById('sentencesModeToggle')); });
+  // renderGamesScreen/renderSentencesScreen phải chạy lại mỗi lần vào tab (không chỉ 1 lần lúc
+  // mở app) để danh sách chủ đề khoá/mở phản ánh đúng tiến độ mới nhất — quan trọng hơn hẳn từ
+  // khi chủ đề mở tuần tự theo từng bài học, thay vì hiếm khi đổi như mốc sao trước đây.
+  document.getElementById('tabGames').addEventListener('click', () => { renderGamesScreen(); showScreen('games'); moveSegmentThumb(document.getElementById('gamesModeToggle')); });
+  document.getElementById('tabSentences').addEventListener('click', () => { renderSentencesScreen(); showScreen('sentences'); moveSegmentThumb(document.getElementById('sentencesModeToggle')); });
   document.getElementById('tabBadges').addEventListener('click', () => { renderBadgesScreen(); showScreen('badges'); moveSegmentThumb(document.getElementById('collectionModeToggle')); });
   document.getElementById('tabProgress').addEventListener('click', () => { renderProgressScreen(); showScreen('progress'); });
 
@@ -352,40 +360,35 @@
     return level;
   }
 
-  // Chủ đề khoá cho tới khi bé TỰ MUA (progress.purchasedTopics) — đủ mốc sao (unlocksAt) chỉ mở
-  // ra CƠ HỘI mua, không tự mở khoá (xem showLockedTopicNotice để coi luồng mua).
+  // Chủ đề mở TUẦN TỰ: phải học lần lượt từ chủ đề đầu tiên, đạt tối thiểu TOPIC_PASS_RATIO
+  // (80%) số câu quiz đúng thì chủ đề TIẾP THEO mới mở (xem finishTopic — set progress.topicPassed).
+  // Nếu 1 chủ đề bất kỳ trước đó chưa đạt thì MỌI chủ đề từ đó trở về sau đều khoá, không chỉ chủ
+  // đề liền kề — nên phải rà toàn bộ chủ đề đứng trước, không chỉ check 1 chủ đề ngay trước nó.
+  // unlocksAt: Infinity (VD "Cơ thể bé", "Phương tiện") là chủ đề CHƯA RA MẮT — luôn khoá, không
+  // tính vào chuỗi tuần tự (không cản chủ đề phía sau nó nếu sau này được thêm nội dung).
   function isTopicLocked(topic) {
-    return !!topic.unlocksAt && !progress.purchasedTopics[topic.id];
+    if (topic.unlocksAt === Infinity) return true;
+    const idx = TOPICS.indexOf(topic);
+    for (let i = 0; i < idx; i++) {
+      if (TOPICS[i].unlocksAt === Infinity) continue;
+      if (!progress.topicPassed[TOPICS[i].id]) return true;
+    }
+    return false;
   }
-  // Đang khoá NHƯNG đã đủ sao để mua — dùng để tô đậm/đổi icon riêng cho card, tránh trông
-  // giống hệt trạng thái "còn khoá, chưa đủ sao" (2 trạng thái này trước đây chỉ khác nhau ở
-  // 1 dòng chữ nhỏ, rất dễ bị bỏ qua).
-  function isTopicBuyable(topic) {
-    return isTopicLocked(topic) && isFinite(topic.unlocksAt) && progress.stars >= topic.unlocksAt;
+  // Lý do đang khoá, hiện trên card/toast — chỉ ra ĐÚNG chủ đề đầu tiên bé cần học xong.
+  function topicLockReasonText(topic) {
+    if (topic.unlocksAt === Infinity) return 'Sắp ra mắt';
+    const idx = TOPICS.indexOf(topic);
+    const blocker = TOPICS.slice(0, idx).find(t => t.unlocksAt !== Infinity && !progress.topicPassed[t.id]);
+    return blocker ? 'Học xong "' + blocker.label + '" (đạt ≥80%) để mở khoá' : 'Sắp mở khoá';
   }
-  function starsNeededText(topic) {
-    if (!isFinite(topic.unlocksAt)) return 'Sắp mở khoá';
-    if (progress.stars < topic.unlocksAt) return 'Cần thêm ' + Math.max(0, topic.unlocksAt - progress.stars) + ' sao';
-    return 'Mua ngay · ' + topic.unlocksAt + '⭐ (đang có ' + progress.wallet + ')';
-  }
-  // Class/badge dùng chung cho mọi nơi vẽ topic-card, để card "đủ sao, có thể mua" luôn được tô
-  // đậm + đổi icon giỏ hàng nhất quán — thay vì trông y hệt card còn khoá hẳn ở mọi màn hình.
+  // Class/badge dùng chung cho mọi nơi vẽ topic-card.
   function topicLockClasses(topic) {
-    if (!isTopicLocked(topic)) return '';
-    return isTopicBuyable(topic) ? ' is-locked is-buyable' : ' is-locked';
+    return isTopicLocked(topic) ? ' is-locked' : '';
   }
   function topicLockBadgeHtml(topic) {
-    if (!isTopicLocked(topic)) return '';
-    return isTopicBuyable(topic) ? '<span class="buy-badge">🛒 Mua</span>' : '<span class="lock-badge">🔒</span>';
+    return isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '';
   }
-  // Gọi lại toàn bộ màn hình có hiển thị lưới chủ đề, để bỏ khoá ngay sau khi bé vừa mua thành công.
-  function refreshTopicGrids() {
-    renderHome();
-    renderGamesScreen();
-    renderSentencesScreen();
-    if (!document.getElementById('screen-progress').hidden) renderProgressScreen();
-  }
-
   function renderTotalStars() {
     document.getElementById('totalStars').textContent = progress.stars;
     document.getElementById('levelBadge').textContent = getLevel(progress.stars).emoji;
@@ -424,16 +427,14 @@
     return newlyUnlocked;
   }
 
-  // So sánh cấp độ trước/sau khi cộng sao — trả về { level, buyableTopics } nếu vừa lên cấp,
-  // hoặc null nếu chưa đủ lên cấp. buyableTopics chỉ là các chủ đề VỪA ĐỦ MỐC SAO để mua (chưa
-  // tự động mở khoá — bé vẫn phải tự bấm mua trong màn chủ đề).
+  // So sánh cấp độ trước/sau khi cộng sao — trả về { level } nếu vừa lên cấp, hoặc null nếu chưa
+  // đủ lên cấp. (Chủ đề không còn mở theo mốc sao nữa — xem isTopicLocked.)
   function checkLevelUp(oldStars) {
     if (typeof oldStars !== 'number') return null;
     const oldLevel = getLevel(oldStars);
     const newLevel = getLevel(progress.stars);
     if (newLevel === oldLevel) return null;
-    const buyableTopics = TOPICS.filter(t => t.unlocksAt && t.unlocksAt > oldStars && t.unlocksAt <= progress.stars && !progress.purchasedTopics[t.id]);
-    return { level: newLevel, buyableTopics: buyableTopics };
+    return { level: newLevel };
   }
 
   // ---------- CONFETTI (hiệu ứng ăn mừng, không cần thư viện ngoài) ----------
@@ -503,16 +504,13 @@
   }
 
   // Thông báo lên cấp — dùng lại khung .badge-toast (viền vàng, giống huy hiệu) vì đây cũng
-  // là 1 cột mốc thành tích. Nếu có chủ đề vừa được mở khoá thì hiện thêm dòng thứ 2.
+  // là 1 cột mốc thành tích.
   function showLevelUpToast(levelUp) {
     const toast = document.createElement('div');
     toast.className = 'badge-toast';
-    const unlockLine = levelUp.buyableTopics.length
-      ? '<br><span class="badge-unlock">🛒 Đủ sao để mua: ' + levelUp.buyableTopics.map(t => t.label).join(', ') + '</span>'
-      : '';
     toast.innerHTML =
       '<span class="badge-icon">' + levelUp.level.emoji + '</span>' +
-      '<span><span class="badge-eyebrow">Lên cấp!</span><br><span class="badge-label">' + levelUp.level.label + '</span>' + unlockLine + '</span>';
+      '<span><span class="badge-eyebrow">Lên cấp!</span><br><span class="badge-label">' + levelUp.level.label + '</span></span>';
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('is-visible'));
     setTimeout(() => {
@@ -535,33 +533,14 @@
     }, 1800);
   }
 
-  // Bấm vào 1 chủ đề đang khoá: nếu chưa đủ mốc sao thì chỉ báo còn thiếu bao nhiêu; nếu đã đủ
-  // mốc thì cho bé chọn có muốn MUA (trừ progress.wallet) hay không — không tự động mở khoá.
-  async function showLockedTopicNotice(topic) {
-    if (!isFinite(topic.unlocksAt)) {
+  // Bấm vào 1 chủ đề đang khoá: báo bé cần học xong chủ đề nào (đạt ≥80%) trước — không còn mua
+  // được bằng sao nữa, phải học tuần tự.
+  function showLockedTopicNotice(topic) {
+    if (topic.unlocksAt === Infinity) {
       showToast('🔒 Chủ đề "' + topic.label + '" sắp ra mắt!', '🔒');
       return;
     }
-    if (progress.stars < topic.unlocksAt) {
-      showToast('🔒 ' + starsNeededText(topic) + ' để mở khoá "' + topic.label + '"!', '🔒');
-      return;
-    }
-    const cost = topic.unlocksAt;
-    if (progress.wallet < cost) {
-      showToast('💰 Bé cần để dành đủ ' + cost + ' sao (đang có ' + progress.wallet + ') để mua chủ đề "' + topic.label + '"!', '💰');
-      return;
-    }
-    const ok = await showConfirmDialog(
-      'Dùng ' + cost + ' sao để mua chủ đề "' + topic.label + '"? (còn lại ' + (progress.wallet - cost) + ' sao sau khi mua)',
-      { okLabel: 'Mua ngay' }
-    );
-    if (!ok) return;
-    progress.wallet -= cost;
-    progress.purchasedTopics[topic.id] = true;
-    saveProgress(progress);
-    showToast('🎉 Đã mua chủ đề "' + topic.label + '"!', '🎉');
-    launchConfetti();
-    refreshTopicGrids();
+    showToast('🔒 ' + topicLockReasonText(topic) + '!', '🔒');
   }
 
   // Hộp thoại xác nhận theo giao diện app (thay cho window.confirm() mặc định của trình duyệt,
@@ -762,7 +741,7 @@
       row.innerHTML =
         '<span class="pr-emoji">' + topic.emoji + '</span>' +
         '<span class="pr-label">' + topic.label + '</span>' +
-        '<span class="pr-status">' + (isTopicLocked(topic) ? (isTopicBuyable(topic) ? '🛒 ' : '🔒 ') + starsNeededText(topic) : (done ? '✓ Đã học' : 'Chưa học')) + '</span>';
+        '<span class="pr-status">' + (isTopicLocked(topic) ? '🔒 ' + topicLockReasonText(topic) : (done ? '✓ Đã học' : 'Chưa học')) + '</span>';
       list.appendChild(row);
     });
   }
@@ -1450,7 +1429,7 @@
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
       btn.className = 'topic-card ' + topic.cls + topicLockClasses(topic);
-      const countText = isTopicLocked(topic) ? starsNeededText(topic) :
+      const countText = isTopicLocked(topic) ? topicLockReasonText(topic) :
         gamesMode === 'match' ? 'Ghép ' + Math.min(MATCH_PAIR_COUNT, topic.words.length) + ' cặp' :
         gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
         gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
@@ -1493,7 +1472,7 @@
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
       btn.className = 'topic-card ' + topic.cls + topicLockClasses(topic);
-      const countText = isTopicLocked(topic) ? starsNeededText(topic) :
+      const countText = isTopicLocked(topic) ? topicLockReasonText(topic) :
         sentencesMode === 'read' ? topic.words.length + ' câu' :
         sentencesMode === 'reverse' ? 'Đoán ' + Math.min(REVERSE_WORD_COUNT, topic.words.length) + ' từ' :
         'Điền ' + Math.min(FILLBLANK_WORD_COUNT, topic.words.length) + ' câu';
@@ -1731,9 +1710,11 @@
   function renderHome() {
     const grid = document.getElementById('topicGrid');
     grid.innerHTML = '';
-    // Bản đồ hành trình: đánh dấu chủ đề TIẾP THEO bé chưa học (dù đang khoá hay không) bằng
-    // 1 mascot nhảy nhót ở đúng vị trí, để bé biết "mình đang ở đâu" trên con đường 10 chủ đề.
-    const nextUpTopic = TOPICS.find(t => !progress.doneTopics[t.id]);
+    // Bản đồ hành trình: đánh dấu chủ đề TIẾP THEO bé cần vượt qua (chưa đạt ≥80%) bằng 1 mascot
+    // nhảy nhót ở đúng vị trí — dùng topicPassed chứ không phải doneTopics, vì bé có thể đã "học
+    // qua" (doneTopics) 1 chủ đề mà chưa đạt yêu cầu, lúc đó chủ đề kế tiếp vẫn đang khoá và mascot
+    // không nên nhảy sang đó.
+    const nextUpTopic = TOPICS.find(t => t.unlocksAt !== Infinity && !progress.topicPassed[t.id]);
     TOPICS.forEach((topic, i) => {
       const btn = document.createElement('button');
       const isCurrent = !!nextUpTopic && topic.id === nextUpTopic.id;
@@ -1744,7 +1725,7 @@
         (isTopicLocked(topic) ? topicLockBadgeHtml(topic) : '<span class="done-badge">✓ Đã học</span>') +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
-        '<span class="count">' + (isTopicLocked(topic) ? starsNeededText(topic) : topic.words.length + ' từ vựng') + '</span></span>';
+        '<span class="count">' + (isTopicLocked(topic) ? topicLockReasonText(topic) : topic.words.length + ' từ vựng') + '</span></span>';
       btn.addEventListener('click', () => startTopic(topic.id));
       grid.appendChild(btn);
     });
@@ -2696,12 +2677,19 @@
   });
 
   // ---------- DONE ----------
+  // Ngưỡng "đạt" để mở khoá chủ đề tiếp theo — xem isTopicLocked. Dùng số câu đúng tối thiểu
+  // (làm tròn lên) thay vì so sánh tỉ lệ thập phân trực tiếp, để tránh sai số dấu phẩy động và để
+  // hiện được đúng số "X/Y" cần đạt trên màn hình cho từng chủ đề (không phải chủ đề nào cũng có
+  // 10 từ — VD 4 chủ đề chào hỏi/số đếm/thời tiết/đồ ăn chỉ có 4 từ mỗi bài).
+  const TOPIC_PASS_RATIO = 0.8;
   function finishTopic() {
     // Tính theo trạng thái mới nhất của từng từ (quizWordStatus) chứ không phải quizCorrectCount/quizOrder,
     // vì bé có thể đã làm lại nhiều vòng ở màn tổng kết (chỉ vòng cuối cùng mới phản ánh đúng số từ còn sai).
     const totalWords = currentTopic.words.length;
     const correctCount = currentTopic.words.filter((_, i) => quizWordStatus[i] !== false).length;
     const isPerfect = correctCount === totalWords;
+    const requiredCorrect = Math.ceil(totalWords * TOPIC_PASS_RATIO);
+    const passed = correctCount >= requiredCorrect;
     const starsEarned = correctCount;
     const oldStars = progress.stars;
     const isNewTopic = !progress.doneTopics[currentTopic.id];
@@ -2710,12 +2698,16 @@
       progress.doneTopics[currentTopic.id] = true;
     }
     if (isPerfect) progress.perfectCount = (progress.perfectCount || 0) + 1;
+    if (passed) progress.topicPassed[currentTopic.id] = true;
     saveProgress(progress);
     updateStreakOnComplete();
 
-    document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : 'Giỏi quá!';
+    document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : passed ? 'Giỏi quá!' : 'Cố lên nào!';
     document.getElementById('doneSubtitle').textContent =
-      'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong chủ đề "' + currentTopic.label + '".';
+      'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong chủ đề "' + currentTopic.label + '". ' +
+      (passed
+        ? '🔓 Bé đã đạt yêu cầu, chủ đề tiếp theo mở khoá rồi!'
+        : '📌 Bé cần đạt ít nhất ' + requiredCorrect + '/' + totalWords + ' câu đúng mới mở khoá được chủ đề tiếp theo — bấm "Học lại chủ đề này" để thử lại nhé!');
     document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, correctCount));
 
     const tipWord = currentTopic.words[Math.floor(Math.random() * currentTopic.words.length)];
