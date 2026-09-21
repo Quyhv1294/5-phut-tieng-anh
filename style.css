@@ -251,6 +251,41 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
+  /* BẢN ĐỒ HÀNH TRÌNH (trang chủ) — cùng 1 danh sách .topic-card như .topic-grid, chỉ đổi cách
+     xếp: 1 cột, so le trái/phải nối bằng đường đứt nét ở giữa, tạo cảm giác "con đường" bé đang
+     đi thay vì 1 lưới ô vuông tĩnh. Tab Trò chơi/Câu/Tiến độ vẫn giữ .topic-grid (chọn nhanh 1
+     hoạt động, không cần cảm giác hành trình). */
+  .topic-path {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 4px 0 10px;
+  }
+  .topic-path::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 6px; bottom: 6px;
+    border-left: 4px dashed var(--line);
+    transform: translateX(-50%);
+    z-index: 0;
+  }
+  .topic-path .topic-card { position: relative; width: 64%; z-index: 1; }
+  .topic-path .topic-card:nth-child(odd) { align-self: flex-start; }
+  .topic-path .topic-card:nth-child(even) { align-self: flex-end; }
+  .topic-path .topic-card.is-current { box-shadow: 0 0 0 3px var(--teal), var(--shadow); }
+  .topic-path .topic-card .current-badge {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    font-size: 26px; line-height: 1;
+    animation: current-badge-bounce 1.2s ease-in-out infinite;
+  }
+  @keyframes current-badge-bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-6px); }
+  }
+  @media (max-width: 380px) {
+    .topic-path .topic-card { width: 72%; }
+  }
   .topic-card {
     position: relative;
     border: none;
@@ -351,6 +386,27 @@
     box-shadow: var(--shadow);
   }
   .streak-banner .streak-emoji { font-size: 26px; flex: none; }
+  .streak-freeze-badge {
+    margin-left: auto; flex: none;
+    background: rgba(255,255,255,0.6);
+    border-radius: 999px;
+    font-size: 13px; font-weight: 800;
+    padding: 4px 10px;
+  }
+
+  /* NHIỆM VỤ HẰNG NGÀY */
+  .daily-mission-card {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 18px;
+    padding: 14px 16px; margin-bottom: 18px;
+  }
+  .daily-mission-list { display: flex; flex-direction: column; gap: 10px; }
+  .daily-mission-row { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14.5px; color: var(--ink-soft); }
+  .daily-mission-row .dm-icon { font-size: 20px; flex: none; }
+  .daily-mission-row.is-done { color: var(--teal-ink); text-decoration: line-through; text-decoration-thickness: 2px; opacity: 0.8; }
+  .daily-mission-claimed {
+    margin: 12px 0 0; padding-top: 12px; border-top: 2px dashed var(--line);
+    text-align: center; font-weight: 800; font-size: 14px; color: var(--gold-ink);
+  }
 
   .reminder-banner {
     display: flex; align-items: center; gap: 10px;
@@ -826,6 +882,12 @@
   /* ĐỐ BA MẸ (bé đố ngược lại phụ huynh — chế độ 4 trong Trò chơi) */
   .quizparent-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; text-align: center; padding: 0 6px; }
   .quizparent-hint { margin: 0; color: var(--ink-soft); font-weight: 700; font-size: 18px; max-width: 340px; line-height: 1.4; }
+  .quizparent-timer {
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 17px;
+    background: var(--surface-2); border-radius: 999px; padding: 6px 16px;
+    margin-top: -12px;
+  }
+  .quizparent-timer.is-urgent { color: var(--danger-ink); background: color-mix(in srgb, var(--danger) 18%, var(--surface)); }
   .quizparent-card {
     background: var(--surface-2); border-radius: 28px; padding: 44px 36px;
     display: flex; flex-direction: column; align-items: center; gap: 16px;

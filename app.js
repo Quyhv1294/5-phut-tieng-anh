@@ -147,6 +147,8 @@
       purchasedOutfits: purchasedOutfits,
       doneTopics: p.doneTopics || {},
       streak: { count: (p.streak && p.streak.count) || 0, lastDate: (p.streak && p.streak.lastDate) || null, best: (p.streak && p.streak.best) || 0 },
+      streakFreezes: p.streakFreezes || 0,
+      dailyMissions: { date: (p.dailyMissions && p.dailyMissions.date) || null, claimed: !!(p.dailyMissions && p.dailyMissions.claimed), stats: (p.dailyMissions && p.dailyMissions.stats) || null },
       perfectCount: p.perfectCount || 0,
       badges: p.badges || {},
       wordStats: p.wordStats || {},
@@ -164,16 +166,22 @@
   function blankProgress() {
     return {
       stars: 0, wallet: 0, purchasedTopics: {}, purchasedOutfits: {},
-      doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
+      doneTopics: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
+      dailyMissions: { date: null, claimed: false, stats: null },
+      perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
       outfitsSeen: {}, equippedOutfit: null,
     };
   }
   // Cộng sao: tăng cả tổng sao trọn đời (progress.stars, dùng cho lên cấp) lẫn số sao để dành
   // (progress.wallet, dùng để mua chủ đề/trang phục) — 2 số luôn cộng dồn song song, chỉ wallet
-  // mới bị trừ khi mua.
+  // mới bị trừ khi mua. Đồng thời báo cho nhiệm vụ hằng ngày biết vừa kiếm thêm sao (xem
+  // bumpDailyMission — hàm này có thể gọi ngược lại addStars() để phát sao thưởng khi bé vừa
+  // hoàn thành đủ nhiệm vụ, nhưng không lặp vô hạn vì bumpDailyMission luôn đánh dấu "đã phát
+  // thưởng hôm nay" TRƯỚC khi gọi addStars cho phần thưởng đó).
   function addStars(amount) {
     progress.stars += amount;
     progress.wallet += amount;
+    bumpDailyMission('starsEarned', amount);
   }
 
   // ---------- GHI NHỚ TỪ VỰNG (lặp lại ngắt quãng — spaced repetition) ----------
@@ -284,6 +292,9 @@
       speedTimerId = null;
       speedActive = false;
     }
+    // Tương tự cho đồng hồ đếm giờ của "Đố ba mẹ" — rời màn giữa chừng (VD bấm tab khác) thì
+    // phải dừng, không thì nó vẫn tự chạy ngầm rồi tự tính "hết giờ" ở màn khác.
+    if (name !== 'quizparent') stopQuizParentTimer();
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
     window.scrollTo(0, 0);
@@ -381,12 +392,15 @@
   }
 
   // ---------- BADGES (huy hiệu cột mốc) ----------
+  // Huy hiệu chuỗi ngày (streak_*) còn thưởng thêm 1 "khiên bảo vệ chuỗi" (freeze) — xem
+  // updateStreakOnComplete: nếu bé lỡ đúng 1 ngày mà còn khiên, chuỗi được nối tiếp thay vì
+  // reset về 1, đỡ nản khi lỡ quên 1 hôm sau cả tuần/tháng chăm chỉ.
   const BADGES = [
     { id: 'first_topic', icon: '🌟', label: 'Bài học đầu tiên', desc: 'Hoàn thành 1 chủ đề từ vựng', check: p => Object.keys(p.doneTopics).length >= 1 },
-    { id: 'streak_3', icon: '🔥', label: '3 ngày chăm chỉ', desc: 'Học liên tiếp 3 ngày (+5 sao)', bonus: 5, check: p => p.streak.count >= 3 },
-    { id: 'streak_7', icon: '🔥', label: '1 tuần bền bỉ', desc: 'Học liên tiếp 7 ngày (+10 sao)', bonus: 10, check: p => p.streak.count >= 7 },
-    { id: 'streak_14', icon: '🔥', label: '2 tuần kiên trì', desc: 'Học liên tiếp 14 ngày (+20 sao)', bonus: 20, check: p => p.streak.count >= 14 },
-    { id: 'streak_30', icon: '🔥', label: 'Bền bỉ cả tháng', desc: 'Học liên tiếp 30 ngày (+40 sao)', bonus: 40, check: p => p.streak.count >= 30 },
+    { id: 'streak_3', icon: '🔥', label: '3 ngày chăm chỉ', desc: 'Học liên tiếp 3 ngày (+5 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 5, freeze: 1, check: p => p.streak.count >= 3 },
+    { id: 'streak_7', icon: '🔥', label: '1 tuần bền bỉ', desc: 'Học liên tiếp 7 ngày (+10 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 10, freeze: 1, check: p => p.streak.count >= 7 },
+    { id: 'streak_14', icon: '🔥', label: '2 tuần kiên trì', desc: 'Học liên tiếp 14 ngày (+20 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 20, freeze: 1, check: p => p.streak.count >= 14 },
+    { id: 'streak_30', icon: '🔥', label: 'Bền bỉ cả tháng', desc: 'Học liên tiếp 30 ngày (+40 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 40, freeze: 1, check: p => p.streak.count >= 30 },
     { id: 'perfect_5', icon: '🥇', label: 'Ngôi sao xuất sắc', desc: 'Đạt điểm tuyệt đối 5 lần', check: p => (p.perfectCount || 0) >= 5 },
     { id: 'all_topics', icon: '🏆', label: 'Bậc thầy tí hon', desc: 'Hoàn thành tất cả chủ đề', check: p => TOPICS.every(t => p.doneTopics[t.id]) },
   ];
@@ -400,6 +414,7 @@
       if (!progress.badges[b.id] && b.check(progress)) {
         progress.badges[b.id] = true;
         if (b.bonus) addStars(b.bonus);
+        if (b.freeze) progress.streakFreezes = (progress.streakFreezes || 0) + b.freeze;
         newlyUnlocked.push(b);
       }
     });
@@ -616,18 +631,89 @@
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = toDateStr(yesterday);
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysAgoStr = toDateStr(twoDaysAgo);
 
+    let usedFreeze = false;
     if (progress.streak.lastDate === todayStr) {
       // hôm nay đã học rồi, không đổi chuỗi
     } else if (progress.streak.lastDate === yesterdayStr) {
       progress.streak.count += 1;
       progress.streak.lastDate = todayStr;
+    } else if (progress.streak.lastDate === twoDaysAgoStr && (progress.streakFreezes || 0) > 0) {
+      // Lỡ đúng 1 ngày nhưng còn khiên — dùng khiên để nối chuỗi thay vì reset về 1. Khiên chỉ
+      // cứu được đúng 1 ngày lỡ, lỡ từ 2 ngày trở lên thì vẫn reset như cũ.
+      progress.streakFreezes -= 1;
+      progress.streak.count += 1;
+      progress.streak.lastDate = todayStr;
+      usedFreeze = true;
     } else {
       progress.streak.count = 1;
       progress.streak.lastDate = todayStr;
     }
     progress.streak.best = Math.max(progress.streak.best || 0, progress.streak.count);
     saveProgress(progress);
+    if (usedFreeze) showToast('🛡️ Bé lỡ mất 1 ngày nhưng đã dùng khiên để giữ chuỗi ' + progress.streak.count + ' ngày!', '🛡️');
+    bumpDailyMission('sessions');
+  }
+
+  // ---------- NHIỆM VỤ HẰNG NGÀY ----------
+  // 3 việc nhỏ, cụ thể, reset mỗi ngày — cho bé 1 checklist rõ ràng để quay lại mỗi ngày thay vì
+  // chỉ có mục tiêu mơ hồ "học 5 phút". Không cần cron/backend: tự phát hiện qua ngày mới bằng
+  // cách so progress.dailyMissions.date với hôm nay mỗi lần được đọc/ghi (ensureDailyMissions).
+  const DAILY_MISSION_BONUS = 5;
+  const DAILY_MISSIONS = [
+    { id: 'session', icon: '📚', label: 'Học hoặc ôn tập 1 lượt', check: s => s.sessions >= 1 },
+    { id: 'game', icon: '🎮', label: 'Chơi 1 trò chơi trong tab Trò chơi', check: s => s.games >= 1 },
+    { id: 'stars5', icon: '⭐', label: 'Kiếm được 5 sao', check: s => s.starsEarned >= 5 },
+  ];
+  function blankDailyStats() { return { sessions: 0, games: 0, starsEarned: 0 }; }
+  function ensureDailyMissions() {
+    const todayStr = toDateStr(new Date());
+    if (progress.dailyMissions.date !== todayStr) {
+      progress.dailyMissions = { date: todayStr, claimed: false, stats: blankDailyStats() };
+    }
+    if (!progress.dailyMissions.stats) progress.dailyMissions.stats = blankDailyStats();
+    return progress.dailyMissions;
+  }
+  // LƯU Ý: không tự saveProgress() ở đây — mọi nơi gọi bumpDailyMission() đều tự lưu tiến độ
+  // ngay sau đó (addStars() luôn có 1 saveProgress() theo sau ở nơi gọi nó; còn nhánh "Ghép
+  // tranh" chơi tự do ở tab Trò chơi thì tự thêm saveProgress() riêng ngay sau lệnh gọi, xem
+  // handleMatchClick). Nếu thêm 1 nơi gọi bumpDailyMission() mới, nhớ đảm bảo có saveProgress()
+  // theo sau, không thì mốc nhiệm vụ vừa tăng sẽ mất khi tải lại.
+  function bumpDailyMission(key, amount) {
+    const dm = ensureDailyMissions();
+    dm.stats[key] = (dm.stats[key] || 0) + (amount || 1);
+    checkDailyMissionsComplete();
+  }
+  // Phát thưởng ngay khi đủ cả 3 nhiệm vụ trong ngày — LUÔN đánh dấu dm.claimed = true TRƯỚC khi
+  // gọi addStars(), vì addStars() gọi ngược lại bumpDailyMission() (để phần thưởng cũng tính vào
+  // "kiếm được 5 sao"), mà bumpDailyMission() lại gọi hàm này — đổi thứ tự 2 dòng dưới sẽ gây lặp
+  // vô hạn.
+  function checkDailyMissionsComplete() {
+    const dm = progress.dailyMissions;
+    if (dm.claimed || !DAILY_MISSIONS.every(m => m.check(dm.stats))) return;
+    dm.claimed = true;
+    addStars(DAILY_MISSION_BONUS);
+    showToast('🎉 Bé đã hoàn thành hết nhiệm vụ hôm nay, thưởng thêm ' + DAILY_MISSION_BONUS + ' sao!', '🎉');
+    launchConfetti();
+  }
+  // Vẽ checklist nhiệm vụ hôm nay lên trang chủ.
+  function renderDailyMissions() {
+    const dm = ensureDailyMissions();
+    const list = document.getElementById('dailyMissionList');
+    list.innerHTML = '';
+    DAILY_MISSIONS.forEach(m => {
+      const done = m.check(dm.stats);
+      const row = document.createElement('div');
+      row.className = 'daily-mission-row' + (done ? ' is-done' : '');
+      row.innerHTML =
+        '<span class="dm-icon">' + (done ? '✅' : m.icon) + '</span>' +
+        '<span class="dm-label">' + m.label + '</span>';
+      list.appendChild(row);
+    });
+    document.getElementById('dailyMissionClaimed').hidden = !dm.claimed;
   }
 
   // Hiện banner nhắc học / banner streak trên trang chủ, dựa vào ngày học gần nhất.
@@ -645,6 +731,10 @@
     } else {
       streakBanner.hidden = true;
     }
+
+    const freezeBadge = document.getElementById('streakFreezeBadge');
+    freezeBadge.hidden = !(progress.streakFreezes > 0);
+    if (progress.streakFreezes > 0) document.getElementById('streakFreezeCount').textContent = progress.streakFreezes;
   }
 
   // ---------- PROGRESS SCREEN ----------
@@ -1639,10 +1729,15 @@
   function renderHome() {
     const grid = document.getElementById('topicGrid');
     grid.innerHTML = '';
+    // Bản đồ hành trình: đánh dấu chủ đề TIẾP THEO bé chưa học (dù đang khoá hay không) bằng
+    // 1 mascot nhảy nhót ở đúng vị trí, để bé biết "mình đang ở đâu" trên con đường 10 chủ đề.
+    const nextUpTopic = TOPICS.find(t => !progress.doneTopics[t.id]);
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      btn.className = 'topic-card ' + topic.cls + (progress.doneTopics[topic.id] ? ' is-done' : '') + topicLockClasses(topic);
+      const isCurrent = !!nextUpTopic && topic.id === nextUpTopic.id;
+      btn.className = 'topic-card ' + topic.cls + (progress.doneTopics[topic.id] ? ' is-done' : '') + topicLockClasses(topic) + (isCurrent ? ' is-current' : '');
       btn.innerHTML =
+        (isCurrent ? '<span class="current-badge">🦊</span>' : '') +
         (isTopicLocked(topic) ? topicLockBadgeHtml(topic) : '<span class="done-badge">✓ Đã học</span>') +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
@@ -1653,6 +1748,7 @@
     renderTotalStars();
     renderHomeBanners();
     renderReviewButtons();
+    renderDailyMissions();
   }
 
   // ---------- FLASHCARDS ----------
@@ -1800,9 +1896,10 @@
   // tiêu. Đây là cách khả thi duy nhất cho 1 app miễn phí không có backend riêng, vẫn tạo được
   // cảm giác "được chấm điểm khi đọc" cho bé. Tự ẩn nút nếu trình duyệt không hỗ trợ (VD Safari
   // cũ) để không có nút bấm vào không chạy gì.
-  // TẠM ẨN theo yêu cầu (2026-09-16) — đổi READ_ALOUD_ENABLED = true để bật lại, không cần sửa
-  // gì khác trong khối này.
-  const READ_ALOUD_ENABLED = false;
+  // Từng tạm ẩn (2026-09-16) vì hay nhận diện sai — bật lại (2026-09-21) sau khi đổi cách chấm
+  // sang xét NHIỀU phương án nhận dạng (maxAlternatives) thay vì chỉ phương án tốt nhất, và nới
+  // ngưỡng cho từ ngắn (xem scoreReading/readRecognition.onresult bên dưới).
+  const READ_ALOUD_ENABLED = true;
   const SpeechRecognitionCtor = READ_ALOUD_ENABLED ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
   const readAloudBtn = document.getElementById('readAloudBtn');
   const readFeedbackEl = document.getElementById('readFeedback');
@@ -1846,15 +1943,22 @@
       readFeedbackEl.className = 'read-feedback ' + cls;
       readFeedbackEl.hidden = false;
     }
-    function scoreReading(transcript, target) {
-      const heard = normalizeSpeech(transcript);
+    // Xét CẢ DÀN phương án nhận dạng (không chỉ phương án tốt nhất) rồi lấy điểm giống cao nhất —
+    // giọng bé thường khiến engine xếp phương án đúng ở vị trí 2-3 chứ không phải đầu tiên, đây là
+    // nguyên nhân chính gây báo sai trước đây. Từ ngắn (<=4 ký tự, chiếm phần lớn từ vựng ở app
+    // này) cũng được nới: lệch đúng 1 ký tự vẫn tính "Khá đó" thay vì "Chưa đúng", vì trên từ ngắn
+    // 1 ký tự lệch đã kéo tỉ lệ giống (Levenshtein/độ dài) xuống rất thấp dù về cơ bản đọc đúng.
+    function scoreReading(transcripts, target) {
+      const heardList = (Array.isArray(transcripts) ? transcripts : [transcripts]).map(normalizeSpeech).filter(Boolean);
       const targetNorm = normalizeSpeech(target);
-      if (!heard) { showReadFeedback('😶 Chưa nghe rõ, bé đọc to hơn nhé!', 'is-retry'); return; }
-      if (heard === targetNorm || heard.split(' ').includes(targetNorm)) {
+      if (!heardList.length) { showReadFeedback('😶 Chưa nghe rõ, bé đọc to hơn nhé!', 'is-retry'); return; }
+      if (heardList.some(h => h === targetNorm || h.split(' ').includes(targetNorm))) {
         showReadFeedback('🌟 Xuất sắc! Đọc chuẩn quá!', 'is-good');
         return;
       }
-      if (similarity(heard, targetNorm) >= 0.55) {
+      const bestSim = Math.max(...heardList.map(h => similarity(h, targetNorm)));
+      const closeShortWord = targetNorm.length <= 4 && heardList.some(h => levenshtein(h, targetNorm) <= 1);
+      if (bestSim >= 0.55 || closeShortWord) {
         showReadFeedback('👍 Khá đó! Đọc lại cho thật chuẩn nhé.', 'is-okay');
       } else {
         showReadFeedback('🔁 Chưa đúng, bé nghe lại rồi đọc theo nhé!', 'is-retry');
@@ -1867,7 +1971,7 @@
       readRecognition = new SpeechRecognitionCtor();
       readRecognition.lang = 'en-US';
       readRecognition.interimResults = false;
-      readRecognition.maxAlternatives = 1;
+      readRecognition.maxAlternatives = 5;
 
       isListeningRead = true;
       readAloudBtn.classList.add('is-listening');
@@ -1875,7 +1979,9 @@
       readFeedbackEl.hidden = true;
 
       readRecognition.onresult = (e) => {
-        scoreReading(e.results[0][0].transcript, word.en);
+        const alternatives = [];
+        for (let i = 0; i < e.results[0].length; i++) alternatives.push(e.results[0][i].transcript);
+        scoreReading(alternatives, word.en);
       };
       readRecognition.onerror = (e) => {
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -2152,6 +2258,8 @@
             setTimeout(() => {
               document.getElementById('matchWrap').hidden = true;
               document.getElementById('matchDoneWrap').hidden = false;
+              bumpDailyMission('games');
+              saveProgress(progress);
             }, 500);
           } else {
             setTimeout(finishTopic, 600);
@@ -2278,6 +2386,7 @@
           document.getElementById('spellingProgressFill').style.width = '100%';
           document.getElementById('spellingWrap').hidden = true;
           document.getElementById('spellingDoneWrap').hidden = false;
+          bumpDailyMission('games');
           saveProgress(progress);
         } else {
           renderSpellingWord();
@@ -2401,6 +2510,7 @@
     const starsEarned = speedCorrectCount + bonus;
     const oldStars = progress.stars;
     addStars(starsEarned);
+    bumpDailyMission('games');
     saveProgress(progress);
     updateStreakOnComplete();
 
@@ -2434,6 +2544,44 @@
   let quizParentIndex = 0;
   let quizParentScore = 0;
 
+  // "Thách đấu": ba mẹ có 1 khoảng thời gian giới hạn để đoán trước khi bị tính hết giờ (coi như
+  // đoán sai) — biến "Đố ba mẹ" từ chỗ chỉ có bé chấm đúng/sai thành có chút áp lực thời gian,
+  // vui hơn cho cả nhà thay vì đoán từ từ không giới hạn như trước.
+  const QUIZPARENT_TIME_LIMIT = 10;
+  let quizParentTimerId = null;
+  let quizParentTimeLeft = 0;
+
+  function stopQuizParentTimer() {
+    if (quizParentTimerId) { clearInterval(quizParentTimerId); quizParentTimerId = null; }
+  }
+  function startQuizParentTimer() {
+    stopQuizParentTimer();
+    quizParentTimeLeft = QUIZPARENT_TIME_LIMIT;
+    const timerEl = document.getElementById('quizParentTimer');
+    timerEl.hidden = false;
+    timerEl.classList.remove('is-urgent');
+    timerEl.textContent = '⏱️ ' + quizParentTimeLeft;
+    quizParentTimerId = setInterval(() => {
+      quizParentTimeLeft--;
+      timerEl.textContent = '⏱️ ' + quizParentTimeLeft;
+      timerEl.classList.toggle('is-urgent', quizParentTimeLeft <= 3);
+      if (quizParentTimeLeft <= 0) {
+        stopQuizParentTimer();
+        handleQuizParentTimeout();
+      }
+    }, 1000);
+  }
+  // Hết giờ trước khi ba mẹ bấm "Xem đáp án" — tự lộ đáp án + tính là 1 câu chưa đoán được,
+  // nhưng vẫn khựng lại 1 chút cho ba mẹ kịp đọc đáp án trước khi sang câu tiếp theo.
+  function handleQuizParentTimeout() {
+    document.getElementById('quizParentTimer').hidden = true;
+    document.getElementById('quizParentAnswer').hidden = false;
+    document.getElementById('quizParentRevealBtn').hidden = true;
+    document.getElementById('quizParentJudge').hidden = true;
+    showToast('⏰ Hết giờ rồi! Đáp án là "' + quizParentWords[quizParentIndex].en + '".', '⏰');
+    setTimeout(() => judgeQuizParent(false), 1400);
+  }
+
   function startQuizParent(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
@@ -2457,9 +2605,12 @@
     document.getElementById('quizParentAnswer').hidden = true;
     document.getElementById('quizParentRevealBtn').hidden = false;
     document.getElementById('quizParentJudge').hidden = true;
+    startQuizParentTimer();
   }
 
   document.getElementById('quizParentRevealBtn').addEventListener('click', () => {
+    stopQuizParentTimer();
+    document.getElementById('quizParentTimer').hidden = true;
     document.getElementById('quizParentAnswer').hidden = false;
     document.getElementById('quizParentRevealBtn').hidden = true;
     document.getElementById('quizParentJudge').hidden = false;
@@ -2475,9 +2626,11 @@
   document.getElementById('quizParentNoBtn').addEventListener('click', () => judgeQuizParent(false));
 
   function endQuizParent() {
+    stopQuizParentTimer();
     const bonus = 2;
     const oldStars = progress.stars;
     addStars(bonus);
+    bumpDailyMission('games');
     saveProgress(progress);
     updateStreakOnComplete();
 
@@ -2490,7 +2643,7 @@
     celebrate(quizParentScore === quizParentWords.length, oldStars);
   }
 
-  document.getElementById('backFromQuizParent').addEventListener('click', () => showScreen('games'));
+  document.getElementById('backFromQuizParent').addEventListener('click', () => { stopQuizParentTimer(); showScreen('games'); });
   document.getElementById('quizParentReplayBtn').addEventListener('click', () => startQuizParent(currentTopic.id));
   document.getElementById('quizParentOtherTopicBtn').addEventListener('click', () => showScreen('games'));
 

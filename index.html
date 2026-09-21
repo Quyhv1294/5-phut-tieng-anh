@@ -88,6 +88,13 @@
     <div class="streak-banner" id="streakBanner" hidden>
       <span class="streak-emoji">🔥</span>
       <span>Bé đã học <strong id="streakCount">0</strong> ngày liên tiếp — giỏi quá!</span>
+      <span class="streak-freeze-badge" id="streakFreezeBadge" hidden>🛡️×<span id="streakFreezeCount">0</span></span>
+    </div>
+
+    <div class="section-label">✅ Nhiệm vụ hôm nay</div>
+    <div class="daily-mission-card">
+      <div class="daily-mission-list" id="dailyMissionList"></div>
+      <p class="daily-mission-claimed" id="dailyMissionClaimed" hidden>🎉 Bé đã xong hết nhiệm vụ hôm nay, được thưởng thêm sao rồi!</p>
     </div>
 
     <div class="section-label">🔁 Ôn tập</div>
@@ -98,7 +105,7 @@
     </div>
 
     <div class="section-label">10 chủ đề từ vựng</div>
-    <div class="topic-grid" id="topicGrid"></div>
+    <div class="topic-path" id="topicGrid"></div>
 
     <div class="home-footnote">"5 Phút Tiếng Anh Mỗi Ngày" 💚</div>
   </section>
@@ -500,6 +507,7 @@
     </div>
     <div class="quizparent-wrap" id="quizParentWrap">
       <p class="quizparent-hint">Bé đưa màn hình cho ba mẹ xem hình rồi đố ba mẹ đoán từ tiếng Anh nhé!</p>
+      <div class="quizparent-timer" id="quizParentTimer" hidden>⏱️ 10</div>
       <div class="quizparent-card">
         <div class="quizparent-emoji" id="quizParentEmoji">🐱</div>
         <div class="quizparent-answer" id="quizParentAnswer" hidden>
@@ -567,11 +575,11 @@
     <div class="onboarding-steps">
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📚</span>
-        <span><strong>Học</strong> — chọn chủ đề, học 10 từ vựng mới bằng flashcard rồi làm mini quiz; sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết. Học/ôn xong còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "Ôn tập thông minh", "Luyện từ khó" và "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
+        <span><strong>Học</strong> — chọn chủ đề, học 10 từ vựng mới bằng flashcard rồi làm mini quiz; sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết. Học/ôn xong còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "✅ Nhiệm vụ hôm nay" (hoàn thành cả 3 việc nhỏ được thưởng thêm sao) và "Ôn tập thông minh", "Luyện từ khó", "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🎮</span>
-        <span><strong>Trò chơi</strong> — chọn "Ghép tranh", "Xếp chữ", "Tính giờ" hoặc "🎤 Đố ba mẹ" (bé đưa máy cho ba mẹ xem hình và đố ngược lại) để ôn từ vựng; chế độ tính giờ càng nhanh càng được nhiều sao!</span>
+        <span><strong>Trò chơi</strong> — chọn "Ghép tranh", "Xếp chữ", "Tính giờ" hoặc "🎤 Đố ba mẹ" (bé đưa máy cho ba mẹ xem hình, ba mẹ có 10 giây để đoán trước khi bị tính hết giờ) để ôn từ vựng; chế độ tính giờ càng nhanh càng được nhiều sao!</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💬</span>
