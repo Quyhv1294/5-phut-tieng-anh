@@ -346,10 +346,26 @@
   function isTopicLocked(topic) {
     return !!topic.unlocksAt && !progress.purchasedTopics[topic.id];
   }
+  // Đang khoá NHƯNG đã đủ sao để mua — dùng để tô đậm/đổi icon riêng cho card, tránh trông
+  // giống hệt trạng thái "còn khoá, chưa đủ sao" (2 trạng thái này trước đây chỉ khác nhau ở
+  // 1 dòng chữ nhỏ, rất dễ bị bỏ qua).
+  function isTopicBuyable(topic) {
+    return isTopicLocked(topic) && isFinite(topic.unlocksAt) && progress.stars >= topic.unlocksAt;
+  }
   function starsNeededText(topic) {
     if (!isFinite(topic.unlocksAt)) return 'Sắp mở khoá';
     if (progress.stars < topic.unlocksAt) return 'Cần thêm ' + Math.max(0, topic.unlocksAt - progress.stars) + ' sao';
-    return 'Bấm để mua · ' + topic.unlocksAt + ' sao';
+    return 'Mua ngay · ' + topic.unlocksAt + '⭐ (đang có ' + progress.wallet + ')';
+  }
+  // Class/badge dùng chung cho mọi nơi vẽ topic-card, để card "đủ sao, có thể mua" luôn được tô
+  // đậm + đổi icon giỏ hàng nhất quán — thay vì trông y hệt card còn khoá hẳn ở mọi màn hình.
+  function topicLockClasses(topic) {
+    if (!isTopicLocked(topic)) return '';
+    return isTopicBuyable(topic) ? ' is-locked is-buyable' : ' is-locked';
+  }
+  function topicLockBadgeHtml(topic) {
+    if (!isTopicLocked(topic)) return '';
+    return isTopicBuyable(topic) ? '<span class="buy-badge">🛒 Mua</span>' : '<span class="lock-badge">🔒</span>';
   }
   // Gọi lại toàn bộ màn hình có hiển thị lưới chủ đề, để bỏ khoá ngay sau khi bé vừa mua thành công.
   function refreshTopicGrids() {
@@ -518,7 +534,10 @@
       showToast('💰 Bé cần để dành đủ ' + cost + ' sao (đang có ' + progress.wallet + ') để mua chủ đề "' + topic.label + '"!', '💰');
       return;
     }
-    const ok = await showConfirmDialog('Dùng ' + cost + ' sao để mua chủ đề "' + topic.label + '"?', { okLabel: 'Mua ngay' });
+    const ok = await showConfirmDialog(
+      'Dùng ' + cost + ' sao để mua chủ đề "' + topic.label + '"? (còn lại ' + (progress.wallet - cost) + ' sao sau khi mua)',
+      { okLabel: 'Mua ngay' }
+    );
     if (!ok) return;
     progress.wallet -= cost;
     progress.purchasedTopics[topic.id] = true;
@@ -647,11 +666,11 @@
     TOPICS.forEach(topic => {
       const done = !!progress.doneTopics[topic.id];
       const row = document.createElement('div');
-      row.className = 'progress-row' + (done ? ' is-done' : '') + (isTopicLocked(topic) ? ' is-locked' : '');
+      row.className = 'progress-row' + (done ? ' is-done' : '') + topicLockClasses(topic);
       row.innerHTML =
         '<span class="pr-emoji">' + topic.emoji + '</span>' +
         '<span class="pr-label">' + topic.label + '</span>' +
-        '<span class="pr-status">' + (isTopicLocked(topic) ? '🔒 ' + starsNeededText(topic) : (done ? '✓ Đã học' : 'Chưa học')) + '</span>';
+        '<span class="pr-status">' + (isTopicLocked(topic) ? (isTopicBuyable(topic) ? '🛒 ' : '🔒 ') + starsNeededText(topic) : (done ? '✓ Đã học' : 'Chưa học')) + '</span>';
       list.appendChild(row);
     });
   }
@@ -828,12 +847,12 @@
       const equipped = progress.equippedOutfit === outfit.id;
       if (owned) ownedCount++;
       const card = document.createElement('button');
-      card.className = 'outfit-card' + (owned ? ' is-owned' : '') + (equipped ? ' is-equipped' : '');
+      card.className = 'outfit-card' + (owned ? ' is-owned' : '') + (equipped ? ' is-equipped' : '') + (buyable ? ' is-buyable' : '');
       const countText = owned ? (equipped ? 'Bấm để cởi ra' : 'Bấm để mặc vào') :
-        buyable ? 'Bấm để mua · ' + outfit.unlocksAt + ' sao' :
+        buyable ? 'Mua ngay · ' + outfit.unlocksAt + '⭐ (đang có ' + progress.wallet + ')' :
         'Cần thêm ' + (outfit.unlocksAt - progress.stars) + ' sao';
       card.innerHTML =
-        (equipped ? '<span class="done-badge">✓ Đang mặc</span>' : '') +
+        (equipped ? '<span class="done-badge">✓ Đang mặc</span>' : buyable ? '<span class="buy-badge">🛒 Mua</span>' : '') +
         '<span class="emoji">' + outfit.emoji + '</span>' +
         '<span class="label">' + outfit.label + '</span>' +
         '<span class="count">' + countText + '</span>';
@@ -858,7 +877,10 @@
         showToast('💰 Bé cần để dành đủ ' + cost + ' sao (đang có ' + progress.wallet + ') để mua "' + outfit.label + '"!', '💰');
         return;
       }
-      const ok = await showConfirmDialog('Dùng ' + cost + ' sao để mua trang phục "' + outfit.label + '"?', { okLabel: 'Mua ngay' });
+      const ok = await showConfirmDialog(
+        'Dùng ' + cost + ' sao để mua trang phục "' + outfit.label + '"? (còn lại ' + (progress.wallet - cost) + ' sao sau khi mua)',
+        { okLabel: 'Mua ngay' }
+      );
       if (!ok) return;
       progress.wallet -= cost;
       progress.purchasedOutfits[outfit.id] = true;
@@ -1335,14 +1357,14 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      btn.className = 'topic-card ' + topic.cls + (isTopicLocked(topic) ? ' is-locked' : '');
+      btn.className = 'topic-card ' + topic.cls + topicLockClasses(topic);
       const countText = isTopicLocked(topic) ? starsNeededText(topic) :
         gamesMode === 'match' ? 'Ghép ' + Math.min(MATCH_PAIR_COUNT, topic.words.length) + ' cặp' :
         gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
         gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
         'Đố ba mẹ ' + Math.min(QUIZPARENT_WORD_COUNT, topic.words.length) + ' từ';
       btn.innerHTML =
-        (isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '') +
+        topicLockBadgeHtml(topic) +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + countText + '</span></span>';
@@ -1378,13 +1400,13 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      btn.className = 'topic-card ' + topic.cls + (isTopicLocked(topic) ? ' is-locked' : '');
+      btn.className = 'topic-card ' + topic.cls + topicLockClasses(topic);
       const countText = isTopicLocked(topic) ? starsNeededText(topic) :
         sentencesMode === 'read' ? topic.words.length + ' câu' :
         sentencesMode === 'reverse' ? 'Đoán ' + Math.min(REVERSE_WORD_COUNT, topic.words.length) + ' từ' :
         'Điền ' + Math.min(FILLBLANK_WORD_COUNT, topic.words.length) + ' câu';
       btn.innerHTML =
-        (isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '') +
+        topicLockBadgeHtml(topic) +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + countText + '</span></span>';
@@ -1619,9 +1641,9 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      btn.className = 'topic-card ' + topic.cls + (progress.doneTopics[topic.id] ? ' is-done' : '') + (isTopicLocked(topic) ? ' is-locked' : '');
+      btn.className = 'topic-card ' + topic.cls + (progress.doneTopics[topic.id] ? ' is-done' : '') + topicLockClasses(topic);
       btn.innerHTML =
-        (isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '<span class="done-badge">✓ Đã học</span>') +
+        (isTopicLocked(topic) ? topicLockBadgeHtml(topic) : '<span class="done-badge">✓ Đã học</span>') +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + (isTopicLocked(topic) ? starsNeededText(topic) : topic.words.length + ' từ vựng') + '</span></span>';

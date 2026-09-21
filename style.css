@@ -286,6 +286,16 @@
     font-size: 14px;
     padding: 3px 9px;
   }
+  /* Đủ sao để mua nhưng chưa mua — KHÔNG được trông xám xịt/mờ như "còn khoá hẳn", nếu không
+     bé/ba mẹ dễ bỏ qua cơ hội mua vì tưởng vẫn đang khoá như cũ. */
+  .topic-card.is-locked.is-buyable { filter: none; opacity: 1; box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
+  .topic-card .buy-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--accent); color: var(--accent-ink);
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 800;
+    padding: 3px 9px;
+  }
 
   .t-pink { background: var(--pink); color: var(--pink-ink); }
   .t-blue { background: var(--blue); color: var(--blue-ink); }
@@ -541,6 +551,8 @@
   .progress-row.is-done { border-color: var(--teal); }
   .progress-row.is-done .pr-status { color: var(--teal-ink); }
   .progress-row.is-locked { opacity: 0.65; }
+  .progress-row.is-locked.is-buyable { opacity: 1; border-color: var(--accent); }
+  .progress-row.is-locked.is-buyable .pr-status { color: var(--accent-ink); }
 
   .progress-actions { display: flex; flex-direction: column; gap: 10px; }
   .progress-actions .ghost-btn { align-self: stretch; }
@@ -627,13 +639,17 @@
   .outfit-card .count { font-size: 11px; font-weight: 700; color: var(--ink-soft); }
   .outfit-card.is-owned { border-color: var(--gold); background: var(--surface-2); }
   .outfit-card.is-equipped { border-color: var(--accent); box-shadow: var(--shadow); }
-  .outfit-card .done-badge {
+  /* Đủ sao để mua nhưng chưa mua — viền đứt nét màu accent để phân biệt rõ với "đã sở hữu"
+     (viền vàng liền) và "đang mặc" (viền accent liền), tránh trông giống thẻ mặc định vô hại. */
+  .outfit-card.is-buyable { border: 2px dashed var(--accent); }
+  .outfit-card .done-badge, .outfit-card .buy-badge {
     position: absolute; top: 8px; right: 8px;
-    background: rgba(255,255,255,0.75);
     border-radius: 999px;
     font-size: 10px; font-weight: 800;
     padding: 2px 7px;
   }
+  .outfit-card .done-badge { background: rgba(255,255,255,0.75); }
+  .outfit-card .buy-badge { background: var(--accent); color: var(--accent-ink); }
 
   /* RƯƠNG MAY MẮN (màn Hoàn thành) */
   .chest-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -831,12 +847,6 @@
   .judge-btn:active { transform: scale(0.96); }
   .judge-btn.is-yes { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface)); }
   .judge-btn.is-no { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 18%, var(--surface)); }
-  #screen-quizparent .match-done-wrap .ghost-btn {
-    border: none; background: var(--blue); color: var(--blue-ink);
-    font-family: 'Baloo 2'; font-weight: 800; font-size: 15.5px;
-    padding: 13px 22px; box-shadow: var(--shadow);
-  }
-  #screen-quizparent .match-done-wrap .ghost-btn:active { transform: translateY(3px); box-shadow: none; }
 
   .cta-btn {
     border: none; border-radius: 16px; background: var(--accent); color: var(--accent-ink);
@@ -851,8 +861,22 @@
     font-family: 'Quicksand'; font-weight: 700; font-size: 14.5px;
     padding: 11px 20px; border-radius: 12px; cursor: pointer;
   }
-  .ghost-btn--muted { align-self: center; margin-top: 6px; }
-  .ghost-btn--danger { align-self: center; color: var(--danger-ink); border-color: var(--danger); }
+  /* .ghost-btn--muted/--danger cũng nổi trực tiếp trên ảnh nền (màn Cài đặt không có thẻ nền
+     riêng) — thêm nền liền khối để không bị chìm, nhưng KHÔNG dùng chung màu xanh với
+     .ghost-btn--solid vì 2 nút này có ý nghĩa khác (nhấn mạnh cảnh báo / cố tình mờ nhạt hơn CTA
+     chính), nên vẫn giữ tông màu viền riêng, chỉ đổi nền từ trong suốt sang đặc. */
+  .ghost-btn--muted { align-self: center; margin-top: 6px; background: var(--surface); box-shadow: var(--shadow); }
+  .ghost-btn--danger { align-self: center; color: var(--danger-ink); border-color: var(--danger); background: var(--surface); box-shadow: var(--shadow); }
+  /* Nút phụ nổi trực tiếp trên ảnh nền (màn "Xong rồi!"/"Học tiếp" — không có thẻ nền riêng) —
+     nền trong suốt của .ghost-btn mặc định dễ chìm vào ảnh nền, nên đổi hẳn sang nền liền khối.
+     Cùng 1 kiểu cho MỌI nút "Chọn chủ đề khác"/"Học tiếp"/"Học lại"/"In flashcard", tránh lặp lại
+     kiểu vá lẻ tẻ từng màn một như trước (đã từng chỉ sửa riêng màn Đố ba mẹ). */
+  .ghost-btn--solid {
+    border: none; background: var(--blue); color: var(--blue-ink);
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 15.5px;
+    padding: 13px 22px; box-shadow: var(--shadow);
+  }
+  .ghost-btn--solid:active { transform: translateY(3px); box-shadow: none; }
 
   [hidden] { display: none !important; }
 
@@ -1067,6 +1091,8 @@
 
     .ghost-btn { transition: transform .2s ease, border-color .2s ease; }
     .ghost-btn:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .ghost-btn--solid { transition: transform .2s ease, box-shadow .2s ease; }
+    .ghost-btn--solid:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(111,168,220,0.4); }
 
     .confirm-ok-btn { transition: transform .2s ease, box-shadow .2s ease; }
     .confirm-ok-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(74,63,53,0.2); }
