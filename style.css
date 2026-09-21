@@ -251,10 +251,30 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
-  /* BẢN ĐỒ HÀNH TRÌNH (trang chủ) — cùng 1 danh sách .topic-card như .topic-grid, chỉ đổi cách
-     xếp: 1 cột, so le trái/phải nối bằng đường đứt nét ở giữa, tạo cảm giác "con đường" bé đang
-     đi thay vì 1 lưới ô vuông tĩnh. Tab Trò chơi/Câu/Tiến độ vẫn giữ .topic-grid (chọn nhanh 1
-     hoạt động, không cần cảm giác hành trình). */
+  /* BẢN ĐỒ KHO BÁU (trang chủ) — cùng 1 danh sách .topic-card như .topic-grid, chỉ đổi cách xếp:
+     1 cột, so le trái/phải nối bằng con đường đứt nét ở giữa như đường mòn trên bản đồ kho báu,
+     mỗi điểm dừng đánh số thứ tự, kết thúc bằng 1 rương kho báu. Tab Trò chơi/Câu/Tiến độ vẫn giữ
+     .topic-grid (chọn nhanh 1 hoạt động, không cần cảm giác hành trình).
+     Toàn bộ hoạ tiết (giấy da, la bàn, rương...) đều vẽ bằng CSS/emoji — không dùng ảnh ngoài, để
+     nhẹ, tự đổi màu theo giao diện sáng/tối, và khớp phong cách "vẽ tay" đã dùng ở bức tranh ghép
+     hình trong mục Sưu tập. */
+  .treasure-map {
+    position: relative;
+    background: linear-gradient(155deg, var(--surface-2), var(--surface));
+    border: 3px dashed var(--gold-ink);
+    border-radius: 26px;
+    padding: 34px 14px 22px;
+  }
+  .treasure-map-compass {
+    position: absolute; top: 14px; right: 18px;
+    font-size: 28px; transform: rotate(12deg);
+    opacity: 0.85;
+  }
+  .treasure-map-start {
+    text-align: center; margin: 0 0 18px;
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 14px;
+    color: var(--ink-soft);
+  }
   .topic-path {
     position: relative;
     display: flex;
@@ -266,7 +286,8 @@
     content: '';
     position: absolute;
     left: 50%; top: 6px; bottom: 6px;
-    border-left: 4px dashed var(--line);
+    border-left: 4px dashed var(--gold-ink);
+    opacity: 0.55;
     transform: translateX(-50%);
     z-index: 0;
   }
@@ -274,15 +295,40 @@
   .topic-path .topic-card:nth-child(odd) { align-self: flex-start; }
   .topic-path .topic-card:nth-child(even) { align-self: flex-end; }
   .topic-path .topic-card.is-current { box-shadow: 0 0 0 3px var(--teal), var(--shadow); }
+  .topic-path .topic-card .stop-number {
+    position: absolute; top: -8px; left: -8px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--gold); color: var(--gold-ink);
+    border: 2px solid var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 12px;
+    box-shadow: var(--shadow);
+  }
   .topic-path .topic-card .current-badge {
-    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-    font-size: 26px; line-height: 1;
+    position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center;
+    font-size: 26px; line-height: 1.1; white-space: nowrap;
     animation: current-badge-bounce 1.2s ease-in-out infinite;
+  }
+  .topic-path .topic-card .current-badge small {
+    font-size: 10px; font-weight: 800; font-family: 'Baloo 2';
+    background: var(--teal); color: #fff;
+    border-radius: 999px; padding: 1px 7px; margin-top: 2px;
   }
   @keyframes current-badge-bounce {
     0%, 100% { transform: translateX(-50%) translateY(0); }
     50% { transform: translateX(-50%) translateY(-6px); }
   }
+  .treasure-map-chest {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    margin-top: 26px; padding-top: 18px;
+    border-top: 3px dashed var(--gold-ink);
+    text-align: center;
+  }
+  .treasure-map-chest .chest-icon { font-size: 48px; filter: grayscale(0.6); opacity: 0.7; }
+  .treasure-map-chest .chest-label { font-weight: 700; font-size: 13px; color: var(--ink-soft); max-width: 220px; }
+  .treasure-map-chest.is-open .chest-icon { filter: none; opacity: 1; animation: current-badge-bounce 1s ease-in-out infinite; }
+  .treasure-map-chest.is-open .chest-label { color: var(--gold-ink); font-weight: 800; }
   @media (max-width: 380px) {
     .topic-path .topic-card { width: 72%; }
   }

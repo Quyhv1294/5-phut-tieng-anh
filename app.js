@@ -1732,12 +1732,13 @@
     // Bản đồ hành trình: đánh dấu chủ đề TIẾP THEO bé chưa học (dù đang khoá hay không) bằng
     // 1 mascot nhảy nhót ở đúng vị trí, để bé biết "mình đang ở đâu" trên con đường 10 chủ đề.
     const nextUpTopic = TOPICS.find(t => !progress.doneTopics[t.id]);
-    TOPICS.forEach(topic => {
+    TOPICS.forEach((topic, i) => {
       const btn = document.createElement('button');
       const isCurrent = !!nextUpTopic && topic.id === nextUpTopic.id;
       btn.className = 'topic-card ' + topic.cls + (progress.doneTopics[topic.id] ? ' is-done' : '') + topicLockClasses(topic) + (isCurrent ? ' is-current' : '');
       btn.innerHTML =
-        (isCurrent ? '<span class="current-badge">🦊</span>' : '') +
+        '<span class="stop-number">' + (i + 1) + '</span>' +
+        (isCurrent ? '<span class="current-badge">🦊<small>Bé ở đây!</small></span>' : '') +
         (isTopicLocked(topic) ? topicLockBadgeHtml(topic) : '<span class="done-badge">✓ Đã học</span>') +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
@@ -1745,6 +1746,13 @@
       btn.addEventListener('click', () => startTopic(topic.id));
       grid.appendChild(btn);
     });
+    // Rương kho báu cuối bản đồ — mở ra khi bé học xong TRỌN VẸN cả 10 chủ đề, dùng lại đúng điều
+    // kiện của huy hiệu "all_topics" (BADGES) cho nhất quán, không cần thêm cờ theo dõi riêng.
+    const treasureFound = TOPICS.every(t => progress.doneTopics[t.id]);
+    document.getElementById('treasureChest').classList.toggle('is-open', treasureFound);
+    document.getElementById('treasureChestIcon').textContent = treasureFound ? '💰' : '📦';
+    document.getElementById('treasureChestLabel').textContent = treasureFound
+      ? 'Bé đã tìm ra kho báu, giỏi quá!' : 'Kho báu bí mật — học hết 10 chủ đề để mở khoá!';
     renderTotalStars();
     renderHomeBanners();
     renderReviewButtons();
