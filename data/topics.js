@@ -93,4 +93,18 @@
         { en: 'BIKE', vi: 'Xe đạp', emoji: '🚲', example: 'I ride my BIKE.', exampleVi: 'Con đạp xe đạp.' },
         { en: 'PLANE', vi: 'Máy bay', emoji: '✈️', example: 'The PLANE can fly.', exampleVi: 'Máy bay biết bay.' },
       ] },
+    { id: 'fruits', label: 'Trái cây', emoji: '🍇', cls: 't-pink', unlocksAt: 500,
+      words: [
+        { en: 'BANANA', vi: 'Chuối', emoji: '🍌', example: 'I eat a BANANA.', exampleVi: 'Con ăn một quả chuối.' },
+        { en: 'MANGO', vi: 'Xoài', emoji: '🥭', example: 'I like MANGO.', exampleVi: 'Con thích xoài.' },
+        { en: 'GRAPE', vi: 'Nho', emoji: '🍇', example: 'I eat a GRAPE.', exampleVi: 'Con ăn một quả nho.' },
+        { en: 'WATERMELON', vi: 'Dưa hấu', emoji: '🍉', example: 'I like WATERMELON.', exampleVi: 'Con thích dưa hấu.' },
+      ] },
+    { id: 'toys', label: 'Đồ chơi', emoji: '🧸', cls: 't-blue', unlocksAt: 500,
+      words: [
+        { en: 'BALLOON', vi: 'Bóng bay', emoji: '🎈', example: 'I have a BALLOON.', exampleVi: 'Con có một quả bóng bay.' },
+        { en: 'YOYO', vi: 'Con quay yoyo', emoji: '🪀', example: 'I play with my YOYO.', exampleVi: 'Con chơi với yoyo của con.' },
+        { en: 'BEAR', vi: 'Gấu bông', emoji: '🧸', example: 'I hug my BEAR.', exampleVi: 'Con ôm gấu bông của con.' },
+        { en: 'GIFT', vi: 'Quà tặng', emoji: '🎁', example: 'I open my GIFT.', exampleVi: 'Con mở quà của con.' },
+      ] },
   ];

@@ -107,5 +107,14 @@ const EMOJI_ICONS = {
   "🟠": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Orange%20circle/3D/orange_circle_3d.png",
   "🟣": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Purple%20circle/3D/purple_circle_3d.png",
   "🟤": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Brown%20circle/3D/brown_circle_3d.png",
-  "🌈": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Rainbow/3D/rainbow_3d.png"
+  "🌈": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Rainbow/3D/rainbow_3d.png",
+
+  "🍌": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Banana/3D/banana_3d.png",
+  "🥭": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Mango/3D/mango_3d.png",
+  "🍇": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Grapes/3D/grapes_3d.png",
+  "🍉": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Watermelon/3D/watermelon_3d.png",
+  "🎈": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Balloon/3D/balloon_3d.png",
+  "🪀": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Yo-yo/3D/yo-yo_3d.png",
+  "🧸": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Teddy%20bear/3D/teddy_bear_3d.png",
+  "🎁": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Wrapped%20gift/3D/wrapped_gift_3d.png"
 };

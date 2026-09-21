@@ -691,7 +691,7 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     /* grid-auto-rows (không phải grid-template-rows cố định số hàng) để tự khớp đúng số hàng
-       PUZZLE_ROWS tính trong app.js (phụ thuộc số chủ đề hiện có, hiện là 10 chủ đề / 4 cột = 3
+       PUZZLE_ROWS tính trong app.js (phụ thuộc số chủ đề hiện có, hiện là 12 chủ đề / 4 cột = 3
        hàng) — trước đây cố định "repeat(2, 1fr)" nên khi thêm chủ đề 9-10 làm PUZZLE_ROWS tăng
        lên 3 mà quên đổi CSS theo, khiến hàng cuối bị co gần như biến mất. */
     grid-auto-rows: 1fr;

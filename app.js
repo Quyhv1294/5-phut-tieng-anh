@@ -1834,13 +1834,13 @@
       btn.addEventListener('click', () => startTopic(topic.id));
       grid.appendChild(btn);
     });
-    // Rương kho báu cuối bản đồ — mở ra khi bé học xong TRỌN VẸN cả 10 chủ đề, dùng lại đúng điều
-    // kiện của huy hiệu "all_topics" (BADGES) cho nhất quán, không cần thêm cờ theo dõi riêng.
+    // Rương kho báu cuối bản đồ — mở ra khi bé học xong TRỌN VẸN mọi chủ đề hiện có, dùng lại đúng
+    // điều kiện của huy hiệu "all_topics" (BADGES) cho nhất quán, không cần thêm cờ theo dõi riêng.
     const treasureFound = TOPICS.every(t => progress.doneTopics[t.id]);
     document.getElementById('treasureChest').classList.toggle('is-open', treasureFound);
     document.getElementById('treasureChestIcon').textContent = treasureFound ? '💰' : '📦';
     document.getElementById('treasureChestLabel').textContent = treasureFound
-      ? 'Bé đã tìm ra kho báu, giỏi quá!' : 'Kho báu bí mật — học hết 10 chủ đề để mở khoá!';
+      ? 'Bé đã tìm ra kho báu, giỏi quá!' : 'Kho báu bí mật — học hết ' + TOPICS.length + ' chủ đề để mở khoá!';
     renderTotalStars();
     renderHomeBanners();
     renderReviewButtons();
