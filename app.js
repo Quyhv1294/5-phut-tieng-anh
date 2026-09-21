@@ -988,17 +988,17 @@
   }
 
   // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
-  // Cập nhật icon phụ kiện đang "mặc" hiển thị đè lên mascot ở góc trên — gọi lại mỗi khi
-  // equippedOutfit đổi hoặc lúc khởi động app.
+  // Cập nhật icon phụ kiện đang "mặc" — hiện ở CẢ 2 nơi: badge nhỏ đè lên mascot góc trên, và badge
+  // to hơn đè lên hình chú cáo toàn thân (assets/mascot-fox.png) ở đầu màn Trang phục. Gọi lại mỗi
+  // khi equippedOutfit đổi hoặc lúc khởi động app.
   function renderMascotAccessory() {
-    const el = document.getElementById('mascotAccessory');
     const outfit = OUTFITS.find(o => o.id === progress.equippedOutfit);
-    if (outfit) {
-      el.textContent = outfit.emoji;
-      el.hidden = false;
-    } else {
-      el.hidden = true;
-    }
+    ['mascotAccessory', 'shopMascotAccessory'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (outfit) { el.textContent = outfit.emoji; el.hidden = false; }
+      else { el.hidden = true; }
+    });
   }
   renderMascotAccessory();
 

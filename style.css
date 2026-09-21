@@ -736,6 +736,19 @@
   .puzzle-piece.is-dragging { cursor: grabbing; box-shadow: 0 16px 28px rgba(74,63,53,0.3); opacity: 0.95; transform: scale(1.05); }
 
   /* TỦ ĐỒ CHO CHÚ CÁO */
+  /* Hình chú cáo toàn thân thật (assets/mascot-fox.png, đã xoá nền) hiện to ở đầu màn Trang phục
+     để thấy rõ phụ kiện "mặc" lên người trước khi mua — badge phụ kiện đặt đè gần đầu (mọi món
+     hiện tại đều là mũ/nơ/kính/khăn/vòng cổ, hợp vị trí này nhất). */
+  .mascot-figure--shop {
+    position: relative;
+    width: 150px; margin: 0 auto 14px;
+  }
+  .mascot-figure--shop .mascot-fox { display: block; width: 100%; height: auto; }
+  .mascot-figure--shop .mascot-accessory--shop {
+    position: absolute; top: 4%; left: 62%;
+    font-size: 34px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  }
   .outfit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .outfit-card {
     position: relative;
