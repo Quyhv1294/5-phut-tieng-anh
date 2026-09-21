@@ -155,6 +155,14 @@
     if (!p.purchasedTopics) {
       TOPICS.forEach(t => { if (topicPassed[t.id] || (p.doneTopics && p.doneTopics[t.id])) purchasedTopics[t.id] = true; });
     }
+    // Di trú 1 lần cho topicsSeen (chỉ dùng để tránh báo lại toast "đủ sao để mua chủ đề" nhiều
+    // lần — xem checkNewPracticeTopicUnlocks): nếu chưa từng có, coi các chủ đề bé ĐÃ đủ sao từ
+    // trước rồi là "đã thấy" luôn, để không dội 1 loạt toast dồn dập cho những mốc bé đã vượt qua
+    // từ lâu trước khi tính năng này tồn tại.
+    const topicsSeen = p.topicsSeen || {};
+    if (!p.topicsSeen) {
+      TOPICS.forEach(t => { if (t.unlocksAt && stars >= t.unlocksAt) topicsSeen[t.id] = true; });
+    }
     return {
       stars: stars,
       wallet: p.wallet || 0,
@@ -170,6 +178,7 @@
       wordStats: p.wordStats || {},
       placedPieces: p.placedPieces || {},
       outfitsSeen: p.outfitsSeen || {},
+      topicsSeen: topicsSeen,
       equippedOutfit: p.equippedOutfit || null,
     };
   }
@@ -185,7 +194,7 @@
       doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
-      outfitsSeen: {}, equippedOutfit: null,
+      outfitsSeen: {}, topicsSeen: {}, equippedOutfit: null,
     };
   }
   // Cộng sao: tăng cả tổng sao trọn đời (progress.stars, dùng cho lên cấp) lẫn số sao để dành
@@ -461,16 +470,16 @@
     return newlyUnlocked;
   }
 
-  // So sánh cấp độ trước/sau khi cộng sao — trả về { level, buyableTopics } nếu vừa lên cấp, hoặc
-  // null nếu chưa đủ lên cấp. buyableTopics chỉ là các chủ đề Trò chơi/Câu VỪA ĐỦ MỐC SAO để mua
-  // (chưa tự động mở khoá — bé vẫn phải tự bấm mua). Tap "Học" không dùng mốc sao (xem isTopicLocked).
+  // So sánh cấp độ trước/sau khi cộng sao — trả về { level } nếu vừa lên cấp, hoặc null nếu chưa
+  // đủ lên cấp. (Thông báo "đủ sao để mua chủ đề Trò chơi/Câu" KHÔNG ăn theo lên cấp nữa — xem
+  // checkNewPracticeTopicUnlocks bên dưới — vì mốc sao mua chủ đề có thể vượt quá cấp cao nhất
+  // trong LEVELS, lúc đó checkLevelUp luôn trả về null nên thông báo sẽ không bao giờ hiện.)
   function checkLevelUp(oldStars) {
     if (typeof oldStars !== 'number') return null;
     const oldLevel = getLevel(oldStars);
     const newLevel = getLevel(progress.stars);
     if (newLevel === oldLevel) return null;
-    const buyableTopics = TOPICS.filter(t => t.unlocksAt && t.unlocksAt > oldStars && t.unlocksAt <= progress.stars && !progress.purchasedTopics[t.id]);
-    return { level: newLevel, buyableTopics: buyableTopics };
+    return { level: newLevel };
   }
 
   // ---------- CONFETTI (hiệu ứng ăn mừng, không cần thư viện ngoài) ----------
@@ -540,16 +549,13 @@
   }
 
   // Thông báo lên cấp — dùng lại khung .badge-toast (viền vàng, giống huy hiệu) vì đây cũng
-  // là 1 cột mốc thành tích. Nếu có chủ đề Trò chơi/Câu vừa đủ sao để mua thì hiện thêm dòng thứ 2.
+  // là 1 cột mốc thành tích.
   function showLevelUpToast(levelUp) {
     const toast = document.createElement('div');
     toast.className = 'badge-toast';
-    const unlockLine = levelUp.buyableTopics.length
-      ? '<br><span class="badge-unlock">🛒 Đủ sao để mua ở Trò chơi/Câu: ' + levelUp.buyableTopics.map(t => t.label).join(', ') + '</span>'
-      : '';
     toast.innerHTML =
       '<span class="badge-icon">' + levelUp.level.emoji + '</span>' +
-      '<span><span class="badge-eyebrow">Lên cấp!</span><br><span class="badge-label">' + levelUp.level.label + '</span>' + unlockLine + '</span>';
+      '<span><span class="badge-eyebrow">Lên cấp!</span><br><span class="badge-label">' + levelUp.level.label + '</span></span>';
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('is-visible'));
     setTimeout(() => {
@@ -641,7 +647,8 @@
     const newBadges = checkNewBadges();
     const levelUp = checkLevelUp(oldStars);
     const newOutfits = checkNewOutfitUnlocks(oldStars);
-    if (isPerfect || newBadges.length || levelUp || newPieceTopic || newOutfits.length) launchConfetti();
+    const newPracticeTopics = checkNewPracticeTopicUnlocks(oldStars);
+    if (isPerfect || newBadges.length || levelUp || newPieceTopic || newOutfits.length || newPracticeTopics.length) launchConfetti();
     showBadgeToasts(newBadges);
     const afterBadges = newBadges.length * 2900;
     if (levelUp) setTimeout(() => showLevelUpToast(levelUp), afterBadges);
@@ -649,6 +656,8 @@
     if (newPieceTopic) setTimeout(() => showPuzzlePieceToast(newPieceTopic), afterLevelUp);
     const afterPiece = afterLevelUp + (newPieceTopic ? 2600 : 0);
     newOutfits.forEach((o, i) => setTimeout(() => showOutfitUnlockToast(o), afterPiece + i * 2600));
+    const afterOutfits = afterPiece + newOutfits.length * 2600;
+    newPracticeTopics.forEach((t, i) => setTimeout(() => showPracticeTopicUnlockToast(t), afterOutfits + i * 2600));
     renderTotalStars(); // huy hiệu chuỗi ngày có thể vừa cộng thêm sao thưởng, cập nhật lại topbar cho khớp
   }
 
@@ -1055,6 +1064,39 @@
       '<span class="badge-icon">' + outfit.emoji + '</span>' +
       '<span><span class="badge-eyebrow">Đủ sao để mua trang phục!</span><br><span class="badge-label">' + outfit.label +
       '</span><br><span class="badge-unlock">Vào mục Sưu tập để mua cho chú cáo nhé!</span></span>';
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    setTimeout(() => {
+      toast.classList.remove('is-visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 2600);
+  }
+
+  // Kiểm tra sau mỗi lần cộng sao xem có vừa đủ mốc MUA chủ đề Trò chơi/Câu mới không — giống hệt
+  // checkNewOutfitUnlocks, tách RIÊNG khỏi checkLevelUp/LEVELS (không dùng "vừa lên cấp" làm dấu
+  // hiệu) vì mốc sao mua chủ đề (VD 350) có thể vượt quá cấp cao nhất trong LEVELS (hiện tại dừng
+  // ở 200) — lúc đó checkLevelUp() sẽ mãi mãi trả về null nên nếu ăn theo lên cấp, thông báo sẽ
+  // không bao giờ hiện dù bé đã đủ sao mua từ lâu. progress.topicsSeen chỉ để tránh báo lại nhiều
+  // lần, KHÔNG tự cấp chủ đề (bé vẫn phải tự bấm mua ở tab Trò chơi/Câu).
+  function checkNewPracticeTopicUnlocks(oldStars) {
+    if (typeof oldStars !== 'number') return [];
+    const newly = [];
+    TOPICS.forEach(t => {
+      if (t.unlocksAt && !progress.topicsSeen[t.id] && !progress.purchasedTopics[t.id] && progress.stars >= t.unlocksAt) {
+        progress.topicsSeen[t.id] = true;
+        newly.push(t);
+      }
+    });
+    if (newly.length) saveProgress(progress);
+    return newly;
+  }
+  function showPracticeTopicUnlockToast(topic) {
+    const toast = document.createElement('div');
+    toast.className = 'badge-toast';
+    toast.innerHTML =
+      '<span class="badge-icon">🛒</span>' +
+      '<span><span class="badge-eyebrow">Đủ sao để mua chủ đề!</span><br><span class="badge-label">' + topic.label +
+      '</span><br><span class="badge-unlock">Vào tab Trò chơi/Câu để mua nhé!</span></span>';
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('is-visible'));
     setTimeout(() => {
