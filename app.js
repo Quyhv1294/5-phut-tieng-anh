@@ -190,10 +190,17 @@
       placedPieces: p.placedPieces || {},
       outfitsSeen: p.outfitsSeen || {},
       topicsSeen: topicsSeen,
-      // Di trú 1 lần: trước khi có slot đầu/thân riêng biệt, chỉ có 1 món được mặc tại 1 thời điểm
-      // (progress.equippedOutfit, dạng string) — mọi trang phục thời đó đều là đồ đội đầu, nên món
-      // đang mặc (nếu có) được giữ nguyên vào slot "head", slot "body" bắt đầu trống.
-      equippedOutfits: p.equippedOutfits || { head: p.equippedOutfit || null, body: null },
+      // Di trú equippedOutfits qua 3 đời schema, cũ nhất trước:
+      //  (a) chưa từng có slot: progress.equippedOutfit là 1 string (hoặc null) — coi là 1 món đầu.
+      //  (b) có slot đầu/thân nhưng đầu vẫn chỉ mặc được 1 món: equippedOutfits.head là 1 string.
+      //  (c) đầu mặc được NHIỀU món cùng lúc (hiện tại): equippedOutfits.head là mảng string[].
+      // Luôn chuẩn hoá về dạng (c) — head là mảng — để code phía sau không phải tự đoán kiểu dữ liệu.
+      equippedOutfits: {
+        head: Array.isArray(p.equippedOutfits && p.equippedOutfits.head) ? p.equippedOutfits.head
+          : (p.equippedOutfits && p.equippedOutfits.head) ? [p.equippedOutfits.head]
+          : p.equippedOutfit ? [p.equippedOutfit] : [],
+        body: (p.equippedOutfits && p.equippedOutfits.body) || null,
+      },
     };
   }
   function loadProgress() {
@@ -208,7 +215,7 @@
       doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
-      outfitsSeen: {}, topicsSeen: {}, equippedOutfits: { head: null, body: null },
+      outfitsSeen: {}, topicsSeen: {}, equippedOutfits: { head: [], body: null },
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -987,40 +994,44 @@
   // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
   const SLOT_LABEL = { head: '🎩 Đội đầu', body: '👕 Toàn thân' };
 
-  // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên (chỉ hiện món slot "head",
-  // vì huy hiệu này quá nhỏ để chứa 2 món), và ảnh lớn ở đầu màn Trang phục.
+  // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên (chỉ hiện 1 món đầu tiên
+  // đang mặc ở đầu, vì huy hiệu này quá nhỏ để chứa nhiều món), và ảnh lớn ở đầu màn Trang phục.
   //
-  // Ảnh lớn có 2 chế độ, tuỳ đang mặc bao nhiêu món:
-  //  - ĐÚNG 1 món (chỉ đầu HOẶC chỉ thân, không phải cả 2): thay hẳn ảnh nền bằng ảnh thật
-  //    "outfit.img" (chú cáo đã mặc SẴN món đó) — nhìn như mặc thật, ẩn 2 badge emoji.
-  //  - 0 món hoặc CẢ 2 món cùng lúc: không có ảnh ghép sẵn cho mọi tổ hợp đầu+thân, nên quay lại
-  //    ảnh nền mascot-fox.png + đè badge emoji lên đúng vị trí đầu/thân như trước (giữ được việc
-  //    "thấy cả 2 món cùng lúc", đánh đổi lấy nhìn kém thật hơn so với case 1 món).
+  // Slot "đầu" giờ mặc được NHIỀU món cùng lúc (progress.equippedOutfits.head là mảng, 0-6 món) —
+  // slot "thân" vẫn chỉ 1 món tại 1 thời điểm như cũ (progress.equippedOutfits.body).
+  //
+  // Ảnh lớn có 2 chế độ, tuỳ đang mặc TỔNG bao nhiêu món (đếm cả 2 slot):
+  //  - ĐÚNG 1 món trong TOÀN BỘ (1 món đầu và không có món thân, hoặc ngược lại): thay hẳn ảnh nền
+  //    bằng ảnh thật "outfit.img" (chú cáo đã mặc SẴN món đó) — nhìn như mặc thật.
+  //  - 0 món, hoặc từ 2 món trở lên (nhiều món đầu, hoặc đầu+thân cùng lúc...): không có ảnh ghép
+  //    sẵn cho MỌI tổ hợp có thể (mặc hết 6 món đầu là 64 tổ hợp chỉ riêng phần đầu), nên quay lại
+  //    ảnh nền mascot-fox.png + đè badge emoji — 1 cụm badge xếp quanh đầu cho TỪNG món đầu đang
+  //    mặc, + 1 badge cho món thân (nếu có) — đổi lấy nhìn kém thật hơn để thấy được hết mọi món.
   // Gọi lại mỗi khi equippedOutfits đổi hoặc lúc khởi động app.
   function renderMascotAccessory() {
-    const headOutfit = OUTFITS.find(o => o.id === progress.equippedOutfits.head);
+    const headOutfits = progress.equippedOutfits.head.map(id => OUTFITS.find(o => o.id === id)).filter(Boolean);
     const bodyOutfit = OUTFITS.find(o => o.id === progress.equippedOutfits.body);
 
     const el = document.getElementById('mascotAccessory');
     if (el) {
-      if (headOutfit) { el.textContent = headOutfit.emoji; el.hidden = false; }
+      if (headOutfits.length) { el.textContent = headOutfits[0].emoji; el.hidden = false; }
       else { el.hidden = true; }
     }
 
     const shopImg = document.getElementById('shopMascotImg');
-    const shopHeadEl = document.getElementById('shopMascotAccessory');
+    const shopHeadBadges = document.getElementById('shopMascotHeadBadges');
     const shopBodyEl = document.getElementById('shopMascotAccessoryBody');
     if (!shopImg) return;
 
-    const soloOutfit = (headOutfit && !bodyOutfit) ? headOutfit : (!headOutfit && bodyOutfit) ? bodyOutfit : null;
+    const totalCount = headOutfits.length + (bodyOutfit ? 1 : 0);
+    const soloOutfit = totalCount === 1 ? (headOutfits[0] || bodyOutfit) : null;
     if (soloOutfit) {
       shopImg.src = soloOutfit.img;
-      shopHeadEl.hidden = true;
+      shopHeadBadges.innerHTML = '';
       shopBodyEl.hidden = true;
     } else {
       shopImg.src = 'assets/mascot-fox.png';
-      if (headOutfit) { shopHeadEl.textContent = headOutfit.emoji; shopHeadEl.hidden = false; }
-      else { shopHeadEl.hidden = true; }
+      shopHeadBadges.innerHTML = headOutfits.map(o => '<span class="head-badge">' + o.emoji + '</span>').join('');
       if (bodyOutfit) { shopBodyEl.textContent = bodyOutfit.emoji; shopBodyEl.hidden = false; }
       else { shopBodyEl.hidden = true; }
     }
@@ -1035,7 +1046,9 @@
     OUTFITS.forEach(outfit => {
       const owned = !!progress.purchasedOutfits[outfit.id] || adminUnlocked;
       const buyable = !owned && progress.stars >= outfit.unlocksAt;
-      const equipped = progress.equippedOutfits[outfit.slot] === outfit.id;
+      const equipped = outfit.slot === 'head'
+        ? progress.equippedOutfits.head.indexOf(outfit.id) !== -1
+        : progress.equippedOutfits.body === outfit.id;
       if (owned) ownedCount++;
       const card = document.createElement('button');
       card.className = 'outfit-card' + (owned ? ' is-owned' : '') + (equipped ? ' is-equipped' : '') + (buyable ? ' is-buyable' : '');
@@ -1079,7 +1092,13 @@
       renderTotalStars();
       return;
     }
-    progress.equippedOutfits[outfit.slot] = progress.equippedOutfits[outfit.slot] === outfit.id ? null : outfit.id;
+    if (outfit.slot === 'head') {
+      const idx = progress.equippedOutfits.head.indexOf(outfit.id);
+      if (idx === -1) progress.equippedOutfits.head.push(outfit.id);
+      else progress.equippedOutfits.head.splice(idx, 1);
+    } else {
+      progress.equippedOutfits.body = progress.equippedOutfits.body === outfit.id ? null : outfit.id;
+    }
     saveProgress(progress);
     renderMascotAccessory();
     renderOutfitShop();
