@@ -1265,7 +1265,7 @@
   // email này là mất quyền ngay, không lưu lại gì). Chỉ ảnh hưởng trang phục, KHÔNG mở khoá chủ đề
   // Học/Trò chơi/Câu — 2 cơ chế đó vẫn hoạt động bình thường cho mọi tài khoản. Thêm/bớt email vào
   // đây khi cần, không cần đụng gì tới Apps Script/Google Sheet.
-  const ADMIN_EMAILS = ['hvq1294@gmail.com'];
+  const ADMIN_EMAILS = [];
   function isAdminEmail() {
     return !!verifiedEmail && ADMIN_EMAILS.indexOf(verifiedEmail.toLowerCase().trim()) !== -1;
   }
