@@ -98,19 +98,23 @@
   // slot: 'head' (đè lên vùng đầu ảnh chú cáo) hoặc 'body' (đè lên vùng thân) — bé có thể mặc
   // ĐỒNG THỜI 1 món đầu + 1 món thân (2 slot độc lập, không tranh chỗ nhau), xem
   // progress.equippedOutfits/renderMascotAccessory.
+  // img: ảnh thật (assets/outfits/<id>.png, do người dùng cung cấp + đã xoá nền) chụp đúng con cáo
+  // này đang mặc SẴN đúng món đó — dùng thay hẳn ảnh nền khi CHỈ 1 món đang được mặc (nhìn như mặc
+  // thật, không phải icon dán đè). Khi mặc CẢ 2 slot cùng lúc (không có ảnh ghép sẵn cho mọi tổ hợp
+  // đầu+thân) hoặc không mặc gì, quay lại ảnh nền (mascot-fox.png) + badge emoji đè như cũ.
   const OUTFITS = [
-    { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10, slot: 'head' },
-    { id: 'tshirt', emoji: '👕', label: 'Áo thun', unlocksAt: 20, slot: 'body' },
-    { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25, slot: 'head' },
-    { id: 'vest', emoji: '🦺', label: 'Áo phản quang', unlocksAt: 45, slot: 'body' },
-    { id: 'hat', emoji: '🎩', label: 'Mũ chóp', unlocksAt: 50, slot: 'head' },
-    { id: 'jacket', emoji: '🧥', label: 'Áo khoác', unlocksAt: 80, slot: 'body' },
-    { id: 'glasses', emoji: '🕶️', label: 'Kính râm', unlocksAt: 100, slot: 'head' },
-    { id: 'labcoat', emoji: '🥼', label: 'Áo bác sĩ', unlocksAt: 130, slot: 'body' },
-    { id: 'necktie', emoji: '👔', label: 'Cà vạt', unlocksAt: 150, slot: 'head' },
-    { id: 'martial', emoji: '🥋', label: 'Võ phục', unlocksAt: 190, slot: 'body' },
-    { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250, slot: 'head' },
-    { id: 'astronaut', emoji: '🧑‍🚀', label: 'Đồ phi hành gia', unlocksAt: 300, slot: 'body' },
+    { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10, slot: 'head', img: 'assets/outfits/scarf.png' },
+    { id: 'tshirt', emoji: '👕', label: 'Áo thun', unlocksAt: 20, slot: 'body', img: 'assets/outfits/tshirt.png' },
+    { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25, slot: 'head', img: 'assets/outfits/ribbon.png' },
+    { id: 'vest', emoji: '🦺', label: 'Áo phản quang', unlocksAt: 45, slot: 'body', img: 'assets/outfits/vest.png' },
+    { id: 'hat', emoji: '🎩', label: 'Mũ chóp', unlocksAt: 50, slot: 'head', img: 'assets/outfits/hat.png' },
+    { id: 'jacket', emoji: '🧥', label: 'Áo khoác', unlocksAt: 80, slot: 'body', img: 'assets/outfits/jacket.png' },
+    { id: 'glasses', emoji: '🕶️', label: 'Kính râm', unlocksAt: 100, slot: 'head', img: 'assets/outfits/glasses.png' },
+    { id: 'labcoat', emoji: '🥼', label: 'Áo bác sĩ', unlocksAt: 130, slot: 'body', img: 'assets/outfits/labcoat.png' },
+    { id: 'necktie', emoji: '👔', label: 'Cà vạt', unlocksAt: 150, slot: 'head', img: 'assets/outfits/necktie.png' },
+    { id: 'martial', emoji: '🥋', label: 'Võ phục', unlocksAt: 190, slot: 'body', img: 'assets/outfits/martial.png' },
+    { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250, slot: 'head', img: 'assets/outfits/crown.png' },
+    { id: 'astronaut', emoji: '🧑‍🚀', label: 'Đồ phi hành gia', unlocksAt: 300, slot: 'body', img: 'assets/outfits/astronaut.png' },
   ];
 
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
@@ -984,23 +988,41 @@
   const SLOT_LABEL = { head: '🎩 Đội đầu', body: '👕 Toàn thân' };
 
   // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên (chỉ hiện món slot "head",
-  // vì huy hiệu này quá nhỏ để chứa 2 món), và 2 badge to hơn đè lên hình chú cáo toàn thân
-  // (assets/mascot-fox.png, 1 ở vùng đầu + 1 ở vùng thân) ở đầu màn Trang phục — bé mặc được ĐỒNG
-  // THỜI 1 món đầu + 1 món thân vì đây là 2 slot độc lập. Gọi lại mỗi khi equippedOutfits đổi hoặc
-  // lúc khởi động app.
+  // vì huy hiệu này quá nhỏ để chứa 2 món), và ảnh lớn ở đầu màn Trang phục.
+  //
+  // Ảnh lớn có 2 chế độ, tuỳ đang mặc bao nhiêu món:
+  //  - ĐÚNG 1 món (chỉ đầu HOẶC chỉ thân, không phải cả 2): thay hẳn ảnh nền bằng ảnh thật
+  //    "outfit.img" (chú cáo đã mặc SẴN món đó) — nhìn như mặc thật, ẩn 2 badge emoji.
+  //  - 0 món hoặc CẢ 2 món cùng lúc: không có ảnh ghép sẵn cho mọi tổ hợp đầu+thân, nên quay lại
+  //    ảnh nền mascot-fox.png + đè badge emoji lên đúng vị trí đầu/thân như trước (giữ được việc
+  //    "thấy cả 2 món cùng lúc", đánh đổi lấy nhìn kém thật hơn so với case 1 món).
+  // Gọi lại mỗi khi equippedOutfits đổi hoặc lúc khởi động app.
   function renderMascotAccessory() {
     const headOutfit = OUTFITS.find(o => o.id === progress.equippedOutfits.head);
     const bodyOutfit = OUTFITS.find(o => o.id === progress.equippedOutfits.body);
-    ['mascotAccessory', 'shopMascotAccessory'].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
+
+    const el = document.getElementById('mascotAccessory');
+    if (el) {
       if (headOutfit) { el.textContent = headOutfit.emoji; el.hidden = false; }
       else { el.hidden = true; }
-    });
-    const bodyEl = document.getElementById('shopMascotAccessoryBody');
-    if (bodyEl) {
-      if (bodyOutfit) { bodyEl.textContent = bodyOutfit.emoji; bodyEl.hidden = false; }
-      else { bodyEl.hidden = true; }
+    }
+
+    const shopImg = document.getElementById('shopMascotImg');
+    const shopHeadEl = document.getElementById('shopMascotAccessory');
+    const shopBodyEl = document.getElementById('shopMascotAccessoryBody');
+    if (!shopImg) return;
+
+    const soloOutfit = (headOutfit && !bodyOutfit) ? headOutfit : (!headOutfit && bodyOutfit) ? bodyOutfit : null;
+    if (soloOutfit) {
+      shopImg.src = soloOutfit.img;
+      shopHeadEl.hidden = true;
+      shopBodyEl.hidden = true;
+    } else {
+      shopImg.src = 'assets/mascot-fox.png';
+      if (headOutfit) { shopHeadEl.textContent = headOutfit.emoji; shopHeadEl.hidden = false; }
+      else { shopHeadEl.hidden = true; }
+      if (bodyOutfit) { shopBodyEl.textContent = bodyOutfit.emoji; shopBodyEl.hidden = false; }
+      else { shopBodyEl.hidden = true; }
     }
   }
   renderMascotAccessory();

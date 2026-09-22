@@ -749,12 +749,15 @@
   /* Hình chú cáo toàn thân thật (assets/mascot-fox.png, đã xoá nền) hiện to ở đầu màn Trang phục
      để thấy rõ phụ kiện "mặc" lên người trước khi mua — 2 badge phụ kiện đè lên 2 vùng khác nhau
      (đầu/thân) vì bé mặc được đồng thời 1 món đầu + 1 món thân (2 slot độc lập, xem OUTFITS/
-     renderMascotAccessory trong app.js). */
+     renderMascotAccessory trong app.js). Khi CHỈ 1 món đang mặc, renderMascotAccessory() đổi hẳn
+     #shopMascotImg sang ảnh thật "đã mặc sẵn" (assets/outfits/<id>.png, tỉ lệ khung khác ảnh nền)
+     thay vì đè badge — khung có aspect-ratio + object-fit:contain cố định để đổi ảnh không làm
+     khung nhảy/méo kích thước. */
   .mascot-figure--shop {
     position: relative;
-    width: 150px; margin: 0 auto 14px;
+    width: 150px; aspect-ratio: 207 / 312; margin: 0 auto 14px;
   }
-  .mascot-figure--shop .mascot-fox { display: block; width: 100%; height: auto; }
+  .mascot-figure--shop .mascot-fox { display: block; width: 100%; height: 100%; object-fit: contain; }
   .mascot-figure--shop .mascot-accessory--shop {
     position: absolute; top: 4%; left: 62%;
     font-size: 34px;
