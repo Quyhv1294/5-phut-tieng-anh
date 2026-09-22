@@ -1009,8 +1009,9 @@
     const grid = document.getElementById('outfitGrid');
     grid.innerHTML = '';
     let ownedCount = 0;
+    const adminUnlocked = isAdminEmail();
     OUTFITS.forEach(outfit => {
-      const owned = !!progress.purchasedOutfits[outfit.id];
+      const owned = !!progress.purchasedOutfits[outfit.id] || adminUnlocked;
       const buyable = !owned && progress.stars >= outfit.unlocksAt;
       const equipped = progress.equippedOutfits[outfit.slot] === outfit.id;
       if (owned) ownedCount++;
@@ -1035,7 +1036,7 @@
   // progress.stars) mua hẳn hay không, không tự động cấp. Đã mua rồi: bấm chỉ để mặc/cởi, không
   // tiêu tốn hay ảnh hưởng gì tới sao.
   async function handleOutfitClick(outfit) {
-    const owned = !!progress.purchasedOutfits[outfit.id];
+    const owned = !!progress.purchasedOutfits[outfit.id] || isAdminEmail();
     if (!owned) {
       const cost = outfit.unlocksAt;
       if (progress.stars < cost) {
@@ -1162,6 +1163,16 @@
   let pendingVerifyEmail = null;
   let resendCooldownTimer = null;
   let profileResyncedForSession = false; // xem syncProgressToCloud — tự gửi lại hồ sơ 1 lần/phiên để "chữa lành" nếu lần lưu hồ sơ gốc từng lỗi ngầm
+
+  // Email test/admin: xác thực đúng 1 trong các email này thì toàn bộ trang phục coi như "đã mua"
+  // (chỉ để bấm thử mặc, KHÔNG đụng gì tới progress.stars/purchasedOutfits thật — tắt xác thực khỏi
+  // email này là mất quyền ngay, không lưu lại gì). Chỉ ảnh hưởng trang phục, KHÔNG mở khoá chủ đề
+  // Học/Trò chơi/Câu — 2 cơ chế đó vẫn hoạt động bình thường cho mọi tài khoản. Thêm/bớt email vào
+  // đây khi cần, không cần đụng gì tới Apps Script/Google Sheet.
+  const ADMIN_EMAILS = ['hvq1294@gmail.com'];
+  function isAdminEmail() {
+    return !!verifiedEmail && ADMIN_EMAILS.indexOf(verifiedEmail.toLowerCase().trim()) !== -1;
+  }
 
   try { verifiedEmail = localStorage.getItem(VERIFIED_EMAIL_KEY); } catch (e) {}
 
