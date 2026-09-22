@@ -120,8 +120,7 @@
 
   // Ảnh ghép sẵn riêng cho combo "đúng 1 món đầu + đúng 1 món thân cùng lúc" — khoá là
   // '<headId>_<bodyId>' — do người dùng cung cấp + đã xoá nền, KHÔNG phải 2 ảnh solo chồng lên
-  // nhau. Thiếu 1/36 tổ hợp (scarf_martial — Khăn quàng + Võ phục, chưa có ảnh) nên tổ hợp đó vẫn
-  // rơi về badge emoji như các combo chưa có ảnh khác.
+  // nhau. Đủ 36/36 tổ hợp (6 đầu × 6 thân).
   const COMBO_IMAGES = {
     crown_tshirt: 'assets/outfits/combo/crown_tshirt.png',
     crown_jacket: 'assets/outfits/combo/crown_jacket.png',
@@ -158,6 +157,7 @@
     scarf_tshirt: 'assets/outfits/combo/scarf_tshirt.png',
     scarf_jacket: 'assets/outfits/combo/scarf_jacket.png',
     scarf_astronaut: 'assets/outfits/combo/scarf_astronaut.png',
+    scarf_martial: 'assets/outfits/combo/scarf_martial.png',
   };
 
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
@@ -1048,11 +1048,10 @@
   //    "outfit.img" (chú cáo đã mặc SẴN món đó) — nhìn như mặc thật.
   //  - ĐÚNG 1 món đầu + 1 món thân cùng lúc VÀ có sẵn ảnh ghép (COMBO_IMAGES): dùng ảnh ghép riêng
   //    đó — cũng là ảnh thật do người dùng cung cấp, KHÔNG phải 2 ảnh solo chồng lên nhau.
-  //  - Mọi trường hợp còn lại (0 món; hoặc từ 2 món đầu trở lên; hoặc đầu+thân nhưng CHƯA có ảnh
-  //    ghép cho đúng combo đó — xem COMBO_IMAGES, thiếu vài combo): không có ảnh dựng sẵn nên quay
-  //    lại ảnh nền mascot-fox.png + đè badge emoji — 1 cụm badge xếp quanh đầu cho TỪNG món đầu
-  //    đang mặc, + 1 badge cho món thân (nếu có) — đổi lấy nhìn kém thật hơn để thấy được hết mọi
-  //    món/không phải chờ có đủ ảnh.
+  //  - Mọi trường hợp còn lại (0 món, hoặc từ 2 món đầu trở lên — dù có kèm 1 món thân hay không):
+  //    không có ảnh dựng sẵn nên quay lại ảnh nền mascot-fox.png + đè badge emoji — 1 cụm badge xếp
+  //    quanh đầu cho TỪNG món đầu đang mặc, + 1 badge cho món thân (nếu có) — đổi lấy nhìn kém thật
+  //    hơn để thấy được hết mọi món.
   // Gọi lại mỗi khi equippedOutfits đổi hoặc lúc khởi động app.
   function renderMascotAccessory() {
     const headOutfits = progress.equippedOutfits.head.map(id => OUTFITS.find(o => o.id === id)).filter(Boolean);

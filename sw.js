@@ -1,7 +1,7 @@
 // Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
 // LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
 // lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v88';
+const CACHE_VERSION = 'v89';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
 
 importScripts('data/emoji-icons.js');
@@ -71,6 +71,7 @@ const APP_SHELL = [
   './assets/outfits/combo/scarf_tshirt.png',
   './assets/outfits/combo/scarf_jacket.png',
   './assets/outfits/combo/scarf_astronaut.png',
+  './assets/outfits/combo/scarf_martial.png',
 ];
 const ICON_URLS = Object.values(EMOJI_ICONS);
 
