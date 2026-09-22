@@ -1,7 +1,7 @@
 // Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
 // LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
 // lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v87';
+const CACHE_VERSION = 'v88';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
 
 importScripts('data/emoji-icons.js');
@@ -36,6 +36,41 @@ const APP_SHELL = [
   './assets/outfits/martial.png',
   './assets/outfits/crown.png',
   './assets/outfits/astronaut.png',
+  './assets/outfits/combo/crown_tshirt.png',
+  './assets/outfits/combo/crown_jacket.png',
+  './assets/outfits/combo/crown_labcoat.png',
+  './assets/outfits/combo/crown_vest.png',
+  './assets/outfits/combo/crown_martial.png',
+  './assets/outfits/combo/crown_astronaut.png',
+  './assets/outfits/combo/hat_tshirt.png',
+  './assets/outfits/combo/hat_jacket.png',
+  './assets/outfits/combo/hat_labcoat.png',
+  './assets/outfits/combo/hat_vest.png',
+  './assets/outfits/combo/hat_martial.png',
+  './assets/outfits/combo/hat_astronaut.png',
+  './assets/outfits/combo/glasses_martial.png',
+  './assets/outfits/combo/glasses_astronaut.png',
+  './assets/outfits/combo/glasses_jacket.png',
+  './assets/outfits/combo/glasses_labcoat.png',
+  './assets/outfits/combo/glasses_tshirt.png',
+  './assets/outfits/combo/glasses_vest.png',
+  './assets/outfits/combo/ribbon_tshirt.png',
+  './assets/outfits/combo/ribbon_vest.png',
+  './assets/outfits/combo/ribbon_jacket.png',
+  './assets/outfits/combo/ribbon_astronaut.png',
+  './assets/outfits/combo/ribbon_labcoat.png',
+  './assets/outfits/combo/ribbon_martial.png',
+  './assets/outfits/combo/necktie_jacket.png',
+  './assets/outfits/combo/necktie_astronaut.png',
+  './assets/outfits/combo/necktie_vest.png',
+  './assets/outfits/combo/necktie_labcoat.png',
+  './assets/outfits/combo/necktie_martial.png',
+  './assets/outfits/combo/necktie_tshirt.png',
+  './assets/outfits/combo/scarf_labcoat.png',
+  './assets/outfits/combo/scarf_vest.png',
+  './assets/outfits/combo/scarf_tshirt.png',
+  './assets/outfits/combo/scarf_jacket.png',
+  './assets/outfits/combo/scarf_astronaut.png',
 ];
 const ICON_URLS = Object.values(EMOJI_ICONS);
 

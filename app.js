@@ -99,9 +99,10 @@
   // ĐỒNG THỜI 1 món đầu + 1 món thân (2 slot độc lập, không tranh chỗ nhau), xem
   // progress.equippedOutfits/renderMascotAccessory.
   // img: ảnh thật (assets/outfits/<id>.png, do người dùng cung cấp + đã xoá nền) chụp đúng con cáo
-  // này đang mặc SẴN đúng món đó — dùng thay hẳn ảnh nền khi CHỈ 1 món đang được mặc (nhìn như mặc
-  // thật, không phải icon dán đè). Khi mặc CẢ 2 slot cùng lúc (không có ảnh ghép sẵn cho mọi tổ hợp
-  // đầu+thân) hoặc không mặc gì, quay lại ảnh nền (mascot-fox.png) + badge emoji đè như cũ.
+  // này đang mặc SẴN đúng món đó — dùng khi CHỈ 1 món đang được mặc trong toàn bộ (nhìn như mặc
+  // thật, không phải icon dán đè). Khi mặc ĐÚNG 1 món đầu + 1 món thân cùng lúc, xem COMBO_IMAGES
+  // bên dưới (ảnh ghép sẵn riêng, không phải ghép 2 ảnh solo chồng lên nhau). Các trường hợp còn lại
+  // (0 món, hoặc từ 2 món đầu trở lên) quay lại ảnh nền (mascot-fox.png) + badge emoji đè như cũ.
   const OUTFITS = [
     { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10, slot: 'head', img: 'assets/outfits/scarf.png' },
     { id: 'tshirt', emoji: '👕', label: 'Áo thun', unlocksAt: 20, slot: 'body', img: 'assets/outfits/tshirt.png' },
@@ -116,6 +117,48 @@
     { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250, slot: 'head', img: 'assets/outfits/crown.png' },
     { id: 'astronaut', emoji: '🧑‍🚀', label: 'Đồ phi hành gia', unlocksAt: 300, slot: 'body', img: 'assets/outfits/astronaut.png' },
   ];
+
+  // Ảnh ghép sẵn riêng cho combo "đúng 1 món đầu + đúng 1 món thân cùng lúc" — khoá là
+  // '<headId>_<bodyId>' — do người dùng cung cấp + đã xoá nền, KHÔNG phải 2 ảnh solo chồng lên
+  // nhau. Thiếu 1/36 tổ hợp (scarf_martial — Khăn quàng + Võ phục, chưa có ảnh) nên tổ hợp đó vẫn
+  // rơi về badge emoji như các combo chưa có ảnh khác.
+  const COMBO_IMAGES = {
+    crown_tshirt: 'assets/outfits/combo/crown_tshirt.png',
+    crown_jacket: 'assets/outfits/combo/crown_jacket.png',
+    crown_labcoat: 'assets/outfits/combo/crown_labcoat.png',
+    crown_vest: 'assets/outfits/combo/crown_vest.png',
+    crown_martial: 'assets/outfits/combo/crown_martial.png',
+    crown_astronaut: 'assets/outfits/combo/crown_astronaut.png',
+    hat_tshirt: 'assets/outfits/combo/hat_tshirt.png',
+    hat_jacket: 'assets/outfits/combo/hat_jacket.png',
+    hat_labcoat: 'assets/outfits/combo/hat_labcoat.png',
+    hat_vest: 'assets/outfits/combo/hat_vest.png',
+    hat_martial: 'assets/outfits/combo/hat_martial.png',
+    hat_astronaut: 'assets/outfits/combo/hat_astronaut.png',
+    glasses_martial: 'assets/outfits/combo/glasses_martial.png',
+    glasses_astronaut: 'assets/outfits/combo/glasses_astronaut.png',
+    glasses_jacket: 'assets/outfits/combo/glasses_jacket.png',
+    glasses_labcoat: 'assets/outfits/combo/glasses_labcoat.png',
+    glasses_tshirt: 'assets/outfits/combo/glasses_tshirt.png',
+    glasses_vest: 'assets/outfits/combo/glasses_vest.png',
+    ribbon_tshirt: 'assets/outfits/combo/ribbon_tshirt.png',
+    ribbon_vest: 'assets/outfits/combo/ribbon_vest.png',
+    ribbon_jacket: 'assets/outfits/combo/ribbon_jacket.png',
+    ribbon_astronaut: 'assets/outfits/combo/ribbon_astronaut.png',
+    ribbon_labcoat: 'assets/outfits/combo/ribbon_labcoat.png',
+    ribbon_martial: 'assets/outfits/combo/ribbon_martial.png',
+    necktie_jacket: 'assets/outfits/combo/necktie_jacket.png',
+    necktie_astronaut: 'assets/outfits/combo/necktie_astronaut.png',
+    necktie_vest: 'assets/outfits/combo/necktie_vest.png',
+    necktie_labcoat: 'assets/outfits/combo/necktie_labcoat.png',
+    necktie_martial: 'assets/outfits/combo/necktie_martial.png',
+    necktie_tshirt: 'assets/outfits/combo/necktie_tshirt.png',
+    scarf_labcoat: 'assets/outfits/combo/scarf_labcoat.png',
+    scarf_vest: 'assets/outfits/combo/scarf_vest.png',
+    scarf_tshirt: 'assets/outfits/combo/scarf_tshirt.png',
+    scarf_jacket: 'assets/outfits/combo/scarf_jacket.png',
+    scarf_astronaut: 'assets/outfits/combo/scarf_astronaut.png',
+  };
 
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
   // về đúng shape mong đợi, điền mặc định cho field thiếu.
@@ -1000,13 +1043,16 @@
   // Slot "đầu" giờ mặc được NHIỀU món cùng lúc (progress.equippedOutfits.head là mảng, 0-6 món) —
   // slot "thân" vẫn chỉ 1 món tại 1 thời điểm như cũ (progress.equippedOutfits.body).
   //
-  // Ảnh lớn có 2 chế độ, tuỳ đang mặc TỔNG bao nhiêu món (đếm cả 2 slot):
-  //  - ĐÚNG 1 món trong TOÀN BỘ (1 món đầu và không có món thân, hoặc ngược lại): thay hẳn ảnh nền
-  //    bằng ảnh thật "outfit.img" (chú cáo đã mặc SẴN món đó) — nhìn như mặc thật.
-  //  - 0 món, hoặc từ 2 món trở lên (nhiều món đầu, hoặc đầu+thân cùng lúc...): không có ảnh ghép
-  //    sẵn cho MỌI tổ hợp có thể (mặc hết 6 món đầu là 64 tổ hợp chỉ riêng phần đầu), nên quay lại
-  //    ảnh nền mascot-fox.png + đè badge emoji — 1 cụm badge xếp quanh đầu cho TỪNG món đầu đang
-  //    mặc, + 1 badge cho món thân (nếu có) — đổi lấy nhìn kém thật hơn để thấy được hết mọi món.
+  // Ảnh lớn có 3 chế độ, tuỳ đang mặc gì:
+  //  - ĐÚNG 1 món trong TOÀN BỘ (1 món đầu và không có món thân, hoặc ngược lại): ảnh thật
+  //    "outfit.img" (chú cáo đã mặc SẴN món đó) — nhìn như mặc thật.
+  //  - ĐÚNG 1 món đầu + 1 món thân cùng lúc VÀ có sẵn ảnh ghép (COMBO_IMAGES): dùng ảnh ghép riêng
+  //    đó — cũng là ảnh thật do người dùng cung cấp, KHÔNG phải 2 ảnh solo chồng lên nhau.
+  //  - Mọi trường hợp còn lại (0 món; hoặc từ 2 món đầu trở lên; hoặc đầu+thân nhưng CHƯA có ảnh
+  //    ghép cho đúng combo đó — xem COMBO_IMAGES, thiếu vài combo): không có ảnh dựng sẵn nên quay
+  //    lại ảnh nền mascot-fox.png + đè badge emoji — 1 cụm badge xếp quanh đầu cho TỪNG món đầu
+  //    đang mặc, + 1 badge cho món thân (nếu có) — đổi lấy nhìn kém thật hơn để thấy được hết mọi
+  //    món/không phải chờ có đủ ảnh.
   // Gọi lại mỗi khi equippedOutfits đổi hoặc lúc khởi động app.
   function renderMascotAccessory() {
     const headOutfits = progress.equippedOutfits.head.map(id => OUTFITS.find(o => o.id === id)).filter(Boolean);
@@ -1025,8 +1071,14 @@
 
     const totalCount = headOutfits.length + (bodyOutfit ? 1 : 0);
     const soloOutfit = totalCount === 1 ? (headOutfits[0] || bodyOutfit) : null;
+    const comboImg = (headOutfits.length === 1 && bodyOutfit) ? COMBO_IMAGES[headOutfits[0].id + '_' + bodyOutfit.id] : null;
+
     if (soloOutfit) {
       shopImg.src = soloOutfit.img;
+      shopHeadBadges.innerHTML = '';
+      shopBodyEl.hidden = true;
+    } else if (comboImg) {
+      shopImg.src = comboImg;
       shopHeadBadges.innerHTML = '';
       shopBodyEl.hidden = true;
     } else {
