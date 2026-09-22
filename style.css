@@ -747,8 +747,9 @@
 
   /* TỦ ĐỒ CHO CHÚ CÁO */
   /* Hình chú cáo toàn thân thật (assets/mascot-fox.png, đã xoá nền) hiện to ở đầu màn Trang phục
-     để thấy rõ phụ kiện "mặc" lên người trước khi mua — badge phụ kiện đặt đè gần đầu (mọi món
-     hiện tại đều là mũ/nơ/kính/khăn/vòng cổ, hợp vị trí này nhất). */
+     để thấy rõ phụ kiện "mặc" lên người trước khi mua — 2 badge phụ kiện đè lên 2 vùng khác nhau
+     (đầu/thân) vì bé mặc được đồng thời 1 món đầu + 1 món thân (2 slot độc lập, xem OUTFITS/
+     renderMascotAccessory trong app.js). */
   .mascot-figure--shop {
     position: relative;
     width: 150px; margin: 0 auto 14px;
@@ -757,6 +758,11 @@
   .mascot-figure--shop .mascot-accessory--shop {
     position: absolute; top: 4%; left: 62%;
     font-size: 34px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  }
+  .mascot-figure--shop .mascot-accessory--shop-body {
+    position: absolute; top: 58%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 46px;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
   }
   .outfit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -787,6 +793,16 @@
   }
   .outfit-card .done-badge { background: rgba(255,255,255,0.75); }
   .outfit-card .buy-badge { background: var(--accent); color: var(--accent-ink); }
+  /* Nhãn slot (đội đầu / toàn thân) ở góc trái đối xứng với done/buy-badge ở góc phải — giúp phụ
+     huynh thấy ngay 1 món có thể mặc CÙNG LÚC với 1 món slot còn lại hay không, không cần bấm thử. */
+  .outfit-card .slot-tag {
+    position: absolute; top: 8px; left: 8px;
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 800;
+    padding: 2px 7px;
+  }
 
   /* RƯƠNG MAY MẮN (màn Hoàn thành) */
   .chest-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }

@@ -95,13 +95,22 @@
   // progress.lifetimeStars — 1 số ẩn, không hiển thị, chỉ tăng chứ không bao giờ giảm, để mua đồ
   // không bao giờ làm bé bị "tụt cấp" (xem addStars). (Chủ đề học ở Tap "Học" KHÔNG dùng cơ chế
   // mua này — xem isTopicLocked, mở tuần tự theo điểm quiz, không liên quan sao.)
+  // slot: 'head' (đè lên vùng đầu ảnh chú cáo) hoặc 'body' (đè lên vùng thân) — bé có thể mặc
+  // ĐỒNG THỜI 1 món đầu + 1 món thân (2 slot độc lập, không tranh chỗ nhau), xem
+  // progress.equippedOutfits/renderMascotAccessory.
   const OUTFITS = [
-    { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10 },
-    { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25 },
-    { id: 'hat', emoji: '🎩', label: 'Mũ chóp', unlocksAt: 50 },
-    { id: 'glasses', emoji: '🕶️', label: 'Kính râm', unlocksAt: 100 },
-    { id: 'necktie', emoji: '👔', label: 'Cà vạt', unlocksAt: 150 },
-    { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250 },
+    { id: 'scarf', emoji: '🧣', label: 'Khăn quàng', unlocksAt: 10, slot: 'head' },
+    { id: 'tshirt', emoji: '👕', label: 'Áo thun', unlocksAt: 20, slot: 'body' },
+    { id: 'ribbon', emoji: '🎀', label: 'Nơ xinh', unlocksAt: 25, slot: 'head' },
+    { id: 'vest', emoji: '🦺', label: 'Áo phản quang', unlocksAt: 45, slot: 'body' },
+    { id: 'hat', emoji: '🎩', label: 'Mũ chóp', unlocksAt: 50, slot: 'head' },
+    { id: 'jacket', emoji: '🧥', label: 'Áo khoác', unlocksAt: 80, slot: 'body' },
+    { id: 'glasses', emoji: '🕶️', label: 'Kính râm', unlocksAt: 100, slot: 'head' },
+    { id: 'labcoat', emoji: '🥼', label: 'Áo bác sĩ', unlocksAt: 130, slot: 'body' },
+    { id: 'necktie', emoji: '👔', label: 'Cà vạt', unlocksAt: 150, slot: 'head' },
+    { id: 'martial', emoji: '🥋', label: 'Võ phục', unlocksAt: 190, slot: 'body' },
+    { id: 'crown', emoji: '👑', label: 'Vương miện', unlocksAt: 250, slot: 'head' },
+    { id: 'astronaut', emoji: '🧑‍🚀', label: 'Đồ phi hành gia', unlocksAt: 300, slot: 'body' },
   ];
 
   // Chuẩn hoá 1 object progress thô (từ localStorage HOẶC từ document Firestore của 1 bé)
@@ -177,7 +186,10 @@
       placedPieces: p.placedPieces || {},
       outfitsSeen: p.outfitsSeen || {},
       topicsSeen: topicsSeen,
-      equippedOutfit: p.equippedOutfit || null,
+      // Di trú 1 lần: trước khi có slot đầu/thân riêng biệt, chỉ có 1 món được mặc tại 1 thời điểm
+      // (progress.equippedOutfit, dạng string) — mọi trang phục thời đó đều là đồ đội đầu, nên món
+      // đang mặc (nếu có) được giữ nguyên vào slot "head", slot "body" bắt đầu trống.
+      equippedOutfits: p.equippedOutfits || { head: p.equippedOutfit || null, body: null },
     };
   }
   function loadProgress() {
@@ -192,7 +204,7 @@
       doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
-      outfitsSeen: {}, topicsSeen: {}, equippedOutfit: null,
+      outfitsSeen: {}, topicsSeen: {}, equippedOutfits: { head: null, body: null },
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -969,17 +981,27 @@
   }
 
   // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
-  // Cập nhật icon phụ kiện đang "mặc" — hiện ở CẢ 2 nơi: badge nhỏ đè lên mascot góc trên, và badge
-  // to hơn đè lên hình chú cáo toàn thân (assets/mascot-fox.png) ở đầu màn Trang phục. Gọi lại mỗi
-  // khi equippedOutfit đổi hoặc lúc khởi động app.
+  const SLOT_LABEL = { head: '🎩 Đội đầu', body: '👕 Toàn thân' };
+
+  // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên (chỉ hiện món slot "head",
+  // vì huy hiệu này quá nhỏ để chứa 2 món), và 2 badge to hơn đè lên hình chú cáo toàn thân
+  // (assets/mascot-fox.png, 1 ở vùng đầu + 1 ở vùng thân) ở đầu màn Trang phục — bé mặc được ĐỒNG
+  // THỜI 1 món đầu + 1 món thân vì đây là 2 slot độc lập. Gọi lại mỗi khi equippedOutfits đổi hoặc
+  // lúc khởi động app.
   function renderMascotAccessory() {
-    const outfit = OUTFITS.find(o => o.id === progress.equippedOutfit);
+    const headOutfit = OUTFITS.find(o => o.id === progress.equippedOutfits.head);
+    const bodyOutfit = OUTFITS.find(o => o.id === progress.equippedOutfits.body);
     ['mascotAccessory', 'shopMascotAccessory'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
-      if (outfit) { el.textContent = outfit.emoji; el.hidden = false; }
+      if (headOutfit) { el.textContent = headOutfit.emoji; el.hidden = false; }
       else { el.hidden = true; }
     });
+    const bodyEl = document.getElementById('shopMascotAccessoryBody');
+    if (bodyEl) {
+      if (bodyOutfit) { bodyEl.textContent = bodyOutfit.emoji; bodyEl.hidden = false; }
+      else { bodyEl.hidden = true; }
+    }
   }
   renderMascotAccessory();
 
@@ -990,7 +1012,7 @@
     OUTFITS.forEach(outfit => {
       const owned = !!progress.purchasedOutfits[outfit.id];
       const buyable = !owned && progress.stars >= outfit.unlocksAt;
-      const equipped = progress.equippedOutfit === outfit.id;
+      const equipped = progress.equippedOutfits[outfit.slot] === outfit.id;
       if (owned) ownedCount++;
       const card = document.createElement('button');
       card.className = 'outfit-card' + (owned ? ' is-owned' : '') + (equipped ? ' is-equipped' : '') + (buyable ? ' is-buyable' : '');
@@ -998,6 +1020,7 @@
         buyable ? 'Mua ngay · ' + outfit.unlocksAt + '⭐ (đang có ' + progress.stars + ')' :
         'Cần thêm ' + (outfit.unlocksAt - progress.stars) + ' sao';
       card.innerHTML =
+        '<span class="slot-tag">' + SLOT_LABEL[outfit.slot] + '</span>' +
         (equipped ? '<span class="done-badge">✓ Đang mặc</span>' : buyable ? '<span class="buy-badge">🛒 Mua</span>' : '') +
         '<span class="emoji">' + outfit.emoji + '</span>' +
         '<span class="label">' + outfit.label + '</span>' +
@@ -1033,7 +1056,7 @@
       renderTotalStars();
       return;
     }
-    progress.equippedOutfit = progress.equippedOutfit === outfit.id ? null : outfit.id;
+    progress.equippedOutfits[outfit.slot] = progress.equippedOutfits[outfit.slot] === outfit.id ? null : outfit.id;
     saveProgress(progress);
     renderMascotAccessory();
     renderOutfitShop();
@@ -3162,8 +3185,15 @@
     if (!onboardingSeen) showOnboarding();
   }
 
-  // Xác thực email + hồ sơ bé là bắt buộc trước khi vào học (xem enforceGate ở trên).
-  if (enforceGate()) {
+  // Xác thực email + hồ sơ bé là bắt buộc trước khi vào học (xem enforceGate ở trên). Nếu email
+  // đã xác thực từ trước nhưng máy NÀY chưa có hồ sơ lưu local (thiết bị mới, hoặc vừa mất cache) —
+  // phải hỏi cloud trước khi kết luận "chưa có hồ sơ", nếu không sẽ bắt tạo hồ sơ mới dù hồ sơ đã
+  // có sẵn trên Google Sheet (enforceGate() một mình chỉ nhìn state local, không tự động hỏi cloud).
+  if (verifiedEmail && !profile && backendConfigured()) {
+    showLoading('Đang khôi phục hồ sơ...');
+    fetchCloudDataAndProceed();
+    checkDeviceSession();
+  } else if (enforceGate()) {
     bootAfterGate();
     checkDeviceSession();
   }
