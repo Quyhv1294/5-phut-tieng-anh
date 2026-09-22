@@ -1036,15 +1036,21 @@
 
   // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
   const SLOT_LABEL = { head: '🎩 Đội đầu', body: '👕 Toàn thân' };
-  // Slot "đầu" mặc được nhiều món cùng lúc nhưng giới hạn tối đa — mặc quá nhiều nhìn rối, và
-  // COMBO_IMAGES/badge cluster cũng chỉ tính toán tốt cho số lượng nhỏ.
-  const MAX_HEAD_ITEMS = 2;
+  // Giới hạn TỔNG số món được mặc cùng lúc, cộng cả 2 slot (đầu + thân) lại — không phải riêng
+  // từng slot. VD đã mặc 1 món thân thì chỉ mặc thêm được 1 món đầu nữa (không phải 2), vì tổng đã
+  // chạm mốc. Mặc quá nhiều nhìn rối, và COMBO_IMAGES/badge cluster cũng chỉ tính toán tốt cho số
+  // lượng nhỏ. Xem currentOutfitCount()/handleOutfitClick.
+  const MAX_TOTAL_ITEMS = 2;
+  function currentOutfitCount() {
+    return progress.equippedOutfits.head.length + (progress.equippedOutfits.body ? 1 : 0);
+  }
 
   // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên (chỉ hiện 1 món đầu tiên
   // đang mặc ở đầu, vì huy hiệu này quá nhỏ để chứa nhiều món), và ảnh lớn ở đầu màn Trang phục.
   //
-  // Slot "đầu" mặc được nhiều món cùng lúc (progress.equippedOutfits.head là mảng), nhưng tối đa
-  // MAX_HEAD_ITEMS món — slot "thân" vẫn chỉ 1 món tại 1 thời điểm như cũ (progress.equippedOutfits.body).
+  // Slot "đầu" mặc được nhiều món cùng lúc (progress.equippedOutfits.head là mảng) — slot "thân"
+  // vẫn chỉ 1 món tại 1 thời điểm như cũ (progress.equippedOutfits.body) — nhưng TỔNG cả 2 slot
+  // cộng lại bị giới hạn bởi MAX_TOTAL_ITEMS.
   //
   // Ảnh lớn có 3 chế độ, tuỳ đang mặc gì:
   //  - ĐÚNG 1 món trong TOÀN BỘ (1 món đầu và không có món thân, hoặc ngược lại): ảnh thật
@@ -1149,16 +1155,22 @@
     if (outfit.slot === 'head') {
       const idx = progress.equippedOutfits.head.indexOf(outfit.id);
       if (idx === -1) {
-        if (progress.equippedOutfits.head.length >= MAX_HEAD_ITEMS) {
-          showToast('👒 Chỉ được mặc tối đa ' + MAX_HEAD_ITEMS + ' món đội đầu cùng lúc thôi — cởi bớt 1 món ra trước nhé!', '👒');
+        if (currentOutfitCount() >= MAX_TOTAL_ITEMS) {
+          showToast('👒 Chỉ được mặc tối đa ' + MAX_TOTAL_ITEMS + ' món cùng lúc thôi (tính cả đầu lẫn thân) — cởi bớt 1 món ra trước nhé!', '👒');
           return;
         }
         progress.equippedOutfits.head.push(outfit.id);
       } else {
         progress.equippedOutfits.head.splice(idx, 1);
       }
+    } else if (progress.equippedOutfits.body !== outfit.id) {
+      if (currentOutfitCount() >= MAX_TOTAL_ITEMS) {
+        showToast('👒 Chỉ được mặc tối đa ' + MAX_TOTAL_ITEMS + ' món cùng lúc thôi (tính cả đầu lẫn thân) — cởi bớt 1 món ra trước nhé!', '👒');
+        return;
+      }
+      progress.equippedOutfits.body = outfit.id;
     } else {
-      progress.equippedOutfits.body = progress.equippedOutfits.body === outfit.id ? null : outfit.id;
+      progress.equippedOutfits.body = null;
     }
     saveProgress(progress);
     renderMascotAccessory();
