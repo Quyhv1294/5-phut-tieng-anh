@@ -1036,12 +1036,15 @@
 
   // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
   const SLOT_LABEL = { head: '🎩 Đội đầu', body: '👕 Toàn thân' };
+  // Slot "đầu" mặc được nhiều món cùng lúc nhưng giới hạn tối đa — mặc quá nhiều nhìn rối, và
+  // COMBO_IMAGES/badge cluster cũng chỉ tính toán tốt cho số lượng nhỏ.
+  const MAX_HEAD_ITEMS = 2;
 
   // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên (chỉ hiện 1 món đầu tiên
   // đang mặc ở đầu, vì huy hiệu này quá nhỏ để chứa nhiều món), và ảnh lớn ở đầu màn Trang phục.
   //
-  // Slot "đầu" giờ mặc được NHIỀU món cùng lúc (progress.equippedOutfits.head là mảng, 0-6 món) —
-  // slot "thân" vẫn chỉ 1 món tại 1 thời điểm như cũ (progress.equippedOutfits.body).
+  // Slot "đầu" mặc được nhiều món cùng lúc (progress.equippedOutfits.head là mảng), nhưng tối đa
+  // MAX_HEAD_ITEMS món — slot "thân" vẫn chỉ 1 món tại 1 thời điểm như cũ (progress.equippedOutfits.body).
   //
   // Ảnh lớn có 3 chế độ, tuỳ đang mặc gì:
   //  - ĐÚNG 1 món trong TOÀN BỘ (1 món đầu và không có món thân, hoặc ngược lại): ảnh thật
@@ -1145,8 +1148,15 @@
     }
     if (outfit.slot === 'head') {
       const idx = progress.equippedOutfits.head.indexOf(outfit.id);
-      if (idx === -1) progress.equippedOutfits.head.push(outfit.id);
-      else progress.equippedOutfits.head.splice(idx, 1);
+      if (idx === -1) {
+        if (progress.equippedOutfits.head.length >= MAX_HEAD_ITEMS) {
+          showToast('👒 Chỉ được mặc tối đa ' + MAX_HEAD_ITEMS + ' món đội đầu cùng lúc thôi — cởi bớt 1 món ra trước nhé!', '👒');
+          return;
+        }
+        progress.equippedOutfits.head.push(outfit.id);
+      } else {
+        progress.equippedOutfits.head.splice(idx, 1);
+      }
     } else {
       progress.equippedOutfits.body = progress.equippedOutfits.body === outfit.id ? null : outfit.id;
     }
