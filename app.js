@@ -1036,31 +1036,25 @@
 
   // ---------- TỦ ĐỒ CHO CHÚ CÁO ----------
   const SLOT_LABEL = { head: '🎩 Đội đầu', body: '👕 Toàn thân' };
-  // Giới hạn TỔNG số món được mặc cùng lúc, cộng cả 2 slot (đầu + thân) lại — không phải riêng
-  // từng slot. VD đã mặc 1 món thân thì chỉ mặc thêm được 1 món đầu nữa (không phải 2), vì tổng đã
-  // chạm mốc. Mặc quá nhiều nhìn rối, và COMBO_IMAGES/badge cluster cũng chỉ tính toán tốt cho số
-  // lượng nhỏ. Xem currentOutfitCount()/handleOutfitClick.
-  const MAX_TOTAL_ITEMS = 2;
-  function currentOutfitCount() {
-    return progress.equippedOutfits.head.length + (progress.equippedOutfits.body ? 1 : 0);
-  }
+  // Mỗi slot (đầu/thân) chỉ mặc được ĐÚNG 1 món tại 1 thời điểm — mặc món đầu mới sẽ tự thay thế
+  // món đầu đang mặc (giống hệt cách slot thân vẫn hoạt động từ trước), không cộng dồn nữa. Tối đa
+  // luôn là 2 món cùng lúc (1 đầu + 1 thân) — không cần kiểm tra/giới hạn riêng vì cấu trúc dữ liệu
+  // đã đảm bảo điều đó, và đúng khớp với COMBO_IMAGES (ảnh ghép sẵn cho mọi tổ hợp 1 đầu + 1 thân).
+  // progress.equippedOutfits.head vẫn LÀ MẢNG (không đổi lại thành string) để không phải sửa lại
+  // renderMascotAccessory/renderOutfitShop/normalizeProgress — chỉ khác là mảng giờ luôn dài 0 hoặc 1.
 
-  // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên (chỉ hiện 1 món đầu tiên
-  // đang mặc ở đầu, vì huy hiệu này quá nhỏ để chứa nhiều món), và ảnh lớn ở đầu màn Trang phục.
-  //
-  // Slot "đầu" mặc được nhiều món cùng lúc (progress.equippedOutfits.head là mảng) — slot "thân"
-  // vẫn chỉ 1 món tại 1 thời điểm như cũ (progress.equippedOutfits.body) — nhưng TỔNG cả 2 slot
-  // cộng lại bị giới hạn bởi MAX_TOTAL_ITEMS.
+  // Cập nhật icon phụ kiện đang "mặc" — badge nhỏ đè lên mascot góc trên, và ảnh lớn ở đầu màn
+  // Trang phục.
   //
   // Ảnh lớn có 3 chế độ, tuỳ đang mặc gì:
   //  - ĐÚNG 1 món trong TOÀN BỘ (1 món đầu và không có món thân, hoặc ngược lại): ảnh thật
   //    "outfit.img" (chú cáo đã mặc SẴN món đó) — nhìn như mặc thật.
   //  - ĐÚNG 1 món đầu + 1 món thân cùng lúc VÀ có sẵn ảnh ghép (COMBO_IMAGES): dùng ảnh ghép riêng
   //    đó — cũng là ảnh thật do người dùng cung cấp, KHÔNG phải 2 ảnh solo chồng lên nhau.
-  //  - Mọi trường hợp còn lại (0 món, hoặc từ 2 món đầu trở lên — dù có kèm 1 món thân hay không):
-  //    không có ảnh dựng sẵn nên quay lại ảnh nền mascot-fox.png + đè badge emoji — 1 cụm badge xếp
-  //    quanh đầu cho TỪNG món đầu đang mặc, + 1 badge cho món thân (nếu có) — đổi lấy nhìn kém thật
-  //    hơn để thấy được hết mọi món.
+  //  - 0 món: ảnh nền mascot-fox.png, không badge.
+  //  - Trường hợp còn lại (về lý thuyết không nên xảy ra nữa vì mỗi slot chỉ 1 món, nhưng vẫn giữ
+  //    làm lưới an toàn — VD lỡ thiếu ảnh combo cho 1 cặp nào đó): quay lại ảnh nền + đè badge
+  //    emoji (1 cho đầu, 1 cho thân).
   // Gọi lại mỗi khi equippedOutfits đổi hoặc lúc khởi động app.
   function renderMascotAccessory() {
     const headOutfits = progress.equippedOutfits.head.map(id => OUTFITS.find(o => o.id === id)).filter(Boolean);
@@ -1154,23 +1148,11 @@
     }
     if (outfit.slot === 'head') {
       const idx = progress.equippedOutfits.head.indexOf(outfit.id);
-      if (idx === -1) {
-        if (currentOutfitCount() >= MAX_TOTAL_ITEMS) {
-          showToast('👒 Chỉ được mặc tối đa ' + MAX_TOTAL_ITEMS + ' món cùng lúc thôi (tính cả đầu lẫn thân) — cởi bớt 1 món ra trước nhé!', '👒');
-          return;
-        }
-        progress.equippedOutfits.head.push(outfit.id);
-      } else {
-        progress.equippedOutfits.head.splice(idx, 1);
-      }
-    } else if (progress.equippedOutfits.body !== outfit.id) {
-      if (currentOutfitCount() >= MAX_TOTAL_ITEMS) {
-        showToast('👒 Chỉ được mặc tối đa ' + MAX_TOTAL_ITEMS + ' món cùng lúc thôi (tính cả đầu lẫn thân) — cởi bớt 1 món ra trước nhé!', '👒');
-        return;
-      }
-      progress.equippedOutfits.body = outfit.id;
+      // Bấm lại đúng món đang mặc -> cởi ra. Bấm món khác -> THAY THẾ hẳn món đầu đang mặc (nếu
+      // có) bằng món mới, không cộng dồn — giống hệt cách slot thân đã hoạt động từ trước.
+      progress.equippedOutfits.head = idx !== -1 ? [] : [outfit.id];
     } else {
-      progress.equippedOutfits.body = null;
+      progress.equippedOutfits.body = progress.equippedOutfits.body === outfit.id ? null : outfit.id;
     }
     saveProgress(progress);
     renderMascotAccessory();
