@@ -2405,12 +2405,15 @@
 
   document.getElementById('backFromQuiz').addEventListener('click', () => showScreen(isMixedReview ? 'progress' : 'home'));
 
-  // ---------- MATCHING GAME ----------
+  // ---------- MATCHING GAME (nối cột: cột trái hình, cột phải chữ, hiện sẵn hết) ----------
   // matchMode: 'learn' (sau flashcard+quiz, được tính sao) hoặc 'practice' (chơi tự do từ tab Trò chơi, không tính sao)
   let matchMode = 'learn';
-  let matchCards = [];
   let matchWords = [];
-  let matchSelected = [];
+  let matchLeftCards = []; // [{ pairId, content: emoji, matched }], thứ tự đã xáo riêng
+  let matchRightCards = []; // [{ pairId, content: en, matched }], thứ tự đã xáo riêng (khác cột trái)
+  let matchSelectedLeft = null; // index trong matchLeftCards đang chọn, hoặc null
+  let matchSelectedRight = null; // index trong matchRightCards đang chọn, hoặc null
+  let matchWrong = false; // true trong lúc đang hiện đỏ cặp nối sai, trước khi tự bỏ chọn
   let matchFoundCount = 0;
   let matchLock = false;
 
@@ -2425,17 +2428,16 @@
 
   function startMatchGame() {
     matchFoundCount = 0;
-    matchSelected = [];
+    matchSelectedLeft = null;
+    matchSelectedRight = null;
+    matchWrong = false;
     matchLock = false;
     document.getElementById('matchWrap').hidden = false;
     document.getElementById('matchDoneWrap').hidden = true;
     matchWords = shuffle(currentTopic.words).slice(0, Math.min(MATCH_PAIR_COUNT, currentTopic.words.length));
-    const cards = [];
-    matchWords.forEach((w, i) => {
-      cards.push({ pairId: i, type: 'word', content: w.en });
-      cards.push({ pairId: i, type: 'emoji', content: w.emoji });
-    });
-    matchCards = shuffle(cards);
+    // Xáo 2 cột độc lập với nhau, để hàng trái/phải không tình cờ thẳng hàng theo đúng cặp.
+    matchLeftCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.emoji, matched: false })));
+    matchRightCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.en, matched: false })));
     renderMatchGame();
     showScreen('match');
   }
@@ -2444,63 +2446,79 @@
     const pct = (matchFoundCount / matchWords.length) * 100;
     document.getElementById('matchProgressFill').style.width = pct + '%';
 
-    const grid = document.getElementById('matchGrid');
-    grid.innerHTML = '';
-    matchCards.forEach((card, idx) => {
+    const leftGrid = document.getElementById('matchGridLeft');
+    const rightGrid = document.getElementById('matchGridRight');
+    leftGrid.innerHTML = '';
+    rightGrid.innerHTML = '';
+
+    matchLeftCards.forEach((card, idx) => {
       const btn = document.createElement('button');
-      const shown = card.flipped || card.matched;
-      btn.className = 'match-card'
-        + (shown && card.type === 'emoji' ? ' match-card--emoji' : '')
-        + (card.flipped ? ' is-flipped' : '')
-        + (card.matched ? ' is-matched' : '');
-      btn.textContent = shown ? card.content : '?';
+      btn.className = 'match-card match-card--emoji'
+        + (card.matched ? ' is-matched' : '')
+        + (idx === matchSelectedLeft ? (matchWrong ? ' is-wrong' : ' is-selected') : '');
+      btn.textContent = card.content;
       btn.disabled = card.matched;
-      btn.addEventListener('click', () => handleMatchClick(idx));
-      grid.appendChild(btn);
+      btn.addEventListener('click', () => handleMatchClick('left', idx));
+      leftGrid.appendChild(btn);
+    });
+
+    matchRightCards.forEach((card, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'match-card match-card--word'
+        + (card.matched ? ' is-matched' : '')
+        + (idx === matchSelectedRight ? (matchWrong ? ' is-wrong' : ' is-selected') : '');
+      btn.textContent = card.content;
+      btn.disabled = card.matched;
+      btn.addEventListener('click', () => handleMatchClick('right', idx));
+      rightGrid.appendChild(btn);
     });
   }
 
-  function handleMatchClick(idx) {
+  function handleMatchClick(side, idx) {
     if (matchLock) return;
-    const card = matchCards[idx];
-    if (card.flipped || card.matched) return;
-
-    card.flipped = true;
-    matchSelected.push(idx);
+    if (side === 'left') {
+      if (matchLeftCards[idx].matched) return;
+      matchSelectedLeft = idx;
+    } else {
+      if (matchRightCards[idx].matched) return;
+      matchSelectedRight = idx;
+    }
     renderMatchGame();
 
-    if (matchSelected.length === 2) {
-      const [i1, i2] = matchSelected;
-      const c1 = matchCards[i1];
-      const c2 = matchCards[i2];
-      if (c1.pairId === c2.pairId) {
-        c1.matched = true;
-        c2.matched = true;
-        matchFoundCount++;
-        matchSelected = [];
-        renderMatchGame();
-        if (matchFoundCount === matchWords.length) {
-          if (matchMode === 'practice') {
-            setTimeout(() => {
-              document.getElementById('matchWrap').hidden = true;
-              document.getElementById('matchDoneWrap').hidden = false;
-              bumpDailyMission('games');
-              saveProgress(progress);
-            }, 500);
-          } else {
-            setTimeout(finishTopic, 600);
-          }
+    if (matchSelectedLeft === null || matchSelectedRight === null) return;
+
+    const l = matchLeftCards[matchSelectedLeft];
+    const r = matchRightCards[matchSelectedRight];
+    if (l.pairId === r.pairId) {
+      l.matched = true;
+      r.matched = true;
+      matchFoundCount++;
+      matchSelectedLeft = null;
+      matchSelectedRight = null;
+      renderMatchGame();
+      if (matchFoundCount === matchWords.length) {
+        if (matchMode === 'practice') {
+          setTimeout(() => {
+            document.getElementById('matchWrap').hidden = true;
+            document.getElementById('matchDoneWrap').hidden = false;
+            bumpDailyMission('games');
+            saveProgress(progress);
+          }, 500);
+        } else {
+          setTimeout(finishTopic, 600);
         }
-      } else {
-        matchLock = true;
-        setTimeout(() => {
-          c1.flipped = false;
-          c2.flipped = false;
-          matchSelected = [];
-          matchLock = false;
-          renderMatchGame();
-        }, 800);
       }
+    } else {
+      matchLock = true;
+      matchWrong = true;
+      renderMatchGame();
+      setTimeout(() => {
+        matchSelectedLeft = null;
+        matchSelectedRight = null;
+        matchWrong = false;
+        matchLock = false;
+        renderMatchGame();
+      }, 700);
     }
   }
 
