@@ -578,63 +578,34 @@
     requestAnimationFrame(frame);
   }
 
-  // Hiện lần lượt từng thẻ thông báo huy hiệu mới mở khoá (nếu có nhiều huy hiệu 1 lúc).
-  function showBadgeToasts(badges) {
-    if (!badges.length) return;
-    let i = 0;
-    function next() {
-      if (i >= badges.length) return;
-      const b = badges[i++];
-      const toast = document.createElement('div');
-      toast.className = 'badge-toast';
-      const bonusLine = b.bonus ? '<br><span class="badge-unlock">🎁 Thưởng +' + b.bonus + ' sao!</span>' : '';
-      toast.innerHTML =
-        '<span class="badge-icon">' + b.icon + '</span>' +
-        '<span><span class="badge-eyebrow">Huy hiệu mới!</span><br><span class="badge-label">' + b.label + '</span>' + bonusLine + '</span>';
-      document.body.appendChild(toast);
-      requestAnimationFrame(() => toast.classList.add('is-visible'));
-      setTimeout(() => {
-        toast.classList.remove('is-visible');
-        setTimeout(() => { toast.remove(); next(); }, 300);
-      }, 2600);
-    }
-    next();
-  }
+  // Gộp MỌI mốc thưởng đạt được cùng lúc sau 1 lượt học (huy hiệu mới + lên cấp + mảnh ghép tranh
+  // mới) thành DUY NHẤT 1 thẻ ở giữa màn hình, thay vì xếp hàng nhiều toast nối tiếp nhau khiến bé
+  // phải đợi lâu mới xem hết — bé liếc 1 phát là biết ngay vừa nhận được những gì.
+  function showRewardsSummaryToast(badges, levelUp, newPieceTopic) {
+    const items = [];
+    badges.forEach(b => {
+      items.push({ icon: b.icon, label: b.label + (b.bonus ? ' +' + b.bonus + '⭐' : '') });
+    });
+    if (levelUp) items.push({ icon: levelUp.level.emoji, label: 'Lên cấp: ' + levelUp.level.label });
+    if (newPieceTopic) items.push({ icon: '🖼️', label: 'Mảnh ghép mới!' });
+    if (!items.length) return;
 
-  // Thông báo lên cấp — dùng lại khung .badge-toast (viền vàng, giống huy hiệu) vì đây cũng
-  // là 1 cột mốc thành tích.
-  function showLevelUpToast(levelUp) {
     const toast = document.createElement('div');
-    toast.className = 'badge-toast';
+    toast.className = 'rewards-toast';
     toast.innerHTML =
-      '<span class="badge-icon">' + levelUp.level.emoji + '</span>' +
-      '<span><span class="badge-eyebrow">Lên cấp!</span><br><span class="badge-label">' + levelUp.level.label + '</span></span>';
+      '<div class="rewards-toast-title">🎉 Phần thưởng!</div>' +
+      '<div class="rewards-toast-list">' +
+      items.map(it =>
+        '<span class="rewards-toast-item"><span class="rewards-toast-icon">' + it.icon + '</span>' +
+        '<span class="rewards-toast-label">' + it.label + '</span></span>'
+      ).join('') +
+      '</div>';
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('is-visible'));
     setTimeout(() => {
       toast.classList.remove('is-visible');
       setTimeout(() => toast.remove(), 300);
-    }, 3200);
-  }
-
-  // Thông báo riêng khi rương kho báu cuối bản đồ mở ra (bé vừa học xong TRỌN VẸN mọi chủ đề) —
-  // tách khỏi showBadgeToasts dù dùng chung điều kiện mở khoá huy hiệu 'all_topics', vì đây là cột
-  // mốc lớn nhất trong app nên xứng đáng có 1 thông báo riêng nhắc rõ "kho báu" thay vì chỉ hiện
-  // chung chung như 1 huy hiệu bình thường. Sao thưởng đã được cộng sẵn qua badge.bonus lúc
-  // checkNewBadges() chạy — hàm này chỉ hiện thông báo, không cộng sao lần 2.
-  function showTreasureUnlockToast(badge) {
-    const toast = document.createElement('div');
-    toast.className = 'badge-toast';
-    toast.innerHTML =
-      '<span class="badge-icon">💰</span>' +
-      '<span><span class="badge-eyebrow">Kho báu đã mở!</span><br><span class="badge-label">Bé học xong tất cả chủ đề rồi!</span>' +
-      '<br><span class="badge-unlock">🎁 Thưởng +' + badge.bonus + ' sao!</span></span>';
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
-    setTimeout(() => {
-      toast.classList.remove('is-visible');
-      setTimeout(() => toast.remove(), 300);
-    }, 3200);
+    }, 500);
   }
 
   // Thông báo nổi ngắn dùng chung (VD: xác thực email thành công) — tái dùng khung .badge-toast
@@ -689,45 +660,14 @@
   }
 
   // Gọi sau khi bé hoàn thành 1 lượt học/ôn tập: mở khoá huy hiệu (nếu có) + hiệu ứng ăn mừng.
-  // oldStars/oldLifetimeStars phải chụp lại TRƯỚC khi addStars() chạy ở nơi gọi — 2 số khác nhau
-  // (stars có thể đã bị bé tiêu trước đó, lifetimeStars thì không) nên không thể suy ra số này từ
-  // số kia, phải truyền cả 2 vào riêng.
-  function celebrate(isPerfect, oldStars, oldLifetimeStars, newPieceTopic) {
+  // oldLifetimeStars phải chụp lại TRƯỚC khi addStars() chạy ở nơi gọi, vì lifetimeStars không bao
+  // giờ giảm (khác progress.stars có thể bị trừ khi mua đồ) nên không thể suy ra số cũ từ số hiện tại.
+  function celebrate(isPerfect, oldLifetimeStars, newPieceTopic) {
     const newBadges = checkNewBadges();
     const levelUp = checkLevelUp(oldLifetimeStars);
-    const newOutfits = checkNewOutfitUnlocks(oldStars);
-    // Huy hiệu 'all_topics' TỰ mở đúng lúc bé vừa học xong chủ đề CUỐI CÙNG còn lại (xem check của
-    // nó trong BADGES) — dùng lại kết quả checkNewBadges() thay vì tính lại điều kiện "vừa xong hết
-    // chủ đề" 1 lần nữa, để chắc chắn 2 thứ không bao giờ lệch nhau.
-    const treasureBadge = newBadges.find(b => b.id === 'all_topics');
-    if (isPerfect || newBadges.length || levelUp || newPieceTopic || newOutfits.length) launchConfetti();
-    showBadgeToasts(newBadges);
-    const afterBadges = newBadges.length * 2900;
-    if (levelUp) setTimeout(() => showLevelUpToast(levelUp), afterBadges);
-    const afterLevelUp = afterBadges + (levelUp ? 3200 : 0);
-    if (newPieceTopic) setTimeout(() => showPuzzlePieceToast(newPieceTopic), afterLevelUp);
-    const afterPiece = afterLevelUp + (newPieceTopic ? 2600 : 0);
-    newOutfits.forEach((o, i) => setTimeout(() => showOutfitUnlockToast(o), afterPiece + i * 2600));
-    const afterOutfits = afterPiece + newOutfits.length * 2600;
-    if (treasureBadge) setTimeout(() => { launchConfetti(); showTreasureUnlockToast(treasureBadge); }, afterOutfits);
+    if (isPerfect || newBadges.length || levelUp || newPieceTopic) launchConfetti();
+    showRewardsSummaryToast(newBadges, levelUp, newPieceTopic);
     renderTotalStars(); // huy hiệu chuỗi ngày có thể vừa cộng thêm sao thưởng, cập nhật lại topbar cho khớp
-  }
-
-  // Thông báo có mảnh ghép tranh mới (học xong 1 chủ đề lần đầu) — dùng lại khung .badge-toast,
-  // xếp hàng sau huy hiệu/lên cấp (nếu có) để không đè lên nhau.
-  function showPuzzlePieceToast(topic) {
-    const toast = document.createElement('div');
-    toast.className = 'badge-toast';
-    toast.innerHTML =
-      '<span class="badge-icon">🖼️</span>' +
-      '<span><span class="badge-eyebrow">Có mảnh ghép mới!</span><br><span class="badge-label">' + topic.label +
-      '</span><br><span class="badge-unlock">Vào mục Sưu tập để ghép vào bức tranh nhé!</span></span>';
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
-    setTimeout(() => {
-      toast.classList.remove('is-visible');
-      setTimeout(() => toast.remove(), 300);
-    }, 2600);
   }
 
   // ---------- STREAK & DAILY REMINDER ----------
@@ -1143,36 +1083,6 @@
     saveProgress(progress);
     renderMascotAccessory();
     renderOutfitShop();
-  }
-
-  // Kiểm tra sau mỗi lần cộng sao xem có vừa đủ mốc MUA trang phục mới không (giống checkLevelUp)
-  // — progress.outfitsSeen chỉ dùng để tránh báo lại 1 trang phục nhiều lần, KHÔNG tự cấp trang
-  // phục (bé vẫn phải tự bấm mua trong tủ đồ).
-  function checkNewOutfitUnlocks(oldStars) {
-    if (typeof oldStars !== 'number') return [];
-    const newly = [];
-    OUTFITS.forEach(o => {
-      if (!progress.outfitsSeen[o.id] && !progress.purchasedOutfits[o.id] && progress.stars >= o.unlocksAt) {
-        progress.outfitsSeen[o.id] = true;
-        newly.push(o);
-      }
-    });
-    if (newly.length) saveProgress(progress);
-    return newly;
-  }
-  function showOutfitUnlockToast(outfit) {
-    const toast = document.createElement('div');
-    toast.className = 'badge-toast';
-    toast.innerHTML =
-      '<span class="badge-icon">' + outfit.emoji + '</span>' +
-      '<span><span class="badge-eyebrow">Đủ sao để mua trang phục!</span><br><span class="badge-label">' + outfit.label +
-      '</span><br><span class="badge-unlock">Vào mục Sưu tập để mua cho chú cáo nhé!</span></span>';
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('is-visible'));
-    setTimeout(() => {
-      toast.classList.remove('is-visible');
-      setTimeout(() => toast.remove(), 300);
-    }, 2600);
   }
 
   document.getElementById('resetProgressBtn').addEventListener('click', () => {
@@ -2707,7 +2617,6 @@
     // (còn dư càng nhiều giây thì thưởng càng nhiều, tối đa +3 sao).
     const bonus = finishedAll ? Math.min(3, Math.ceil(speedTimeLeft / 10)) : 0;
     const starsEarned = speedCorrectCount + bonus;
-    const oldStars = progress.stars;
     const oldLifetimeStars = progress.lifetimeStars;
     addStars(starsEarned);
     bumpDailyMission('games');
@@ -2724,7 +2633,7 @@
     document.getElementById('speedWrap').hidden = true;
     document.getElementById('speedDoneWrap').hidden = false;
 
-    celebrate(finishedAll && speedCorrectCount === speedWords.length, oldStars, oldLifetimeStars, null);
+    celebrate(finishedAll && speedCorrectCount === speedWords.length, oldLifetimeStars, null);
   }
 
   document.getElementById('backFromSpeed').addEventListener('click', () => {
@@ -2828,7 +2737,6 @@
   function endQuizParent() {
     stopQuizParentTimer();
     const bonus = 2;
-    const oldStars = progress.stars;
     const oldLifetimeStars = progress.lifetimeStars;
     addStars(bonus);
     bumpDailyMission('games');
@@ -2841,7 +2749,7 @@
     document.getElementById('quizParentWrap').hidden = true;
     document.getElementById('quizParentDoneWrap').hidden = false;
 
-    celebrate(quizParentScore === quizParentWords.length, oldStars, oldLifetimeStars);
+    celebrate(quizParentScore === quizParentWords.length, oldLifetimeStars);
   }
 
   document.getElementById('backFromQuizParent').addEventListener('click', () => { stopQuizParentTimer(); showScreen('games'); });
@@ -2901,7 +2809,6 @@
     const requiredCorrect = Math.ceil(totalWords * TOPIC_PASS_RATIO);
     const passed = correctCount >= requiredCorrect;
     const starsEarned = correctCount;
-    const oldStars = progress.stars;
     const oldLifetimeStars = progress.lifetimeStars;
     const isNewTopic = !progress.doneTopics[currentTopic.id];
     if (isNewTopic) {
@@ -2933,7 +2840,7 @@
     replayBtn.onclick = () => startTopic(currentTopic.id);
 
     renderTotalStars();
-    celebrate(isPerfect, oldStars, oldLifetimeStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null);
+    celebrate(isPerfect, oldLifetimeStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null);
     resetChest();
     showScreen('done');
   }
@@ -2944,7 +2851,6 @@
   // (không có chủ đề để "học lại"/in flashcard riêng, chỉ tính sao + cập nhật chuỗi ngày/huy hiệu).
   function finishReviewSession() {
     const isPerfect = quizCorrectCount === quizOrder.length;
-    const oldStars = progress.stars;
     const oldLifetimeStars = progress.lifetimeStars;
     addStars(quizCorrectCount);
     if (isPerfect) progress.perfectCount = (progress.perfectCount || 0) + 1;
@@ -2974,7 +2880,7 @@
     replayBtn.onclick = replayByKind[reviewKind];
 
     renderTotalStars();
-    celebrate(isPerfect, oldStars, oldLifetimeStars);
+    celebrate(isPerfect, oldLifetimeStars);
     resetChest();
     isMixedReview = false;
     showScreen('done');

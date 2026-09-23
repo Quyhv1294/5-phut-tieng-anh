@@ -841,6 +841,23 @@
   .badge-toast .badge-unlock { font-size: 13px; color: var(--ink-soft); font-weight: 700; }
   .info-toast { border-color: var(--teal); }
 
+  /* Thẻ gộp phần thưởng (huy hiệu mới + lên cấp + mảnh ghép mới) — hiện GIỮA màn hình (khác
+     .badge-toast ghim trên đầu) vì đây là 1 lần "chốt" duy nhất cho cả lượt học, không phải 1 dòng
+     thông báo trôi qua như các toast khác. */
+  .rewards-toast {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.85);
+    background: var(--surface); border: 3px solid var(--gold); border-radius: 22px;
+    padding: 16px 20px; box-shadow: var(--shadow); z-index: 220;
+    opacity: 0; transition: opacity .25s ease, transform .25s ease;
+    max-width: 84vw; text-align: center;
+  }
+  .rewards-toast.is-visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .rewards-toast-title { font-family: 'Baloo 2'; font-weight: 800; font-size: 18.5px; margin-bottom: 10px; }
+  .rewards-toast-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 300px; }
+  .rewards-toast-item { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 80px; }
+  .rewards-toast-icon { font-size: 30px; }
+  .rewards-toast-label { font-family: 'Baloo 2'; font-weight: 700; font-size: 11.5px; line-height: 1.25; }
+
   /* SENTENCES SCREEN */
   .sentence-wrap { flex: 1; display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
   .sentence-topic-title { font-family: 'Baloo 2'; font-weight: 800; font-size: 23px; text-align: center; }
