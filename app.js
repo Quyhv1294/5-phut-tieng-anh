@@ -502,6 +502,7 @@
     { id: 'streak_14', icon: '🔥', label: '2 tuần kiên trì', desc: 'Học liên tiếp 14 ngày (+20 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 20, freeze: 1, check: p => p.streak.count >= 14 },
     { id: 'streak_30', icon: '🔥', label: 'Bền bỉ cả tháng', desc: 'Học liên tiếp 30 ngày (+40 sao, +1 🛡️ khiên bảo vệ chuỗi)', bonus: 40, freeze: 1, check: p => p.streak.count >= 30 },
     { id: 'perfect_5', icon: '🥇', label: 'Ngôi sao xuất sắc', desc: 'Đạt điểm tuyệt đối 5 lần', check: p => (p.perfectCount || 0) >= 5 },
+    { id: 'abc_master', icon: '🔤', label: 'Thuộc lòng bảng chữ cái', desc: 'Học xong cả 26 chữ cái (+20 sao)', bonus: 20, check: p => ABC_TOPICS.every(t => p.doneTopics[t.id]) },
     // Huy hiệu này còn quyết định lúc nào rương kho báu trên trang chủ mở ra (xem renderHome) —
     // nên cần có phần thưởng thật sự tương xứng, không chỉ là 1 huy hiệu để khoe.
     { id: 'all_topics', icon: '🏆', label: 'Bậc thầy tí hon', desc: 'Hoàn thành tất cả chủ đề (+100 sao, mở kho báu bí mật!)', bonus: 100, check: p => TOPICS.every(t => p.doneTopics[t.id]) },
@@ -1805,7 +1806,28 @@
     difficultBtn.title = difficultCount === 0 ? 'Bé chưa có từ nào hay sai cả, giỏi quá!' : '';
   }
 
+  // Bảng chữ cái ABC — 6 nhóm chữ cái liền nhau (ABC_TOPICS, data/alphabet.js), luôn mở hết, không
+  // khoá tuần tự/không tính vào "Bậc thầy tí hon"/mảnh ghép tranh (những thứ đó chỉ tính 12 chủ đề
+  // từ vựng chính trong TOPICS). Chỉ đánh dấu "✓ Đã học" theo progress.doneTopics như bình thường.
+  function renderAbcSection() {
+    const grid = document.getElementById('abcTopicGrid');
+    grid.innerHTML = '';
+    ABC_TOPICS.forEach(topic => {
+      const btn = document.createElement('button');
+      const done = !!progress.doneTopics[topic.id];
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã học</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.words.length + ' chữ cái</span></span>';
+      btn.addEventListener('click', () => startTopic(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
   function renderHome() {
+    renderAbcSection();
     const grid = document.getElementById('topicGrid');
     grid.innerHTML = '';
     // Bản đồ hành trình: đánh dấu chủ đề TIẾP THEO bé cần vượt qua (chưa đạt ≥80%) bằng 1 mascot
@@ -1845,6 +1867,17 @@
   let cardIndex = 0;
 
   function startTopic(topicId) {
+    // Bảng chữ cái (ABC_TOPICS) tách riêng khỏi TOPICS, luôn mở, không qua khoá tuần tự —
+    // check trước, không rơi vào nhánh isTopicLocked() vốn chỉ áp dụng cho 12 chủ đề từ vựng chính.
+    const abcTopic = ABC_TOPICS.find(t => t.id === topicId);
+    if (abcTopic) {
+      currentTopic = abcTopic;
+      cardIndex = 0;
+      isMixedReview = false;
+      renderCard();
+      showScreen('cards');
+      return;
+    }
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
     if (isTopicLocked(topic)) { showLockedTopicNotice(topic); return; }
@@ -2811,6 +2844,9 @@
     const starsEarned = correctCount;
     const oldLifetimeStars = progress.lifetimeStars;
     const isNewTopic = !progress.doneTopics[currentTopic.id];
+    // Bảng chữ cái (ABC_TOPICS) không nằm trong TOPICS nên không có khoá tuần tự lẫn Trò chơi/Câu
+    // riêng — subtitle/nút bấm cần đổi nội dung cho khớp, không nhắc "mở khoá chủ đề tiếp theo".
+    const isAbcTopic = ABC_TOPICS.includes(currentTopic);
     if (isNewTopic) {
       addStars(starsEarned);
       progress.doneTopics[currentTopic.id] = true;
@@ -2821,12 +2857,14 @@
     updateStreakOnComplete();
 
     document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : passed ? 'Giỏi quá!' : 'Cố lên nào!';
-    document.getElementById('doneSubtitle').textContent =
-      'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong chủ đề "' + currentTopic.label + '". ' +
-      (passed
-        ? '🔓 Bé đã đạt yêu cầu, chủ đề tiếp theo mở khoá rồi!'
-        : '📌 Bé cần đạt ít nhất ' + requiredCorrect + '/' + totalWords + ' câu đúng mới mở khoá được chủ đề tiếp theo — bấm "Học lại chủ đề này" để thử lại nhé!') +
-      (isNewTopic ? ' 🎮 Trò chơi và Câu của chủ đề này cũng vừa mở khoá!' : '');
+    document.getElementById('doneSubtitle').textContent = isAbcTopic
+      ? 'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong nhóm "' + currentTopic.label + '". ' +
+        (passed ? '🌟 Bé nhớ chữ tốt lắm, học tiếp nhóm chữ khác nhé!' : '📌 Bé ôn lại nhóm chữ này thêm 1 lần nữa cho nhớ nhé!')
+      : 'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong chủ đề "' + currentTopic.label + '". ' +
+        (passed
+          ? '🔓 Bé đã đạt yêu cầu, chủ đề tiếp theo mở khoá rồi!'
+          : '📌 Bé cần đạt ít nhất ' + requiredCorrect + '/' + totalWords + ' câu đúng mới mở khoá được chủ đề tiếp theo — bấm "Học lại chủ đề này" để thử lại nhé!') +
+        (isNewTopic ? ' 🎮 Trò chơi và Câu của chủ đề này cũng vừa mở khoá!' : '');
     document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, correctCount));
 
     const tipWord = currentTopic.words[Math.floor(Math.random() * currentTopic.words.length)];
@@ -2836,7 +2874,7 @@
     document.getElementById('printBtn').hidden = false;
     document.getElementById('printBtn').onclick = () => printTopicFlashcards(currentTopic);
     const replayBtn = document.getElementById('replayBtn');
-    replayBtn.textContent = 'Học lại chủ đề này';
+    replayBtn.textContent = isAbcTopic ? 'Học lại nhóm chữ này' : 'Học lại chủ đề này';
     replayBtn.onclick = () => startTopic(currentTopic.id);
 
     renderTotalStars();
