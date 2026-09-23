@@ -107,6 +107,9 @@
     <div class="section-label">🔤 Bảng chữ cái ABC</div>
     <div class="topic-grid" id="abcTopicGrid"></div>
 
+    <div class="section-label">🔊 Ngữ âm cơ bản (Phonics)</div>
+    <div class="topic-grid" id="phonicsTopicGrid"></div>
+
     <div class="section-label">🗺️ Bản đồ kho báu 12 chủ đề</div>
     <div class="treasure-map">
       <span class="treasure-map-compass">🧭</span>
@@ -374,6 +377,42 @@
         <button class="nav-btn" id="prevCardBtn">← Trước</button>
         <button class="nav-btn primary" id="nextCardBtn">Tiếp →</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ PHONICS: HỌC GHÉP ÂM SCREEN ============ -->
+  <section class="screen" id="screen-phonics-learn">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromPhonicsLearn" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="phonicsLearnProgressFill"></div></div>
+    </div>
+    <div class="flash-wrap">
+      <div class="flashcard" id="phonicsFlashcard">
+        <div class="big-emoji" id="phonicsCardEmoji">🐱</div>
+        <div class="phonics-letters" id="phonicsLetterTiles"></div>
+        <div class="word-vi" id="phonicsCardVi">Con mèo</div>
+      </div>
+      <button class="speak-btn" id="phonicsBlendBtn">🔊 Nghe ghép âm cả từ</button>
+      <p class="phonics-hint">👆 Bấm từng chữ cái để nghe tên chữ nhé!</p>
+      <div class="nav-row">
+        <button class="nav-btn" id="phonicsPrevBtn">← Trước</button>
+        <button class="nav-btn primary" id="phonicsNextBtn">Tiếp →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PHONICS: ĐỐ ÂM ĐẦU (QUIZ) SCREEN ============ -->
+  <section class="screen" id="screen-phonics-quiz">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromPhonicsQuiz" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="phonicsQuizProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap">
+      <div class="quiz-prompt">Từ này bắt đầu bằng chữ gì?</div>
+      <div class="reverse-emoji" id="phonicsQuizEmoji">🐱</div>
+      <button class="speak-btn" id="phonicsQuizReplayBtn">🔊 Nghe lại từ</button>
+      <div class="quiz-options" id="phonicsQuizOptions"></div>
+      <div class="quiz-feedback" id="phonicsQuizFeedback"></div>
     </div>
   </section>
 
@@ -679,6 +718,7 @@
 
 <script src="data/topics.js"></script>
 <script src="data/alphabet.js"></script>
+<script src="data/phonics.js"></script>
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>
 <script src="app.js"></script>

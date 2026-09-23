@@ -506,6 +506,13 @@
   .flashcard .word-en { font-family: 'Baloo 2'; font-weight: 800; font-size: 46px; letter-spacing: 0.5px; }
   .flashcard .word-vi { font-family: 'Quicksand'; font-weight: 700; font-size: 20.5px; opacity: 0.85; }
 
+  /* PHONICS (Ngữ âm cơ bản) — tái dùng .spelling-tile cho từng ô chữ cái bấm được, chỉ phóng to hơn
+     vì đây là màn học chính (ít ô hơn, mỗi từ chỉ 3-4 chữ) chứ không phải ngân hàng chữ xếp từ. */
+  .phonics-letters { display: flex; justify-content: center; gap: 10px; }
+  .phonics-letters .spelling-tile { width: 58px; height: 58px; font-size: 28px; cursor: pointer; }
+  .phonics-letters .spelling-tile:active { transform: scale(0.92); }
+  .phonics-hint { font-size: 14.5px; color: var(--ink-soft); font-weight: 700; text-align: center; margin: 0; }
+
   .speak-btn {
     border: none; border-radius: 999px;
     background: var(--surface);

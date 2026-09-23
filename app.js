@@ -353,6 +353,8 @@
     donate: document.getElementById('screen-donate'),
     profileCreate: document.getElementById('screen-profile-create'),
     cards: document.getElementById('screen-cards'),
+    phonicsLearn: document.getElementById('screen-phonics-learn'),
+    phonicsQuiz: document.getElementById('screen-phonics-quiz'),
     quiz: document.getElementById('screen-quiz'),
     quizRecap: document.getElementById('screen-quiz-recap'),
     match: document.getElementById('screen-match'),
@@ -1826,8 +1828,28 @@
     });
   }
 
+  // Ngữ âm cơ bản (Phonics) — 4 nhóm họ vần (PHONICS_TOPICS, data/phonics.js), cùng nguyên tắc với
+  // ABC_TOPICS: luôn mở hết, tách khỏi TOPICS nên không đụng khoá tuần tự/huy hiệu/mảnh ghép tranh.
+  function renderPhonicsSection() {
+    const grid = document.getElementById('phonicsTopicGrid');
+    grid.innerHTML = '';
+    PHONICS_TOPICS.forEach(topic => {
+      const btn = document.createElement('button');
+      const done = !!progress.doneTopics[topic.id];
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã học</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.words.length + ' từ</span></span>';
+      btn.addEventListener('click', () => startPhonicsGroup(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
   function renderHome() {
     renderAbcSection();
+    renderPhonicsSection();
     const grid = document.getElementById('topicGrid');
     grid.innerHTML = '';
     // Bản đồ hành trình: đánh dấu chủ đề TIẾP THEO bé cần vượt qua (chưa đạt ≥80%) bằng 1 mascot
@@ -2121,6 +2143,158 @@
       };
       try { readRecognition.start(); } catch (e) {}
     });
+  }
+
+  // ---------- PHONICS (Ngữ âm cơ bản) ----------
+  // Màn riêng, KHÔNG dùng chung #screen-cards/#screen-quiz với TOPICS/ABC_TOPICS: bé bấm từng chữ
+  // cái để nghe TÊN chữ (học ghép âm), rồi quiz kiểu khác hẳn — cho hình + nghe cả từ, chọn ĐÚNG
+  // CHỮ CÁI đầu (không phải chọn hình như quiz thường) — đúng kỹ năng "nhận biết âm đầu" của phonics,
+  // khác "Xếp chữ" (Trò chơi) vốn đánh vần lại TOÀN BỘ từ.
+  let currentPhonicsTopic = null;
+  let phonicsIndex = 0;
+  let phonicsQuizIndex = 0;
+  let phonicsQuizCorrectCount = 0;
+  const PHONICS_DISTRACTOR_LETTERS = ['B','C','D','F','G','H','J','K','L','M','N','P','R','S','T','V','W'];
+
+  function startPhonicsGroup(topicId) {
+    const topic = PHONICS_TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    currentPhonicsTopic = topic;
+    phonicsIndex = 0;
+    renderPhonicsLearnCard();
+    showScreen('phonicsLearn');
+  }
+
+  function renderPhonicsLearnCard() {
+    const w = currentPhonicsTopic.words[phonicsIndex];
+    document.getElementById('phonicsCardEmoji').textContent = w.emoji;
+    document.getElementById('phonicsCardVi').textContent = w.vi;
+    const tiles = document.getElementById('phonicsLetterTiles');
+    tiles.innerHTML = '';
+    w.en.split('').forEach(letter => {
+      const btn = document.createElement('button');
+      btn.className = 'spelling-tile';
+      btn.textContent = letter;
+      btn.addEventListener('click', () => speak(letter));
+      tiles.appendChild(btn);
+    });
+    const pct = (phonicsIndex / currentPhonicsTopic.words.length) * 100;
+    document.getElementById('phonicsLearnProgressFill').style.width = pct + '%';
+    document.getElementById('phonicsPrevBtn').disabled = phonicsIndex === 0;
+    document.getElementById('phonicsNextBtn').textContent =
+      (phonicsIndex === currentPhonicsTopic.words.length - 1) ? 'Đố vui →' : 'Tiếp →';
+  }
+
+  document.getElementById('phonicsBlendBtn').addEventListener('click', () => {
+    speak(currentPhonicsTopic.words[phonicsIndex].en);
+  });
+  document.getElementById('phonicsPrevBtn').addEventListener('click', () => {
+    if (phonicsIndex > 0) { phonicsIndex--; renderPhonicsLearnCard(); }
+  });
+  document.getElementById('phonicsNextBtn').addEventListener('click', () => {
+    if (phonicsIndex < currentPhonicsTopic.words.length - 1) {
+      phonicsIndex++;
+      renderPhonicsLearnCard();
+    } else {
+      startPhonicsQuiz();
+    }
+  });
+  document.getElementById('backFromPhonicsLearn').addEventListener('click', () => showScreen('home'));
+
+  function startPhonicsQuiz() {
+    phonicsQuizIndex = 0;
+    phonicsQuizCorrectCount = 0;
+    renderPhonicsQuizQuestion();
+    showScreen('phonicsQuiz');
+  }
+
+  function renderPhonicsQuizQuestion() {
+    document.getElementById('phonicsQuizFeedback').textContent = '';
+    document.getElementById('phonicsQuizFeedback').className = 'quiz-feedback';
+    const pct = (phonicsQuizIndex / currentPhonicsTopic.words.length) * 100;
+    document.getElementById('phonicsQuizProgressFill').style.width = pct + '%';
+
+    const word = currentPhonicsTopic.words[phonicsQuizIndex];
+    document.getElementById('phonicsQuizEmoji').textContent = word.emoji;
+    speak(word.en);
+
+    const correctLetter = word.en[0];
+    const distractors = shuffle(PHONICS_DISTRACTOR_LETTERS.filter(l => l !== correctLetter)).slice(0, 3);
+    const options = shuffle([correctLetter, ...distractors]);
+
+    const wrap = document.getElementById('phonicsQuizOptions');
+    wrap.innerHTML = '';
+    options.forEach(letter => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt';
+      b.textContent = letter;
+      b.addEventListener('click', () => handlePhonicsQuizAnswer(b, letter === correctLetter));
+      wrap.appendChild(b);
+    });
+  }
+
+  function handlePhonicsQuizAnswer(btn, isCorrect) {
+    document.querySelectorAll('#phonicsQuizOptions .quiz-opt').forEach(o => o.disabled = true);
+    const fb = document.getElementById('phonicsQuizFeedback');
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.textContent = 'Chính xác! 🎉';
+      fb.className = 'quiz-feedback ok';
+      phonicsQuizCorrectCount++;
+    } else {
+      btn.classList.add('wrong');
+      fb.textContent = 'Chưa đúng rồi, thử lại lần sau nhé!';
+      fb.className = 'quiz-feedback no';
+    }
+    setTimeout(() => {
+      phonicsQuizIndex++;
+      if (phonicsQuizIndex < currentPhonicsTopic.words.length) {
+        renderPhonicsQuizQuestion();
+      } else {
+        finishPhonics();
+      }
+    }, 1000);
+  }
+
+  document.getElementById('phonicsQuizReplayBtn').addEventListener('click', () => {
+    speak(currentPhonicsTopic.words[phonicsQuizIndex].en);
+  });
+  document.getElementById('backFromPhonicsQuiz').addEventListener('click', () => showScreen('home'));
+
+  // Không đi qua finishTopic() vì PHONICS_TOPICS không nằm trong TOPICS (giống ABC_TOPICS) — tự lo
+  // sao thưởng/doneTopics/màn Hoàn thành riêng, không có "in flashcard" hay "chủ đề tiếp theo".
+  function finishPhonics() {
+    const totalWords = currentPhonicsTopic.words.length;
+    const isPerfect = phonicsQuizCorrectCount === totalWords;
+    const oldLifetimeStars = progress.lifetimeStars;
+    const isNewGroup = !progress.doneTopics[currentPhonicsTopic.id];
+    if (isNewGroup) {
+      addStars(phonicsQuizCorrectCount);
+      progress.doneTopics[currentPhonicsTopic.id] = true;
+    }
+    if (isPerfect) progress.perfectCount = (progress.perfectCount || 0) + 1;
+    saveProgress(progress);
+    updateStreakOnComplete();
+
+    document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : 'Giỏi quá!';
+    document.getElementById('doneSubtitle').textContent =
+      'Bé đoán đúng ' + phonicsQuizCorrectCount + '/' + totalWords + ' âm đầu trong nhóm "' + currentPhonicsTopic.label + '".';
+    document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, phonicsQuizCorrectCount));
+
+    const tipWord = currentPhonicsTopic.words[Math.floor(Math.random() * totalWords)];
+    document.getElementById('parentTip').innerHTML =
+      '💬 Ba mẹ thử hỏi bé: "<strong>' + tipWord.en + '</strong> đánh vần thế nào nhỉ?" (đáp án: <strong>' +
+      tipWord.en.split('').join('-') + '</strong>)';
+
+    document.getElementById('printBtn').hidden = true;
+    const replayBtn = document.getElementById('replayBtn');
+    replayBtn.textContent = 'Học lại nhóm vần này';
+    replayBtn.onclick = () => startPhonicsGroup(currentPhonicsTopic.id);
+
+    renderTotalStars();
+    celebrate(isPerfect, oldLifetimeStars, null);
+    resetChest();
+    showScreen('done');
   }
 
   // ---------- QUIZ ----------
