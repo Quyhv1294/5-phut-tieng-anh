@@ -66,8 +66,7 @@
   }
 
   const STORAGE_KEY = '5phut_progress_v1';
-  const MATCH_PAIR_COUNT = 4; // Ghép tranh chỉ lấy ngẫu nhiên 4 cặp/lượt cho vừa sức bé, không cần hết cả chủ đề
-  const SPELLING_WORD_COUNT = 4; // Xếp chữ cũng chỉ lấy ngẫu nhiên 4 từ/lượt, cùng độ khó với Ghép tranh
+  const SPELLING_WORD_COUNT = 4; // Xếp chữ chỉ lấy ngẫu nhiên 4 từ/lượt cho vừa sức bé
   const SPEED_WORD_COUNT = 8; // Đố vui tính giờ: lấy tối đa 8 từ/lượt để có đủ thời gian "đua"
   const SPEED_TIME_LIMIT = 30; // giây cho mỗi lượt chơi
   const QUIZPARENT_WORD_COUNT = 8; // Đố ba mẹ: lấy tối đa 8 từ/lượt, đủ dài nhưng không quá dài
@@ -1665,7 +1664,7 @@
       const btn = document.createElement('button');
       btn.className = 'topic-card ' + topic.cls + practiceLockClasses(topic);
       const countText = isTopicLockedForPractice(topic) ? practiceLockReasonText(topic) :
-        gamesMode === 'match' ? 'Ghép ' + Math.min(MATCH_PAIR_COUNT, topic.words.length) + ' cặp' :
+        gamesMode === 'match' ? 'Nối ' + topic.words.length + ' cặp' :
         gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
         gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
         'Đố ba mẹ ' + Math.min(QUIZPARENT_WORD_COUNT, topic.words.length) + ' từ';
@@ -2434,7 +2433,7 @@
     matchLock = false;
     document.getElementById('matchWrap').hidden = false;
     document.getElementById('matchDoneWrap').hidden = true;
-    matchWords = shuffle(currentTopic.words).slice(0, Math.min(MATCH_PAIR_COUNT, currentTopic.words.length));
+    matchWords = shuffle(currentTopic.words); // lấy hết toàn bộ từ vựng của chủ đề, không bỏ từ nào
     // Xáo 2 cột độc lập với nhau, để hàng trái/phải không tình cờ thẳng hàng theo đúng cặp.
     matchLeftCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.emoji, matched: false })));
     matchRightCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.en, matched: false })));
@@ -2501,6 +2500,8 @@
           setTimeout(() => {
             document.getElementById('matchWrap').hidden = true;
             document.getElementById('matchDoneWrap').hidden = false;
+            document.getElementById('matchDoneText').textContent =
+              'Bé đã ghép đúng hết cả ' + matchWords.length + ' cặp rồi đó!';
             bumpDailyMission('games');
             saveProgress(progress);
           }, 500);
