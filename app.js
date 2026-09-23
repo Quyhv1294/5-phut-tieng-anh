@@ -467,8 +467,25 @@
     return isTopicLocked(topic) ? '<span class="lock-badge">🔒</span>' : '';
   }
 
-  // Tap "Trò chơi" và "Câu" không còn khoá chủ đề theo sao nữa — toàn bộ TOPICS luôn chơi được ở
-  // 2 tab này, độc lập với tiến độ khoá tuần tự của Tap "Học" ở trên.
+  // Tap "Trò chơi" và "Câu": khoá theo TỪNG chủ đề riêng lẻ, không tuần tự như Tap "Học" ở trên —
+  // chỉ cần bé đã học xong (progress.doneTopics, tức đã làm xong quiz của chủ đề đó ít nhất 1 lần,
+  // không cần đạt ≥80%) là chủ đề đó mở ngay ở cả 2 tab, không phụ thuộc các chủ đề khác đã xong
+  // hay chưa.
+  function isTopicLockedForPractice(topic) {
+    return !progress.doneTopics[topic.id];
+  }
+  function practiceLockReasonText(topic) {
+    return 'Học xong "' + topic.label + '" ở Tap Học để mở khoá';
+  }
+  function practiceLockClasses(topic) {
+    return isTopicLockedForPractice(topic) ? ' is-locked' : '';
+  }
+  function practiceLockBadgeHtml(topic) {
+    return isTopicLockedForPractice(topic) ? '<span class="lock-badge">🔒</span>' : '';
+  }
+  function showLockedPracticeTopicNotice(topic) {
+    showToast('🔒 ' + practiceLockReasonText(topic) + '!', '🔒');
+  }
   function renderTotalStars() {
     document.getElementById('totalStars').textContent = progress.stars;
     document.getElementById('levelBadge').textContent = getLevel(progress.lifetimeStars).emoji;
@@ -1573,14 +1590,14 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      // Tab "Trò chơi" mở toàn bộ chủ đề, không áp dụng khoá mua bằng sao (khác Tap "Câu").
-      btn.className = 'topic-card ' + topic.cls;
-      const countText =
+      btn.className = 'topic-card ' + topic.cls + practiceLockClasses(topic);
+      const countText = isTopicLockedForPractice(topic) ? practiceLockReasonText(topic) :
         gamesMode === 'match' ? 'Nối ' + topic.words.length + ' cặp' :
         gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
         gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
         'Đố ba mẹ ' + Math.min(QUIZPARENT_WORD_COUNT, topic.words.length) + ' từ';
       btn.innerHTML =
+        practiceLockBadgeHtml(topic) +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + countText + '</span></span>';
@@ -1616,13 +1633,13 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      // Tab "Câu" cũng mở toàn bộ chủ đề, không áp dụng khoá mua bằng sao (giống Tap "Trò chơi").
-      btn.className = 'topic-card ' + topic.cls;
-      const countText =
+      btn.className = 'topic-card ' + topic.cls + practiceLockClasses(topic);
+      const countText = isTopicLockedForPractice(topic) ? practiceLockReasonText(topic) :
         sentencesMode === 'read' ? topic.words.length + ' câu' :
         sentencesMode === 'reverse' ? 'Đoán ' + Math.min(REVERSE_WORD_COUNT, topic.words.length) + ' từ' :
         'Điền ' + Math.min(FILLBLANK_WORD_COUNT, topic.words.length) + ' câu';
       btn.innerHTML =
+        practiceLockBadgeHtml(topic) +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + countText + '</span></span>';
@@ -1651,6 +1668,7 @@
   function startSentenceTopic(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     document.getElementById('sentenceTopicTitle').textContent = topic.label;
 
     const list = document.getElementById('sentenceList');
@@ -1686,6 +1704,7 @@
   function startReverseQuiz(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     reverseWords = shuffle(topic.words).slice(0, Math.min(REVERSE_WORD_COUNT, topic.words.length));
     reverseIndex = 0;
@@ -1761,6 +1780,7 @@
   function startFillBlank(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     const withExamples = topic.words.filter(w => w.example);
     fillBlankWords = shuffle(withExamples).slice(0, Math.min(FILLBLANK_WORD_COUNT, withExamples.length));
@@ -2327,6 +2347,7 @@
   function startPracticeMatch(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     matchMode = 'practice';
     startMatchGame();
@@ -2447,6 +2468,7 @@
   function startSpelling(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     spellingWords = shuffle(topic.words).slice(0, Math.min(SPELLING_WORD_COUNT, topic.words.length));
     spellingIndex = 0;
@@ -2577,6 +2599,7 @@
   function startSpeedQuiz(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     speedWords = shuffle(topic.words).slice(0, Math.min(SPEED_WORD_COUNT, topic.words.length));
     speedIndex = 0;
@@ -2736,6 +2759,7 @@
   function startQuizParent(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
+    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     quizParentWords = shuffle(topic.words).slice(0, Math.min(QUIZPARENT_WORD_COUNT, topic.words.length));
     quizParentIndex = 0;
@@ -2868,7 +2892,8 @@
       'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong chủ đề "' + currentTopic.label + '". ' +
       (passed
         ? '🔓 Bé đã đạt yêu cầu, chủ đề tiếp theo mở khoá rồi!'
-        : '📌 Bé cần đạt ít nhất ' + requiredCorrect + '/' + totalWords + ' câu đúng mới mở khoá được chủ đề tiếp theo — bấm "Học lại chủ đề này" để thử lại nhé!');
+        : '📌 Bé cần đạt ít nhất ' + requiredCorrect + '/' + totalWords + ' câu đúng mới mở khoá được chủ đề tiếp theo — bấm "Học lại chủ đề này" để thử lại nhé!') +
+      (isNewTopic ? ' 🎮 Trò chơi và Câu của chủ đề này cũng vừa mở khoá!' : '');
     document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, correctCount));
 
     const tipWord = currentTopic.words[Math.floor(Math.random() * currentTopic.words.length)];
