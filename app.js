@@ -1662,14 +1662,14 @@
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
       const btn = document.createElement('button');
-      btn.className = 'topic-card ' + topic.cls + practiceLockClasses(topic);
-      const countText = isTopicLockedForPractice(topic) ? practiceLockReasonText(topic) :
+      // Tab "Trò chơi" mở toàn bộ chủ đề, không áp dụng khoá mua bằng sao (khác Tap "Câu").
+      btn.className = 'topic-card ' + topic.cls;
+      const countText =
         gamesMode === 'match' ? 'Nối ' + topic.words.length + ' cặp' :
         gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
         gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
         'Đố ba mẹ ' + Math.min(QUIZPARENT_WORD_COUNT, topic.words.length) + ' từ';
       btn.innerHTML =
-        practiceLockBadgeHtml(topic) +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
         '<span class="count">' + countText + '</span></span>';
@@ -2419,7 +2419,6 @@
   function startPracticeMatch(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     matchMode = 'practice';
     startMatchGame();
@@ -2540,7 +2539,6 @@
   function startSpelling(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     spellingWords = shuffle(topic.words).slice(0, Math.min(SPELLING_WORD_COUNT, topic.words.length));
     spellingIndex = 0;
@@ -2671,7 +2669,6 @@
   function startSpeedQuiz(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     speedWords = shuffle(topic.words).slice(0, Math.min(SPEED_WORD_COUNT, topic.words.length));
     speedIndex = 0;
@@ -2831,7 +2828,6 @@
   function startQuizParent(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
     if (!topic) return;
-    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
     quizParentWords = shuffle(topic.words).slice(0, Math.min(QUIZPARENT_WORD_COUNT, topic.words.length));
     quizParentIndex = 0;
