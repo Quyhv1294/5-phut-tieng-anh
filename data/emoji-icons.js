@@ -1,4 +1,5 @@
 const EMOJI_ICONS = {
+  "🗺️": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/World%20map/3D/world_map_3d.png",
   "🦇": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Bat/3D/bat_3d.png",
   "🐀": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Rat/3D/rat_3d.png",
   "🪵": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Wood/3D/wood_3d.png",

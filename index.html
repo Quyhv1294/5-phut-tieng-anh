@@ -104,21 +104,31 @@
       <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
     </div>
 
-    <div class="section-label">🔤 Bảng chữ cái ABC</div>
-    <div class="topic-grid" id="abcTopicGrid"></div>
+    <div class="segment-toggle" id="homeModeToggle">
+      <div class="segment-thumb"></div>
+      <button class="segment-btn active" id="homeModeVocabBtn">🗺️ Từ vựng</button>
+      <button class="segment-btn" id="homeModeAbcBtn">🔤 Bảng chữ cái</button>
+      <button class="segment-btn" id="homeModePhonicsBtn">🔊 Ngữ âm</button>
+    </div>
 
-    <div class="section-label">🔊 Ngữ âm cơ bản (Phonics)</div>
-    <div class="topic-grid" id="phonicsTopicGrid"></div>
-
-    <div class="section-label">🗺️ Bản đồ kho báu 12 chủ đề</div>
-    <div class="treasure-map">
-      <span class="treasure-map-compass">🧭</span>
-      <div class="treasure-map-start">🚩 Xuất phát</div>
-      <div class="topic-path" id="topicGrid"></div>
-      <div class="treasure-map-chest" id="treasureChest">
-        <span class="chest-icon" id="treasureChestIcon">📦</span>
-        <span class="chest-label" id="treasureChestLabel">Kho báu bí mật — học hết 12 chủ đề để mở khoá!</span>
+    <div class="home-mode-panel" id="homeModeVocabPanel">
+      <div class="treasure-map">
+        <span class="treasure-map-compass">🧭</span>
+        <div class="treasure-map-start">🚩 Xuất phát</div>
+        <div class="topic-path" id="topicGrid"></div>
+        <div class="treasure-map-chest" id="treasureChest">
+          <span class="chest-icon" id="treasureChestIcon">📦</span>
+          <span class="chest-label" id="treasureChestLabel">Kho báu bí mật — học hết 12 chủ đề để mở khoá!</span>
+        </div>
       </div>
+    </div>
+
+    <div class="home-mode-panel" id="homeModeAbcPanel" hidden>
+      <div class="topic-grid" id="abcTopicGrid"></div>
+    </div>
+
+    <div class="home-mode-panel" id="homeModePhonicsPanel" hidden>
+      <div class="topic-grid" id="phonicsTopicGrid"></div>
     </div>
 
     <div class="home-footnote">"5 Phút Tiếng Anh Mỗi Ngày" 💚</div>

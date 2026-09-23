@@ -408,13 +408,32 @@
     thumb.style.transform = 'translateX(' + active.offsetLeft + 'px)';
   }
   window.addEventListener('resize', () => {
-    ['gamesModeToggle', 'sentencesModeToggle', 'collectionModeToggle'].forEach(id => {
+    ['gamesModeToggle', 'sentencesModeToggle', 'collectionModeToggle', 'homeModeToggle'].forEach(id => {
       const el = document.getElementById(id);
       if (el && el.offsetParent !== null) moveSegmentThumb(el);
     });
   });
 
-  document.getElementById('tabHome').addEventListener('click', () => { renderHome(); showScreen('home'); });
+  // Tap "Học" gộp 3 khối nội dung lớn (bản đồ 12 chủ đề / bảng chữ cái / ngữ âm) đằng sau 1 segment-
+  // toggle thay vì xếp chồng hết lên nhau — trang chủ trước đây dài, phải kéo rất nhiều mới hết.
+  // Nhiệm vụ hôm nay/Ôn tập vẫn hiện sẵn phía trên (không thuộc tab nhỏ nào) vì đó là việc bé cần
+  // thấy ngay mỗi ngày, không phải "thư viện nội dung" để chọn duyệt qua.
+  let homeMode = 'vocab'; // 'vocab' (bản đồ 12 chủ đề), 'abc' (bảng chữ cái) hoặc 'phonics' (ngữ âm)
+  function setHomeMode(mode) {
+    homeMode = mode;
+    document.getElementById('homeModeVocabBtn').classList.toggle('active', mode === 'vocab');
+    document.getElementById('homeModeAbcBtn').classList.toggle('active', mode === 'abc');
+    document.getElementById('homeModePhonicsBtn').classList.toggle('active', mode === 'phonics');
+    document.getElementById('homeModeVocabPanel').hidden = mode !== 'vocab';
+    document.getElementById('homeModeAbcPanel').hidden = mode !== 'abc';
+    document.getElementById('homeModePhonicsPanel').hidden = mode !== 'phonics';
+    moveSegmentThumb(document.getElementById('homeModeToggle'));
+  }
+  document.getElementById('homeModeVocabBtn').addEventListener('click', () => setHomeMode('vocab'));
+  document.getElementById('homeModeAbcBtn').addEventListener('click', () => setHomeMode('abc'));
+  document.getElementById('homeModePhonicsBtn').addEventListener('click', () => setHomeMode('phonics'));
+
+  document.getElementById('tabHome').addEventListener('click', () => goHome());
   document.getElementById('brandHomeBtn').addEventListener('click', () => { if (enforceGate()) goHome(); });
   // renderGamesScreen/renderSentencesScreen phải chạy lại mỗi lần vào tab (không chỉ 1 lần lúc
   // mở app) để danh sách chủ đề khoá/mở phản ánh đúng tiến độ mới nhất — quan trọng hơn hẳn từ
@@ -2032,7 +2051,7 @@
       startQuiz();
     }
   });
-  document.getElementById('backFromCards').addEventListener('click', () => { resetReadAloud(); showScreen('home'); });
+  document.getElementById('backFromCards').addEventListener('click', () => { resetReadAloud(); goHome(); });
 
   // ---------- ĐỌC THEO CHẤM ĐIỂM (Web Speech API) ----------
   // LƯU Ý: đây KHÔNG phải chấm phát âm chuẩn ngữ âm học (cần AI/server riêng, tốn phí) — chỉ là
@@ -2199,7 +2218,7 @@
       startPhonicsQuiz();
     }
   });
-  document.getElementById('backFromPhonicsLearn').addEventListener('click', () => showScreen('home'));
+  document.getElementById('backFromPhonicsLearn').addEventListener('click', () => goHome());
 
   function startPhonicsQuiz() {
     phonicsQuizIndex = 0;
@@ -2259,7 +2278,7 @@
   document.getElementById('phonicsQuizReplayBtn').addEventListener('click', () => {
     speak(currentPhonicsTopic.words[phonicsQuizIndex].en);
   });
-  document.getElementById('backFromPhonicsQuiz').addEventListener('click', () => showScreen('home'));
+  document.getElementById('backFromPhonicsQuiz').addEventListener('click', () => goHome());
 
   // Không đi qua finishTopic() vì PHONICS_TOPICS không nằm trong TOPICS (giống ABC_TOPICS) — tự lo
   // sao thưởng/doneTopics/màn Hoàn thành riêng, không có "in flashcard" hay "chủ đề tiếp theo".
@@ -2471,7 +2490,7 @@
     continueBtn.onclick = () => { matchMode = 'learn'; startMatchGame(); };
   }
 
-  document.getElementById('backFromQuizRecap').addEventListener('click', () => showScreen('home'));
+  document.getElementById('backFromQuizRecap').addEventListener('click', () => goHome());
 
   document.getElementById('backFromQuiz').addEventListener('click', () => showScreen(isMixedReview ? 'progress' : 'home'));
 
@@ -3098,7 +3117,7 @@
     showScreen('done');
   }
 
-  document.getElementById('backHomeBtn').addEventListener('click', () => { renderHome(); showScreen('home'); });
+  document.getElementById('backHomeBtn').addEventListener('click', () => goHome());
 
   // ---------- PRINT FLASHCARDS ----------
   function printTopicFlashcards(topic) {
@@ -3349,11 +3368,12 @@
     showScreen('weekly');
   }
 
-  document.getElementById('backFromWeekly').addEventListener('click', () => showScreen('home'));
+  document.getElementById('backFromWeekly').addEventListener('click', () => goHome());
 
   function goHome() {
     renderHome();
     showScreen('home');
+    moveSegmentThumb(document.getElementById('homeModeToggle'));
   }
 
   // Chạy 1 lần duy nhất mỗi phiên, đúng lúc gate (xác thực + hồ sơ) vừa được thoả lần đầu —
