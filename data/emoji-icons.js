@@ -1,4 +1,6 @@
 const EMOJI_ICONS = {
+  "💰": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Money%20bag/3D/money_bag_3d.png",
+  "📦": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Package/3D/package_3d.png",
   "1️⃣": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Keycap%201/3D/keycap_1_3d.png",
   "2️⃣": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Keycap%202/3D/keycap_2_3d.png",
   "3️⃣": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Keycap%203/3D/keycap_3_3d.png",

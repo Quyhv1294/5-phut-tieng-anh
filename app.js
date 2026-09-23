@@ -504,7 +504,7 @@
     { id: 'perfect_5', icon: '🥇', label: 'Ngôi sao xuất sắc', desc: 'Đạt điểm tuyệt đối 5 lần', check: p => (p.perfectCount || 0) >= 5 },
     // Huy hiệu này còn quyết định lúc nào rương kho báu trên trang chủ mở ra (xem renderHome) —
     // nên cần có phần thưởng thật sự tương xứng, không chỉ là 1 huy hiệu để khoe.
-    { id: 'all_topics', icon: '🏆', label: 'Bậc thầy tí hon', desc: 'Hoàn thành tất cả chủ đề (+50 sao, mở kho báu bí mật!)', bonus: 50, check: p => TOPICS.every(t => p.doneTopics[t.id]) },
+    { id: 'all_topics', icon: '🏆', label: 'Bậc thầy tí hon', desc: 'Hoàn thành tất cả chủ đề (+100 sao, mở kho báu bí mật!)', bonus: 100, check: p => TOPICS.every(t => p.doneTopics[t.id]) },
   ];
 
   // Kiểm tra sau mỗi lần hoàn thành bài học xem có mở khoá huy hiệu mới không.
@@ -617,6 +617,26 @@
     }, 3200);
   }
 
+  // Thông báo riêng khi rương kho báu cuối bản đồ mở ra (bé vừa học xong TRỌN VẸN mọi chủ đề) —
+  // tách khỏi showBadgeToasts dù dùng chung điều kiện mở khoá huy hiệu 'all_topics', vì đây là cột
+  // mốc lớn nhất trong app nên xứng đáng có 1 thông báo riêng nhắc rõ "kho báu" thay vì chỉ hiện
+  // chung chung như 1 huy hiệu bình thường. Sao thưởng đã được cộng sẵn qua badge.bonus lúc
+  // checkNewBadges() chạy — hàm này chỉ hiện thông báo, không cộng sao lần 2.
+  function showTreasureUnlockToast(badge) {
+    const toast = document.createElement('div');
+    toast.className = 'badge-toast';
+    toast.innerHTML =
+      '<span class="badge-icon">💰</span>' +
+      '<span><span class="badge-eyebrow">Kho báu đã mở!</span><br><span class="badge-label">Bé học xong tất cả chủ đề rồi!</span>' +
+      '<br><span class="badge-unlock">🎁 Thưởng +' + badge.bonus + ' sao!</span></span>';
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    setTimeout(() => {
+      toast.classList.remove('is-visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 3200);
+  }
+
   // Thông báo nổi ngắn dùng chung (VD: xác thực email thành công) — tái dùng khung .badge-toast
   // nhưng đổi màu viền để phân biệt với thông báo huy hiệu.
   function showToast(message, icon) {
@@ -676,6 +696,10 @@
     const newBadges = checkNewBadges();
     const levelUp = checkLevelUp(oldLifetimeStars);
     const newOutfits = checkNewOutfitUnlocks(oldStars);
+    // Huy hiệu 'all_topics' TỰ mở đúng lúc bé vừa học xong chủ đề CUỐI CÙNG còn lại (xem check của
+    // nó trong BADGES) — dùng lại kết quả checkNewBadges() thay vì tính lại điều kiện "vừa xong hết
+    // chủ đề" 1 lần nữa, để chắc chắn 2 thứ không bao giờ lệch nhau.
+    const treasureBadge = newBadges.find(b => b.id === 'all_topics');
     if (isPerfect || newBadges.length || levelUp || newPieceTopic || newOutfits.length) launchConfetti();
     showBadgeToasts(newBadges);
     const afterBadges = newBadges.length * 2900;
@@ -684,6 +708,8 @@
     if (newPieceTopic) setTimeout(() => showPuzzlePieceToast(newPieceTopic), afterLevelUp);
     const afterPiece = afterLevelUp + (newPieceTopic ? 2600 : 0);
     newOutfits.forEach((o, i) => setTimeout(() => showOutfitUnlockToast(o), afterPiece + i * 2600));
+    const afterOutfits = afterPiece + newOutfits.length * 2600;
+    if (treasureBadge) setTimeout(() => { launchConfetti(); showTreasureUnlockToast(treasureBadge); }, afterOutfits);
     renderTotalStars(); // huy hiệu chuỗi ngày có thể vừa cộng thêm sao thưởng, cập nhật lại topbar cho khớp
   }
 
