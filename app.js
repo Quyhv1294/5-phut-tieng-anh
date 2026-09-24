@@ -355,6 +355,8 @@
     cards: document.getElementById('screen-cards'),
     phonicsLearn: document.getElementById('screen-phonics-learn'),
     phonicsQuiz: document.getElementById('screen-phonics-quiz'),
+    storyRead: document.getElementById('screen-story-read'),
+    storyQuiz: document.getElementById('screen-story-quiz'),
     quiz: document.getElementById('screen-quiz'),
     quizRecap: document.getElementById('screen-quiz-recap'),
     match: document.getElementById('screen-match'),
@@ -418,20 +420,23 @@
   // toggle thay vì xếp chồng hết lên nhau — trang chủ trước đây dài, phải kéo rất nhiều mới hết.
   // Nhiệm vụ hôm nay/Ôn tập vẫn hiện sẵn phía trên (không thuộc tab nhỏ nào) vì đó là việc bé cần
   // thấy ngay mỗi ngày, không phải "thư viện nội dung" để chọn duyệt qua.
-  let homeMode = 'vocab'; // 'vocab' (bản đồ 12 chủ đề), 'abc' (bảng chữ cái) hoặc 'phonics' (ngữ âm)
+  let homeMode = 'vocab'; // 'vocab' (bản đồ 12 chủ đề), 'abc' (bảng chữ cái), 'phonics' (ngữ âm) hoặc 'story' (truyện tranh)
   function setHomeMode(mode) {
     homeMode = mode;
     document.getElementById('homeModeVocabBtn').classList.toggle('active', mode === 'vocab');
     document.getElementById('homeModeAbcBtn').classList.toggle('active', mode === 'abc');
     document.getElementById('homeModePhonicsBtn').classList.toggle('active', mode === 'phonics');
+    document.getElementById('homeModeStoryBtn').classList.toggle('active', mode === 'story');
     document.getElementById('homeModeVocabPanel').hidden = mode !== 'vocab';
     document.getElementById('homeModeAbcPanel').hidden = mode !== 'abc';
     document.getElementById('homeModePhonicsPanel').hidden = mode !== 'phonics';
+    document.getElementById('homeModeStoryPanel').hidden = mode !== 'story';
     moveSegmentThumb(document.getElementById('homeModeToggle'));
   }
   document.getElementById('homeModeVocabBtn').addEventListener('click', () => setHomeMode('vocab'));
   document.getElementById('homeModeAbcBtn').addEventListener('click', () => setHomeMode('abc'));
   document.getElementById('homeModePhonicsBtn').addEventListener('click', () => setHomeMode('phonics'));
+  document.getElementById('homeModeStoryBtn').addEventListener('click', () => setHomeMode('story'));
 
   document.getElementById('tabHome').addEventListener('click', () => goHome());
   document.getElementById('brandHomeBtn').addEventListener('click', () => { if (enforceGate()) goHome(); });
@@ -1866,9 +1871,29 @@
     });
   }
 
+  // Truyện tranh song ngữ ngắn (STORY_TOPICS, data/stories.js) — cùng nguyên tắc ABC_TOPICS/
+  // PHONICS_TOPICS: luôn mở hết, tách khỏi TOPICS nên không đụng khoá tuần tự/huy hiệu/mảnh ghép tranh.
+  function renderStorySection() {
+    const grid = document.getElementById('storyTopicGrid');
+    grid.innerHTML = '';
+    STORY_TOPICS.forEach(topic => {
+      const btn = document.createElement('button');
+      const done = !!progress.doneTopics[topic.id];
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã đọc</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.pages.length + ' trang truyện</span></span>';
+      btn.addEventListener('click', () => startStory(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
   function renderHome() {
     renderAbcSection();
     renderPhonicsSection();
+    renderStorySection();
     const grid = document.getElementById('topicGrid');
     grid.innerHTML = '';
     // Bản đồ hành trình: đánh dấu chủ đề TIẾP THEO bé cần vượt qua (chưa đạt ≥80%) bằng 1 mascot
@@ -2309,6 +2334,141 @@
     const replayBtn = document.getElementById('replayBtn');
     replayBtn.textContent = 'Học lại nhóm vần này';
     replayBtn.onclick = () => startPhonicsGroup(currentPhonicsTopic.id);
+
+    renderTotalStars();
+    celebrate(isPerfect, oldLifetimeStars, null);
+    resetChest();
+    showScreen('done');
+  }
+
+  // ---------- TRUYỆN TRANH SONG NGỮ (STORY_TOPICS, data/stories.js) ----------
+  // Màn riêng, không dùng chung #screen-cards/#screen-quiz với TOPICS/ABC_TOPICS: đọc từng trang
+  // truyện (emoji + câu tiếng Anh + nghĩa tiếng Việt) rồi trả lời câu hỏi HIỂU TRUYỆN bằng tiếng
+  // Việt (không phải chọn nghĩa 1 từ vựng như quiz thường).
+  let currentStory = null;
+  let storyPageIndex = 0;
+  let storyQuizIndex = 0;
+  let storyQuizCorrectCount = 0;
+
+  function startStory(topicId) {
+    const topic = STORY_TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    currentStory = topic;
+    storyPageIndex = 0;
+    renderStoryPage();
+    showScreen('storyRead');
+  }
+
+  function renderStoryPage() {
+    const page = currentStory.pages[storyPageIndex];
+    document.getElementById('storyPageEmoji').textContent = page.emoji;
+    document.getElementById('storyPageEn').textContent = page.en;
+    document.getElementById('storyPageVi').textContent = page.vi;
+    speak(page.en);
+    const pct = (storyPageIndex / currentStory.pages.length) * 100;
+    document.getElementById('storyReadProgressFill').style.width = pct + '%';
+    document.getElementById('storyPrevBtn').disabled = storyPageIndex === 0;
+    document.getElementById('storyNextBtn').textContent =
+      (storyPageIndex === currentStory.pages.length - 1) ? 'Trả lời câu hỏi →' : 'Tiếp →';
+  }
+
+  document.getElementById('storyReadSpeakBtn').addEventListener('click', () => {
+    speak(currentStory.pages[storyPageIndex].en);
+  });
+  document.getElementById('storyPrevBtn').addEventListener('click', () => {
+    if (storyPageIndex > 0) { storyPageIndex--; renderStoryPage(); }
+  });
+  document.getElementById('storyNextBtn').addEventListener('click', () => {
+    if (storyPageIndex < currentStory.pages.length - 1) {
+      storyPageIndex++;
+      renderStoryPage();
+    } else {
+      startStoryQuiz();
+    }
+  });
+  document.getElementById('backFromStoryRead').addEventListener('click', () => goHome());
+
+  function startStoryQuiz() {
+    storyQuizIndex = 0;
+    storyQuizCorrectCount = 0;
+    renderStoryQuizQuestion();
+    showScreen('storyQuiz');
+  }
+
+  function renderStoryQuizQuestion() {
+    document.getElementById('storyQuizFeedback').textContent = '';
+    document.getElementById('storyQuizFeedback').className = 'quiz-feedback';
+    const pct = (storyQuizIndex / currentStory.questions.length) * 100;
+    document.getElementById('storyQuizProgressFill').style.width = pct + '%';
+
+    const question = currentStory.questions[storyQuizIndex];
+    document.getElementById('storyQuizQuestion').textContent = question.q;
+
+    const wrap = document.getElementById('storyQuizOptions');
+    wrap.innerHTML = '';
+    question.options.forEach((label, i) => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt';
+      b.textContent = label;
+      b.addEventListener('click', () => handleStoryQuizAnswer(b, i === question.answer));
+      wrap.appendChild(b);
+    });
+  }
+
+  function handleStoryQuizAnswer(btn, isCorrect) {
+    document.querySelectorAll('#storyQuizOptions .quiz-opt').forEach(o => o.disabled = true);
+    const fb = document.getElementById('storyQuizFeedback');
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.textContent = 'Chính xác! 🎉';
+      fb.className = 'quiz-feedback ok';
+      storyQuizCorrectCount++;
+    } else {
+      btn.classList.add('wrong');
+      fb.textContent = 'Chưa đúng rồi, đọc lại truyện lần sau nhé!';
+      fb.className = 'quiz-feedback no';
+    }
+    setTimeout(() => {
+      storyQuizIndex++;
+      if (storyQuizIndex < currentStory.questions.length) {
+        renderStoryQuizQuestion();
+      } else {
+        finishStory();
+      }
+    }, 1000);
+  }
+
+  document.getElementById('backFromStoryQuiz').addEventListener('click', () => goHome());
+
+  // Không đi qua finishTopic() vì STORY_TOPICS không nằm trong TOPICS (giống ABC_TOPICS/
+  // PHONICS_TOPICS) — tự lo sao thưởng/doneTopics/màn Hoàn thành riêng. Sao thưởng = số trang truyện
+  // (công đọc hết truyện) + số câu hỏi trả lời đúng (thưởng thêm cho phần hiểu truyện).
+  function finishStory() {
+    const totalQuestions = currentStory.questions.length;
+    const isPerfect = storyQuizCorrectCount === totalQuestions;
+    const starsEarned = currentStory.pages.length + storyQuizCorrectCount;
+    const oldLifetimeStars = progress.lifetimeStars;
+    const isNewStory = !progress.doneTopics[currentStory.id];
+    if (isNewStory) {
+      addStars(starsEarned);
+      progress.doneTopics[currentStory.id] = true;
+    }
+    if (isPerfect) progress.perfectCount = (progress.perfectCount || 0) + 1;
+    saveProgress(progress);
+    updateStreakOnComplete();
+
+    document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : 'Giỏi quá!';
+    document.getElementById('doneSubtitle').textContent =
+      'Bé trả lời đúng ' + storyQuizCorrectCount + '/' + totalQuestions + ' câu hỏi về truyện "' + currentStory.label + '".';
+    document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, starsEarned));
+
+    document.getElementById('parentTip').innerHTML =
+      '💬 Ba mẹ thử hỏi bé: "Trong truyện vừa đọc có những ai/những gì?" để bé kể lại bằng tiếng Anh nhé.';
+
+    document.getElementById('printBtn').hidden = true;
+    const replayBtn = document.getElementById('replayBtn');
+    replayBtn.textContent = 'Đọc lại truyện này';
+    replayBtn.onclick = () => startStory(currentStory.id);
 
     renderTotalStars();
     celebrate(isPerfect, oldLifetimeStars, null);

@@ -183,5 +183,10 @@ const EMOJI_ICONS = {
   "🪆": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Nesting%20dolls/3D/nesting_dolls_3d.png",
   "🤖": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Robot/3D/robot_3d.png",
   "🥁": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Drum/3D/drum_3d.png",
-  "🧱": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Brick/3D/brick_3d.png"
+  "🧱": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Brick/3D/brick_3d.png",
+  "🚜": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Tractor/3D/tractor_3d.png",
+  "🐄": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Cow/3D/cow_3d.png",
+  "🐔": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Chicken/3D/chicken_3d.png",
+  "🐖": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Pig/3D/pig_3d.png",
+  "📗": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Green%20book/3D/green_book_3d.png"
 };

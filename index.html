@@ -109,6 +109,7 @@
       <button class="segment-btn active" id="homeModeVocabBtn">🗺️ Từ vựng</button>
       <button class="segment-btn" id="homeModeAbcBtn">🔤 Bảng chữ cái</button>
       <button class="segment-btn" id="homeModePhonicsBtn">🔊 Ngữ âm</button>
+      <button class="segment-btn" id="homeModeStoryBtn">📗 Truyện tranh</button>
     </div>
 
     <div class="home-mode-panel" id="homeModeVocabPanel">
@@ -129,6 +130,10 @@
 
     <div class="home-mode-panel" id="homeModePhonicsPanel" hidden>
       <div class="topic-grid" id="phonicsTopicGrid"></div>
+    </div>
+
+    <div class="home-mode-panel" id="homeModeStoryPanel" hidden>
+      <div class="topic-grid" id="storyTopicGrid"></div>
     </div>
 
     <div class="home-footnote">"5 Phút Tiếng Anh Mỗi Ngày" 💚</div>
@@ -426,6 +431,39 @@
     </div>
   </section>
 
+  <!-- ============ TRUYỆN TRANH: ĐỌC TỪNG TRANG ============ -->
+  <section class="screen" id="screen-story-read">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromStoryRead" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="storyReadProgressFill"></div></div>
+    </div>
+    <div class="flash-wrap">
+      <div class="flashcard" id="storyFlashcard">
+        <div class="big-emoji" id="storyPageEmoji">🧒</div>
+        <div class="word-en" id="storyPageEn">This is me.</div>
+        <div class="word-vi" id="storyPageVi">Đây là tôi.</div>
+      </div>
+      <button class="speak-btn" id="storyReadSpeakBtn">🔊 Nghe đọc câu</button>
+      <div class="nav-row">
+        <button class="nav-btn" id="storyPrevBtn">← Trước</button>
+        <button class="nav-btn primary" id="storyNextBtn">Tiếp →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRUYỆN TRANH: CÂU HỎI HIỂU TRUYỆN ============ -->
+  <section class="screen" id="screen-story-quiz">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromStoryQuiz" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="storyQuizProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap">
+      <div class="quiz-prompt" id="storyQuizQuestion">Câu hỏi?</div>
+      <div class="quiz-options reverse-options" id="storyQuizOptions"></div>
+      <div class="quiz-feedback" id="storyQuizFeedback"></div>
+    </div>
+  </section>
+
   <!-- ============ QUIZ SCREEN ============ -->
   <section class="screen" id="screen-quiz">
     <div class="card-topbar">
@@ -643,7 +681,7 @@
     <div class="onboarding-steps">
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📚</span>
-        <span><strong>Học</strong> — có 3 tab nhỏ: "🗺️ Từ vựng" (các chủ đề mở LẦN LƯỢT theo thứ tự trên bản đồ kho báu: học 1 chủ đề bằng flashcard rồi làm mini quiz, đạt từ 80% câu đúng trở lên thì chủ đề tiếp theo mới mở khoá, sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết), "🔤 Bảng chữ cái" (học 26 chữ cái A-Z, luôn mở sẵn không cần chờ) và "🔊 Ngữ âm" (ghép âm các nhóm vần đơn giản như -at/-og/-ug/-an, cũng luôn mở sẵn). Học/ôn xong 1 bài còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "✅ Nhiệm vụ hôm nay" (hoàn thành cả 3 việc nhỏ được thưởng thêm sao) và "Ôn tập thông minh", "Luyện từ khó", "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
+        <span><strong>Học</strong> — có 4 tab nhỏ: "🗺️ Từ vựng" (các chủ đề mở LẦN LƯỢT theo thứ tự trên bản đồ kho báu: học 1 chủ đề bằng flashcard rồi làm mini quiz, đạt từ 80% câu đúng trở lên thì chủ đề tiếp theo mới mở khoá, sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết), "🔤 Bảng chữ cái" (học 26 chữ cái A-Z, luôn mở sẵn không cần chờ), "🔊 Ngữ âm" (ghép âm các nhóm vần đơn giản như -at/-og/-ug/-an, cũng luôn mở sẵn) và "📗 Truyện tranh" (đọc truyện tranh song ngữ ngắn từng trang kèm nghĩa tiếng Việt, đọc xong trả lời vài câu hỏi hiểu truyện, cũng luôn mở sẵn). Học/ôn xong 1 bài còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "✅ Nhiệm vụ hôm nay" (hoàn thành cả 3 việc nhỏ được thưởng thêm sao) và "Ôn tập thông minh", "Luyện từ khó", "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🎮</span>
@@ -729,6 +767,7 @@
 <script src="data/topics.js"></script>
 <script src="data/alphabet.js"></script>
 <script src="data/phonics.js"></script>
+<script src="data/stories.js"></script>
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>
 <script src="app.js"></script>
