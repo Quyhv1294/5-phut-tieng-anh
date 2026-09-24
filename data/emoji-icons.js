@@ -188,5 +188,12 @@ const EMOJI_ICONS = {
   "🐄": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Cow/3D/cow_3d.png",
   "🐔": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Chicken/3D/chicken_3d.png",
   "🐖": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Pig/3D/pig_3d.png",
-  "📗": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Green%20book/3D/green_book_3d.png"
+  "📗": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Green%20book/3D/green_book_3d.png",
+  "🏫": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/School/3D/school_3d.png",
+  "🌳": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Deciduous%20tree/3D/deciduous_tree_3d.png",
+  "🐈": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Cat/3D/cat_3d.png",
+  "🐕": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Dog/3D/dog_3d.png",
+  "🍭": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Lollipop/3D/lollipop_3d.png",
+  "🎂": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Birthday%20cake/3D/birthday_cake_3d.png",
+  "🎄": "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Christmas%20tree/3D/christmas_tree_3d.png"
 };

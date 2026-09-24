@@ -583,6 +583,11 @@
   .quiz-opt:active { transform: scale(0.96); }
   .quiz-opt.correct { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface)); }
   .quiz-opt.text-opt { font-family: 'Baloo 2'; font-weight: 800; font-size: 22px; padding: 16px 8px; }
+  .quiz-options.story-options { grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 340px; }
+  .quiz-opt.story-opt { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 14px 6px; }
+  .quiz-opt.story-opt .story-opt-emoji { font-size: 36px; line-height: 1; }
+  .quiz-opt.story-opt .story-opt-en { font-family: 'Baloo 2'; font-weight: 800; font-size: 16px; }
+  .quiz-opt.story-opt .story-opt-vi { font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
   .reverse-emoji { font-size: 64px; }
   .fillblank-sentence { font-family: 'Baloo 2'; font-weight: 700; font-size: 23px; line-height: 1.4; max-width: 320px; }
   .fillblank-sentence .blank { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 3px; }

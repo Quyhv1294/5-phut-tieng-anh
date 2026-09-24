@@ -2406,10 +2406,13 @@
 
     const wrap = document.getElementById('storyQuizOptions');
     wrap.innerHTML = '';
-    question.options.forEach((label, i) => {
+    question.options.forEach((opt, i) => {
       const b = document.createElement('button');
-      b.className = 'quiz-opt';
-      b.textContent = label;
+      b.className = 'quiz-opt story-opt';
+      b.innerHTML =
+        '<span class="story-opt-emoji">' + opt.emoji + '</span>' +
+        '<span class="story-opt-en">' + opt.en + '</span>' +
+        '<span class="story-opt-vi">' + opt.vi + '</span>';
       b.addEventListener('click', () => handleStoryQuizAnswer(b, i === question.answer));
       wrap.appendChild(b);
     });

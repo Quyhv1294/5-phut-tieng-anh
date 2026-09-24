@@ -1,7 +1,8 @@
 // Truyện tranh song ngữ ngắn — mỗi truyện 4-5 trang (emoji + câu tiếng Anh + nghĩa tiếng Việt),
-// đọc xong làm 2 câu hỏi hiểu truyện bằng tiếng Việt. Cùng nguyên tắc với ABC_TOPICS/PHONICS_TOPICS
-// (data/alphabet.js, data/phonics.js): tách khỏi TOPICS nên không đụng khoá tuần tự/huy hiệu/mảnh
-// ghép tranh, chỉ đánh dấu progress.doneTopics theo id riêng.
+// đọc xong làm 2 câu hỏi hiểu truyện bằng tiếng Việt. Mỗi đáp án kèm icon + từ tiếng Anh + nghĩa
+// tiếng Việt (không phải chỉ chữ tiếng Việt) để bé vừa ôn từ vựng vừa trả lời câu hỏi. Cùng nguyên
+// tắc với ABC_TOPICS/PHONICS_TOPICS (data/alphabet.js, data/phonics.js): tách khỏi TOPICS nên không
+// đụng khoá tuần tự/huy hiệu/mảnh ghép tranh, chỉ đánh dấu progress.doneTopics theo id riêng.
 const STORY_TOPICS = [
   {
     id: 'story_zoo', label: 'Đi sở thú', emoji: '🦁', cls: 't-mint',
@@ -13,8 +14,16 @@ const STORY_TOPICS = [
       { emoji: '😊', en: 'What a fun day!', vi: 'Một ngày thật vui!' },
     ],
     questions: [
-      { q: 'Bạn nhỏ đi đến đâu?', options: ['Trường học', 'Sở thú', 'Công viên'], answer: 1 },
-      { q: 'Con vật nào to lớn xuất hiện trong truyện?', options: ['Con mèo', 'Con sư tử', 'Con chó'], answer: 1 },
+      { q: 'Bạn nhỏ đi đến đâu?', options: [
+        { emoji: '🏫', en: 'School', vi: 'Trường học' },
+        { emoji: '🦁', en: 'Zoo', vi: 'Sở thú' },
+        { emoji: '🌳', en: 'Park', vi: 'Công viên' },
+      ], answer: 1 },
+      { q: 'Con vật nào to lớn xuất hiện trong truyện?', options: [
+        { emoji: '🐈', en: 'Cat', vi: 'Con mèo' },
+        { emoji: '🦁', en: 'Lion', vi: 'Con sư tử' },
+        { emoji: '🐕', en: 'Dog', vi: 'Con chó' },
+      ], answer: 1 },
     ],
   },
   {
@@ -27,8 +36,16 @@ const STORY_TOPICS = [
       { emoji: '😊', en: 'It is a happy day.', vi: 'Đó là một ngày thật vui.' },
     ],
     questions: [
-      { q: 'Hôm nay là ngày gì?', options: ['Sinh nhật', 'Trung thu', 'Giáng sinh'], answer: 0 },
-      { q: 'Bạn nhỏ và các bạn cùng ăn gì?', options: ['Kẹo', 'Bánh', 'Trái cây'], answer: 1 },
+      { q: 'Hôm nay là ngày gì?', options: [
+        { emoji: '🎂', en: 'Birthday', vi: 'Sinh nhật' },
+        { emoji: '🎄', en: 'Christmas', vi: 'Giáng sinh' },
+        { emoji: '🎉', en: 'Party', vi: 'Tiệc' },
+      ], answer: 0 },
+      { q: 'Bạn nhỏ và các bạn cùng ăn gì?', options: [
+        { emoji: '🍭', en: 'Candy', vi: 'Kẹo' },
+        { emoji: '🍰', en: 'Cake', vi: 'Bánh' },
+        { emoji: '🍞', en: 'Bread', vi: 'Bánh mì' },
+      ], answer: 1 },
     ],
   },
   {
@@ -40,8 +57,16 @@ const STORY_TOPICS = [
       { emoji: '😊', en: 'The rainbow is so pretty.', vi: 'Cầu vồng thật đẹp.' },
     ],
     questions: [
-      { q: 'Bạn nhỏ mang theo gì khi trời mưa?', options: ['Mũ', 'Ô (dù)', 'Kính'], answer: 1 },
-      { q: 'Sau cơn mưa, bạn nhỏ nhìn thấy gì?', options: ['Mặt trời', 'Cầu vồng', 'Ngôi sao'], answer: 1 },
+      { q: 'Bạn nhỏ mang theo gì khi trời mưa?', options: [
+        { emoji: '🎈', en: 'Balloon', vi: 'Bóng bay' },
+        { emoji: '☂️', en: 'Umbrella', vi: 'Ô (dù)' },
+        { emoji: '☀️', en: 'Sun', vi: 'Mặt trời' },
+      ], answer: 1 },
+      { q: 'Sau cơn mưa, bạn nhỏ nhìn thấy gì?', options: [
+        { emoji: '☀️', en: 'Sun', vi: 'Mặt trời' },
+        { emoji: '🌈', en: 'Rainbow', vi: 'Cầu vồng' },
+        { emoji: '⭐', en: 'Star', vi: 'Ngôi sao' },
+      ], answer: 1 },
     ],
   },
   {
@@ -54,8 +79,16 @@ const STORY_TOPICS = [
       { emoji: '😊', en: 'I love the farm.', vi: 'Tôi yêu trang trại này.' },
     ],
     questions: [
-      { q: 'Chúng tôi đến thăm nơi nào?', options: ['Trang trại', 'Bãi biển', 'Sở thú'], answer: 0 },
-      { q: 'Con bò kêu tiếng gì?', options: ['Cục tác', 'Moo', 'Ụt ịt'], answer: 1 },
+      { q: 'Chúng tôi đến thăm nơi nào?', options: [
+        { emoji: '🚜', en: 'Farm', vi: 'Trang trại' },
+        { emoji: '🏫', en: 'School', vi: 'Trường học' },
+        { emoji: '🦁', en: 'Zoo', vi: 'Sở thú' },
+      ], answer: 0 },
+      { q: 'Con bò kêu tiếng gì?', options: [
+        { emoji: '🐔', en: 'Cluck', vi: 'Cục tác' },
+        { emoji: '🐄', en: 'Moo', vi: 'Moo' },
+        { emoji: '🐖', en: 'Oink', vi: 'Ụt ịt' },
+      ], answer: 1 },
     ],
   },
 ];
