@@ -351,6 +351,7 @@
     settings: document.getElementById('screen-settings'),
     account: document.getElementById('screen-account'),
     donate: document.getElementById('screen-donate'),
+    feedback: document.getElementById('screen-feedback'),
     profileCreate: document.getElementById('screen-profile-create'),
     cards: document.getElementById('screen-cards'),
     phonicsLearn: document.getElementById('screen-phonics-learn'),
@@ -1181,6 +1182,8 @@
       case 'daily_limit': return 'Hệ thống tạm hết lượt gửi hôm nay, vui lòng thử lại vào ngày mai.';
       case 'expired_or_missing': return 'Mã đã hết hạn, vui lòng bấm gửi mã mới.';
       case 'wrong_code': return 'Mã xác thực không đúng.';
+      case 'feedback_limit': return 'Hôm nay ba mẹ đã gửi khá nhiều ý kiến rồi, mai gửi tiếp giúp mình nhé!';
+      case 'message_too_short': return 'Ba mẹ nhắn thêm vài chữ giúp mình nhé.';
       default: return 'Có lỗi xảy ra, vui lòng thử lại.';
     }
   }
@@ -1391,6 +1394,107 @@
 
   document.getElementById('settingsBtn').addEventListener('click', () => showScreen('settings'));
   document.getElementById('backFromSettings').addEventListener('click', () => { if (enforceGate()) goHome(); });
+
+  // ---------- GỬI Ý KIẾN (ghi vào tab "Feedback" của Google Sheet qua Apps Script) ----------
+  // Khác saveProgress/saveProfile (bắn rồi bỏ), gửi ý kiến phải ĐỢI phản hồi thật để chỉ báo
+  // "đã gửi" khi Sheet đã ghi được — nếu không, ba mẹ gõ cả đoạn dài rồi mất trắng mà không biết.
+  const FEEDBACK_MAX_LEN = 500; // GET URL có giới hạn độ dài, 500 ký tự tiếng Việt vẫn nằm gọn trong đó
+  const FEEDBACK_MIN_LEN = 5;
+  let feedbackRating = 0;
+  let feedbackCategory = 'Góp ý tính năng';
+  let feedbackSending = false;
+
+  function showFeedbackError(msg) {
+    const el = document.getElementById('feedbackError');
+    el.textContent = msg;
+    el.hidden = !msg;
+  }
+  function setFeedbackRating(value) {
+    feedbackRating = value;
+    showFeedbackError('');
+    document.querySelectorAll('#feedbackRating .feedback-star').forEach(btn => {
+      const v = Number(btn.dataset.value);
+      btn.classList.toggle('on', v <= value);
+      btn.setAttribute('aria-checked', v === value ? 'true' : 'false');
+    });
+  }
+  function setFeedbackCategory(value) {
+    feedbackCategory = value;
+    showFeedbackError('');
+    document.querySelectorAll('#feedbackCategories .feedback-chip').forEach(btn => {
+      const on = btn.dataset.value === value;
+      btn.classList.toggle('selected', on);
+      btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+  function resetFeedbackForm() {
+    setFeedbackRating(0);
+    setFeedbackCategory('Góp ý tính năng');
+    document.getElementById('feedbackMessage').value = '';
+    document.getElementById('feedbackCounter').textContent = '0/' + FEEDBACK_MAX_LEN;
+    showFeedbackError('');
+  }
+  function feedbackPlatform() {
+    const cap = window.Capacitor;
+    if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) return 'Android APK';
+    const standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    return standalone || navigator.standalone ? 'Web app (đã thêm vào màn hình chính)' : 'Trình duyệt web';
+  }
+
+  document.getElementById('openFeedbackBtn').addEventListener('click', () => {
+    resetFeedbackForm();
+    showScreen('feedback');
+  });
+  document.getElementById('backFromFeedback').addEventListener('click', () => showScreen('settings'));
+  document.querySelectorAll('#feedbackRating .feedback-star').forEach(btn => {
+    btn.addEventListener('click', () => setFeedbackRating(Number(btn.dataset.value)));
+  });
+  document.querySelectorAll('#feedbackCategories .feedback-chip').forEach(btn => {
+    btn.addEventListener('click', () => setFeedbackCategory(btn.dataset.value));
+  });
+  document.getElementById('feedbackMessage').addEventListener('input', (e) => {
+    showFeedbackError('');
+    document.getElementById('feedbackCounter').textContent = e.target.value.length + '/' + FEEDBACK_MAX_LEN;
+  });
+
+  document.getElementById('feedbackForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (feedbackSending) return;
+    const message = document.getElementById('feedbackMessage').value.trim().slice(0, FEEDBACK_MAX_LEN);
+    if (!feedbackRating) { showFeedbackError('Ba mẹ chọn số sao giúp mình nhé.'); return; }
+    if (message.length < FEEDBACK_MIN_LEN) { showFeedbackError(mapBackendError('message_too_short')); return; }
+    if (!backendConfigured()) { showFeedbackError('Tính năng gửi ý kiến đang được cấu hình, ba mẹ thử lại sau nhé.'); return; }
+    showFeedbackError('');
+
+    const url = SHEETS_CONFIG.webAppUrl + '?action=saveFeedback'
+      + '&email=' + encodeURIComponent(verifiedEmail || '')
+      + '&name=' + encodeURIComponent(profile ? profile.name : '')
+      + '&rating=' + feedbackRating
+      + '&category=' + encodeURIComponent(feedbackCategory)
+      + '&message=' + encodeURIComponent(message)
+      + '&platform=' + encodeURIComponent(feedbackPlatform())
+      + '&deviceId=' + encodeURIComponent(deviceId);
+
+    const submitBtn = document.getElementById('feedbackSubmitBtn');
+    feedbackSending = true;
+    submitBtn.disabled = true;
+    showLoading('Đang gửi ý kiến...');
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    fetch(url, { signal: ctrl.signal }).then(r => r.json()).then(data => {
+      if (!data.ok) { showFeedbackError(mapBackendError(data.error)); return; }
+      showToast('Đã gửi ý kiến, cảm ơn ba mẹ nhiều!', '💚');
+      resetFeedbackForm();
+      showScreen('settings');
+    }).catch(() => {
+      showFeedbackError('Chưa gửi được, ba mẹ kiểm tra mạng rồi thử lại nhé (nội dung vẫn được giữ nguyên).');
+    }).finally(() => {
+      clearTimeout(timer);
+      hideLoading();
+      feedbackSending = false;
+      submitBtn.disabled = false;
+    });
+  });
   document.getElementById('donateCopyBtn').addEventListener('click', () => {
     const number = document.getElementById('donateAccountNumber').textContent;
     if (!navigator.clipboard || !navigator.clipboard.writeText) return;

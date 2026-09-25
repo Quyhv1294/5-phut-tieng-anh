@@ -1247,6 +1247,33 @@
     font-family: 'Quicksand'; font-weight: 600; font-size: 17.5px;
     background: var(--surface); color: var(--ink);
   }
+  /* Màn "Gửi ý kiến": chấm sao + chọn nhóm + ô nhập nội dung */
+  .feedback-rating { display: flex; gap: 6px; justify-content: space-between; }
+  .feedback-star {
+    flex: 1; aspect-ratio: 1; max-width: 64px; border-radius: 14px;
+    border: 2px solid var(--line); background: var(--surface);
+    font-size: 30px; line-height: 1; cursor: pointer;
+    filter: grayscale(1); opacity: 0.55;
+    transition: transform .15s ease, opacity .15s ease, filter .15s ease;
+  }
+  .feedback-star.on { filter: none; opacity: 1; border-color: var(--accent); }
+  .feedback-star:active { transform: scale(0.92); }
+  .feedback-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .feedback-chip {
+    border: 2px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink);
+    font-family: 'Quicksand'; font-weight: 700; font-size: 16px;
+    padding: 9px 16px; cursor: pointer;
+  }
+  .feedback-chip.selected { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+  .feedback-chip:active { transform: scale(0.96); }
+  .feedback-textarea {
+    border: 2px solid var(--line); border-radius: 12px; padding: 11px 14px;
+    font-family: 'Quicksand'; font-weight: 600; font-size: 17.5px; line-height: 1.5;
+    background: var(--surface); color: var(--ink); resize: vertical; min-height: 120px;
+  }
+  .feedback-counter { text-align: right; font-size: 14px; font-weight: 700; color: var(--ink-soft); margin-top: -4px; }
+  .account-primary-btn:disabled { opacity: 0.6; cursor: default; }
+
   .avatar-grid {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
   }

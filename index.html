@@ -252,8 +252,50 @@
     </div>
     <div class="progress-wrap">
       <h2>Cài đặt</h2>
+      <button class="ghost-btn ghost-btn--muted" id="openFeedbackBtn">💬 Gửi ý kiến cho chúng tôi</button>
       <button class="ghost-btn ghost-btn--muted" id="replayOnboardingBtn">📖 Xem lại hướng dẫn sử dụng</button>
       <button class="ghost-btn ghost-btn--danger" id="resetProgressBtn">Đặt lại toàn bộ tiến độ học</button>
+    </div>
+  </section>
+
+  <!-- ============ FEEDBACK SCREEN ============ -->
+  <section class="screen" id="screen-feedback">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromFeedback" aria-label="Quay lại">←</button>
+    </div>
+    <div class="account-wrap">
+      <div class="account-hero">
+        <div class="account-hero-emoji">💬</div>
+        <h2>Gửi ý kiến cho chúng tôi</h2>
+        <p>Ba mẹ thấy app thế nào? Mọi góp ý đều giúp mình làm bài học hay hơn cho bé ạ.</p>
+      </div>
+
+      <form class="otp-form" id="feedbackForm" novalidate>
+        <label>Ba mẹ chấm app mấy sao?</label>
+        <div class="feedback-rating" id="feedbackRating" role="radiogroup" aria-label="Đánh giá">
+          <button type="button" class="feedback-star" data-value="1" role="radio" aria-checked="false" aria-label="1 sao">⭐</button>
+          <button type="button" class="feedback-star" data-value="2" role="radio" aria-checked="false" aria-label="2 sao">⭐</button>
+          <button type="button" class="feedback-star" data-value="3" role="radio" aria-checked="false" aria-label="3 sao">⭐</button>
+          <button type="button" class="feedback-star" data-value="4" role="radio" aria-checked="false" aria-label="4 sao">⭐</button>
+          <button type="button" class="feedback-star" data-value="5" role="radio" aria-checked="false" aria-label="5 sao">⭐</button>
+        </div>
+
+        <label>Ý kiến thuộc nhóm nào?</label>
+        <div class="feedback-chips" id="feedbackCategories" role="radiogroup" aria-label="Nhóm ý kiến">
+          <button type="button" class="feedback-chip selected" data-value="Góp ý tính năng" role="radio" aria-checked="true">💡 Góp ý</button>
+          <button type="button" class="feedback-chip" data-value="Báo lỗi" role="radio" aria-checked="false">🐞 Báo lỗi</button>
+          <button type="button" class="feedback-chip" data-value="Nội dung bài học" role="radio" aria-checked="false">📚 Bài học</button>
+          <button type="button" class="feedback-chip" data-value="Khác" role="radio" aria-checked="false">✨ Khác</button>
+        </div>
+
+        <label for="feedbackMessage">Ba mẹ muốn nhắn gì ạ?</label>
+        <textarea id="feedbackMessage" class="feedback-textarea" maxlength="500" rows="5" placeholder="VD: Con mình thích trò nối hình, mong có thêm chủ đề động vật biển..."></textarea>
+        <div class="feedback-counter" id="feedbackCounter" aria-live="polite">0/500</div>
+
+        <button type="submit" class="account-primary-btn" id="feedbackSubmitBtn">Gửi ý kiến</button>
+        <p class="account-error" id="feedbackError" role="alert" hidden></p>
+        <p class="account-note">Ý kiến được gửi kèm email đã xác thực để mình có thể phản hồi lại ba mẹ khi cần.</p>
+      </form>
     </div>
   </section>
 
@@ -709,7 +751,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">⚙️</span>
-        <span><strong>Cài đặt</strong> — bấm biểu tượng bánh răng ở góc trên để xem lại hướng dẫn sử dụng này bất cứ lúc nào, hoặc đặt lại toàn bộ tiến độ học của bé.</span>
+        <span><strong>Cài đặt</strong> — bấm biểu tượng bánh răng ở góc trên để gửi ý kiến góp ý cho mình, xem lại hướng dẫn sử dụng này bất cứ lúc nào, hoặc đặt lại toàn bộ tiến độ học của bé.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💚</span>

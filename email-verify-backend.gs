@@ -27,6 +27,11 @@ const CONFIG = {
   RESEND_COOLDOWN_SECONDS: 60,  // phải đợi bao lâu mới được gửi lại mã (khớp startResendCooldown(60) trong app.js)
   DAILY_SEND_LIMIT: 10,         // tối đa bao nhiêu lần gửi mã / email / ngày
 
+  // --- Ý kiến phản hồi của người dùng (action=saveFeedback) ---
+  FEEDBACK_SHEET_NAME: 'Feedback', // tab riêng, tự tạo lần đầu có người gửi ý kiến
+  FEEDBACK_MAX_LEN: 500,           // khớp FEEDBACK_MAX_LEN trong app.js
+  FEEDBACK_DAILY_LIMIT: 5,         // tối đa bao nhiêu ý kiến / thiết bị / ngày (chống spam)
+
   // --- Phần 2: nhắc học qua email ---
   INACTIVE_DAYS_THRESHOLD: 2,   // bao nhiêu ngày không học liên tiếp thì gửi email nhắc
   APP_URL: 'https://ten-mien-cua-ban.com', // đổi thành domain thật bạn đang host
@@ -39,6 +44,9 @@ const AUTH_HEADERS = [
   'OtpCode', 'OtpExpiresAt', 'OtpLastSentAt', 'OtpSentCountToday', 'OtpSentCountDate',
   'UpdatedAt',
 ];
+
+// Cột của tab "Feedback" (mỗi ý kiến 1 dòng, thứ tự cột = thứ tự trong appendRow ở handleSaveFeedback_).
+const FEEDBACK_HEADERS = ['Time', 'Email', 'Name', 'Rating', 'Category', 'Message', 'Platform', 'DeviceId', 'Status'];
 
 // Từ khoá để Phần 2 (nhắc học) tự dò cột Email/Progress theo TÊN Ở HÀNG TIÊU
 // ĐỀ (không phân biệt hoa/thường) — vẫn khớp header 'Email'/'Progress' ở trên.
@@ -72,6 +80,9 @@ function doGet(e) {
         break;
       case 'saveProfile':
         result = handleSaveProfile_(e.parameter);
+        break;
+      case 'saveFeedback':
+        result = handleSaveFeedback_(e.parameter);
         break;
       default:
         result = { ok: false, error: 'unknown_action' };
@@ -253,6 +264,75 @@ function handleSaveProfile_(p) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ---------- action=saveFeedback ----------
+// Mỗi ý kiến = 1 dòng MỚI ở tab "Feedback" (khác tab "Progress" là 1 dòng / email). Gọi từ màn
+// Cài đặt > "Gửi ý kiến cho chúng tôi" trong app. Web App này công khai nên phải tự chặn spam:
+// tối đa FEEDBACK_DAILY_LIMIT ý kiến / thiết bị / ngày, và cắt độ dài mọi trường.
+function handleSaveFeedback_(p) {
+  const message = String(p.message || '').trim().slice(0, CONFIG.FEEDBACK_MAX_LEN);
+  if (message.length < 5) return { ok: false, error: 'message_too_short' };
+  const rating = Math.min(5, Math.max(1, Number(p.rating) || 0));
+  if (!Number(p.rating)) return { ok: false, error: 'missing_params' };
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sheet = getFeedbackSheet_();
+    const now = new Date();
+    const deviceId = String(p.deviceId || '').slice(0, 64);
+
+    // Đếm số ý kiến cùng thiết bị trong hôm nay (đọc tối đa ~200 dòng cuối cho nhanh).
+    const lastRow = sheet.getLastRow();
+    if (deviceId && lastRow >= 2) {
+      const fromRow = Math.max(2, lastRow - 199);
+      const rows = sheet.getRange(fromRow, 1, lastRow - fromRow + 1, FEEDBACK_HEADERS.length).getValues();
+      const todayStr = formatDateYmd_(now);
+      const devIdx = FEEDBACK_HEADERS.indexOf('DeviceId');
+      const timeIdx = FEEDBACK_HEADERS.indexOf('Time');
+      let sentToday = 0;
+      rows.forEach(function (r) {
+        if (String(r[devIdx]) === deviceId && r[timeIdx] instanceof Date && formatDateYmd_(r[timeIdx]) === todayStr) sentToday++;
+      });
+      if (sentToday >= CONFIG.FEEDBACK_DAILY_LIMIT) return { ok: false, error: 'feedback_limit' };
+    }
+
+    sheet.appendRow([
+      now,
+      safeCell_(p.email, 120),
+      safeCell_(p.name, 60),
+      rating,
+      safeCell_(p.category, 40),
+      safeCell_(message, CONFIG.FEEDBACK_MAX_LEN),
+      safeCell_(p.platform, 60),
+      deviceId,
+      'Mới',   // Trạng thái xử lý — bạn tự đổi thành "Đã đọc"/"Đã xử lý" trên Sheet
+    ]);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Cắt độ dài + chặn "chèn công thức" (ô bắt đầu bằng = + - @ sẽ bị Google Sheet hiểu là công thức,
+// người lạ có thể lợi dụng vì Web App này công khai) bằng cách thêm dấu ' phía trước.
+function safeCell_(value, maxLen) {
+  let s = String(value == null ? '' : value).trim().slice(0, maxLen);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return s;
+}
+
+function getFeedbackSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.FEEDBACK_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(CONFIG.FEEDBACK_SHEET_NAME);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(FEEDBACK_HEADERS);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, FEEDBACK_HEADERS.length).setFontWeight('bold');
+  }
+  return sheet;
 }
 
 // ---------- Helpers Phần 1 — sheet "Progress": 1 dòng / email, cột theo AUTH_HEADERS ----------
