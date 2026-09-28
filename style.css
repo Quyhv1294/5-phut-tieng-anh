@@ -1251,6 +1251,28 @@
     font-family: 'Quicksand'; font-weight: 600; font-size: 17.5px;
     background: var(--surface); color: var(--ink);
   }
+  /* Bài kiểm tra trình độ (xếp lớp Mầm/Chồi/Lá) */
+  .placement-banner { background: var(--blue); }
+  .placement-wrap { gap: 14px; }
+  .placement-part { font-size: 15px; font-weight: 800; color: var(--ink-soft); letter-spacing: .06em; text-transform: uppercase; }
+  .placement-visual { min-height: 40px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .placement-visual:empty { display: none; }
+  .placement-visual .placement-emoji { font-size: 80px; line-height: 1.1; }
+  .placement-visual .placement-word { font-family: 'Baloo 2'; font-weight: 800; font-size: 44px; letter-spacing: .04em; }
+  .placement-options.is-long { grid-template-columns: 1fr; max-width: 340px; }
+  .quiz-opt.long-opt { font-family: 'Quicksand'; font-weight: 700; font-size: 18px; line-height: 1.35; padding: 14px 12px; }
+  .quiz-opt.letter-opt { font-size: 42px; padding: 12px 8px; }
+  .quiz-opt.is-picked { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 18%, var(--surface)); }
+  .placement-picker { display: flex; flex-direction: column; gap: 8px; }
+  .placement-level-btn {
+    display: flex; align-items: center; gap: 12px; text-align: left; width: 100%;
+    border: 3px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink);
+    padding: 12px 14px; font-family: 'Baloo 2'; font-weight: 800; font-size: 19px; cursor: pointer;
+  }
+  .placement-level-btn small { display: block; font-family: 'Quicksand'; font-weight: 700; font-size: 14.5px; color: var(--ink-soft); }
+  .placement-level-btn .lv-emoji { font-size: 34px; }
+  .placement-level-btn.is-current { border-color: var(--accent); }
+
   /* Màn "Gửi ý kiến": chấm sao + chọn nhóm + ô nhập nội dung */
   .feedback-rating { display: flex; gap: 6px; justify-content: space-between; }
   .feedback-star {

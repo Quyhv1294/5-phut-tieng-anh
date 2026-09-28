@@ -232,6 +232,7 @@
       wordStats: p.wordStats || {},
       placedPieces: p.placedPieces || {},
       outfitsSeen: p.outfitsSeen || {},
+      placement: (p.placement && PLACEMENT_LEVELS[p.placement.level]) ? p.placement : null,
       topicsSeen: topicsSeen,
       // Di trú equippedOutfits qua 3 đời schema, cũ nhất trước:
       //  (a) chưa từng có slot: progress.equippedOutfit là 1 string (hoặc null) — coi là 1 món đầu.
@@ -258,7 +259,7 @@
       doneTopics: {}, topicPassed: {}, streak: { count: 0, lastDate: null, best: 0 }, streakFreezes: 0,
       dailyMissions: { date: null, claimed: false, stats: null },
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
-      outfitsSeen: {}, topicsSeen: {}, equippedOutfits: { head: [], body: null },
+      outfitsSeen: {}, topicsSeen: {}, equippedOutfits: { head: [], body: null }, placement: null,
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -359,6 +360,7 @@
     account: document.getElementById('screen-account'),
     donate: document.getElementById('screen-donate'),
     feedback: document.getElementById('screen-feedback'),
+    placement: document.getElementById('screen-placement'),
     profileCreate: document.getElementById('screen-profile-create'),
     cards: document.getElementById('screen-cards'),
     phonicsLearn: document.getElementById('screen-phonics-learn'),
@@ -801,6 +803,7 @@
 
   // Hiện banner nhắc học / banner streak trên trang chủ, dựa vào ngày học gần nhất.
   function renderHomeBanners() {
+    renderPlacementBanner();
     const todayStr = toDateStr(new Date());
     const studiedToday = progress.streak.lastDate === todayStr;
 
@@ -1388,6 +1391,8 @@
     document.getElementById('accountChildAge').textContent = profile ? profile.age + ' tuổi' : '—';
     document.getElementById('accountEmailDisplay').textContent = maskEmail(verifiedEmail);
     document.getElementById('accountPhoneDisplay').textContent = profile ? profile.parentPhone : '—';
+    const accLv = progress.placement ? PLACEMENT_LEVELS[progress.placement.level] : null;
+    document.getElementById('accountLevelDisplay').textContent = accLv ? accLv.emoji + ' ' + accLv.label : 'Chưa kiểm tra';
   }
 
   document.getElementById('accountBtn').addEventListener('click', () => {
@@ -1401,6 +1406,177 @@
 
   document.getElementById('settingsBtn').addEventListener('click', () => showScreen('settings'));
   document.getElementById('backFromSettings').addEventListener('click', () => { if (enforceGate()) goHome(); });
+
+  // ---------- BÀI KIỂM TRA TRÌNH ĐỘ (xếp lớp Mầm / Chồi / Lá) ----------
+  // Đề sinh ngẫu nhiên trong data/placement.js. Kết quả lưu ở progress.placement
+  // ({ level, t1, t2, date, manual }) nên tự đồng bộ cloud theo tiến độ, không cần đổi backend.
+  // Không cộng sao, không ghi vào wordStats (không ảnh hưởng ôn tập ngắt quãng) và không tính
+  // nhiệm vụ hằng ngày — đây chỉ là bài đo, bé làm dở rồi thoát thì không lưu gì cả.
+  // Hiện tại lớp chỉ hiển thị + gợi ý; nội dung theo lớp sẽ nối vào sau qua getChildLevelId().
+  let placementState = null; // { tier, index, questions, scores: [n, n|null], locked, used }
+
+  function getChildLevelId() {
+    if (progress.placement) return progress.placement.level;
+    const age = profile ? profile.age : 0;
+    return age >= 7 ? 'la' : age >= 5 ? 'choi' : 'mam'; // chưa kiểm tra thì tạm đoán theo tuổi
+  }
+
+  function renderPlacementBanner() {
+    const lv = progress.placement ? PLACEMENT_LEVELS[progress.placement.level] : null;
+    document.getElementById('placementBannerEmoji').textContent = lv ? lv.emoji : '🧪';
+    document.getElementById('placementBannerEyebrow').textContent = lv ? 'Lớp của bé' : 'Kiểm tra nhỏ · 3 phút';
+    document.getElementById('placementBannerTitle').textContent = lv ? lv.label : 'Xem bé hợp lớp nào nhé!';
+  }
+
+  function showPlacementPanel(name) {
+    document.getElementById('placementIntro').hidden = name !== 'intro';
+    document.getElementById('placementQuestion').hidden = name !== 'question';
+    document.getElementById('placementResult').hidden = name !== 'result';
+    document.getElementById('placementProgressTrack').hidden = name !== 'question';
+  }
+
+  function openPlacement() {
+    if (!enforceGate()) return;
+    if (progress.placement) showPlacementResult(); else showPlacementPanel('intro');
+    showScreen('placement');
+  }
+
+  function startPlacement() {
+    placementState = { tier: 0, index: 0, questions: [], scores: [0, null], locked: false, used: new Set() };
+    placementState.questions = buildPlacementTier(0, TOPICS, placementState.used);
+    showPlacementPanel('question');
+    showScreen('placement');
+    renderPlacementQuestion();
+  }
+
+  function renderPlacementQuestion() {
+    const st = placementState;
+    const q = st.questions[st.index];
+    st.locked = false;
+    const total = st.questions.length;
+    document.getElementById('placementPart').textContent =
+      'Phần ' + (st.tier + 1) + '/' + PLACEMENT_TIER_COUNT + ' · Câu ' + (st.index + 1) + '/' + total;
+    document.getElementById('placementProgressFill').style.width = (st.index / total) * 100 + '%';
+    document.getElementById('placementPrompt').textContent = q.prompt;
+
+    const visual = document.getElementById('placementVisual');
+    visual.innerHTML = '';
+    if (q.visual.kind !== 'none') {
+      const el = document.createElement('div');
+      if (q.visual.kind === 'emoji') { el.className = 'placement-emoji'; el.textContent = q.visual.value; }
+      else if (q.visual.kind === 'word') { el.className = 'placement-word'; el.textContent = q.visual.value; }
+      else {
+        el.className = 'fillblank-sentence';
+        el.innerHTML = q.visual.value.replace('____', '<span class="blank">____</span>');
+      }
+      visual.appendChild(el);
+    }
+
+    const listenBtn = document.getElementById('placementListenBtn');
+    listenBtn.hidden = !q.speak;
+    if (q.speak) setTimeout(() => { if (placementState === st && st.questions[st.index] === q) speak(q.speak); }, 250);
+
+    const wrap = document.getElementById('placementOptions');
+    wrap.className = 'quiz-options placement-options' + (q.optionKind === 'long' ? ' is-long' : '');
+    wrap.innerHTML = '';
+    q.options.forEach(opt => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt' + (q.optionKind === 'emoji' ? '' : q.optionKind === 'long' ? ' text-opt long-opt'
+        : (q.skill === 'letter' || q.skill === 'phonics') ? ' text-opt letter-opt' : ' text-opt');
+      b.textContent = opt.label;
+      b.addEventListener('click', () => answerPlacement(b, opt.correct));
+      wrap.appendChild(b);
+    });
+  }
+
+  function answerPlacement(btn, isCorrect) {
+    const st = placementState;
+    if (!st || st.locked) return;
+    st.locked = true; // chỉ nhận 1 lần bấm/câu — bấm liên tục không được tính nhiều lần
+    btn.classList.add('is-picked'); // không báo đúng/sai: đây là bài đo, không phải bài học
+    document.querySelectorAll('#placementOptions .quiz-opt').forEach(o => { o.disabled = true; });
+    if (isCorrect) st.scores[st.tier]++;
+    setTimeout(() => { if (placementState === st) advancePlacement(); }, 500);
+  }
+
+  function advancePlacement() {
+    const st = placementState;
+    st.index++;
+    if (st.index < st.questions.length) { renderPlacementQuestion(); return; }
+    // Hết 1 phần: qua cửa thì sang phần 2, không thì dừng luôn (bé nhỏ khỏi làm câu quá khó).
+    if (st.tier === 0 && st.scores[0] >= PLACEMENT_PASS) {
+      st.tier = 1; st.index = 0; st.scores[1] = 0;
+      st.questions = buildPlacementTier(1, TOPICS, st.used);
+      renderPlacementQuestion();
+      return;
+    }
+    finishPlacement();
+  }
+
+  function finishPlacement() {
+    const st = placementState;
+    progress.placement = {
+      level: placementLevelFromScores(st.scores),
+      t1: st.scores[0],
+      t2: st.scores[1],
+      date: toDateStr(new Date()),
+      manual: false,
+    };
+    placementState = null;
+    saveProgress(progress);
+    showPlacementResult();
+  }
+
+  function showPlacementResult() {
+    const pl = progress.placement;
+    const lv = PLACEMENT_LEVELS[pl.level];
+    document.getElementById('placementResultEmoji').textContent = lv.emoji;
+    document.getElementById('placementResultTitle').textContent =
+      (profile ? profile.name + ' hợp với ' : 'Bé hợp với ') + lv.label + '!';
+    document.getElementById('placementResultMsg').textContent =
+      pl.manual ? 'Ba mẹ đã chọn ' + lv.label + ' cho bé. ' + lv.message : lv.message;
+
+    const rows = [];
+    rows.push('<div class="account-detail-row"><span class="account-detail-label">🔤 Chữ cái & đọc từ</span><span class="account-detail-value">' + pl.t1 + '/' + PLACEMENT_QUESTIONS_PER_TIER + '</span></div>');
+    if (pl.t2 !== null && pl.t2 !== undefined) {
+      rows.push('<div class="account-detail-row"><span class="account-detail-label">📖 Đánh vần & đọc câu</span><span class="account-detail-value">' + pl.t2 + '/' + PLACEMENT_QUESTIONS_PER_TIER + '</span></div>');
+    }
+    rows.push('<div class="account-detail-row"><span class="account-detail-label">📅 Ngày kiểm tra</span><span class="account-detail-value">' + pl.date + '</span></div>');
+    document.getElementById('placementResultDetail').innerHTML = rows.join('');
+
+    const picker = document.getElementById('placementPicker');
+    picker.hidden = true;
+    picker.innerHTML = '';
+    PLACEMENT_LEVEL_ORDER.forEach(id => {
+      const l = PLACEMENT_LEVELS[id];
+      const b = document.createElement('button');
+      b.className = 'placement-level-btn' + (id === pl.level ? ' is-current' : '');
+      b.innerHTML = '<span class="lv-emoji">' + l.emoji + '</span><span>' + l.label + '<small>Thường hợp bé ' + l.ageText + '</small></span>';
+      b.addEventListener('click', () => {
+        // manual = lớp ba mẹ chọn khác với lớp bài kiểm tra đề xuất (chọn lại đúng lớp đề xuất thì bỏ cờ manual).
+        progress.placement = Object.assign({}, progress.placement, { level: id, manual: id !== placementLevelFromScores([pl.t1, pl.t2]) });
+        saveProgress(progress);
+        showPlacementResult();
+      });
+      picker.appendChild(b);
+    });
+    showPlacementPanel('result');
+  }
+
+  document.getElementById('placementBanner').addEventListener('click', openPlacement);
+  document.getElementById('openPlacementBtn').addEventListener('click', openPlacement);
+  document.getElementById('placementStartBtn').addEventListener('click', startPlacement);
+  document.getElementById('placementRetakeBtn').addEventListener('click', startPlacement);
+  document.getElementById('placementLaterBtn').addEventListener('click', () => goHome());
+  document.getElementById('placementGoHomeBtn').addEventListener('click', () => goHome());
+  document.getElementById('backFromPlacement').addEventListener('click', () => { placementState = null; goHome(); });
+  document.getElementById('placementPickBtn').addEventListener('click', () => {
+    const picker = document.getElementById('placementPicker');
+    picker.hidden = !picker.hidden;
+  });
+  document.getElementById('placementListenBtn').addEventListener('click', () => {
+    if (placementState) speak(placementState.questions[placementState.index].speak);
+  });
 
   // ---------- GỬI Ý KIẾN (ghi vào tab "Feedback" của Google Sheet qua Apps Script) ----------
   // Khác saveProgress/saveProfile (bắn rồi bỏ), gửi ý kiến phải ĐỢI phản hồi thật để chỉ báo

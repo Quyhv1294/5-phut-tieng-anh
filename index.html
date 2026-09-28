@@ -80,6 +80,15 @@
       <span class="wb-arrow">→</span>
     </button>
 
+    <button class="week-banner placement-banner" id="placementBanner">
+      <span class="wb-emoji" id="placementBannerEmoji">🧪</span>
+      <span>
+        <span class="wb-eyebrow" id="placementBannerEyebrow">Kiểm tra nhỏ · 3 phút</span><br>
+        <span class="wb-title" id="placementBannerTitle">Xem bé hợp lớp nào nhé!</span>
+      </span>
+      <span class="wb-arrow">→</span>
+    </button>
+
     <div class="reminder-banner" id="reminderBanner" hidden>
       <span class="reminder-emoji">📚</span>
       <span>Hôm nay bé chưa học bài nào — chọn 1 chủ đề bên dưới để bắt đầu nhé!</span>
@@ -252,6 +261,7 @@
     </div>
     <div class="progress-wrap">
       <h2>Cài đặt</h2>
+      <button class="ghost-btn ghost-btn--muted" id="openPlacementBtn">🧪 Kiểm tra trình độ của bé</button>
       <button class="ghost-btn ghost-btn--muted" id="openFeedbackBtn">💬 Gửi ý kiến cho chúng tôi</button>
       <button class="ghost-btn ghost-btn--muted" id="replayOnboardingBtn">📖 Xem lại hướng dẫn sử dụng</button>
       <button class="ghost-btn ghost-btn--danger" id="resetProgressBtn">Đặt lại toàn bộ tiến độ học</button>
@@ -299,6 +309,45 @@
     </div>
   </section>
 
+  <!-- ============ PLACEMENT TEST SCREEN (xếp lớp Mầm / Chồi / Lá) ============ -->
+  <section class="screen" id="screen-placement">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromPlacement" aria-label="Quay lại">←</button>
+      <div class="progress-track" id="placementProgressTrack" hidden><div class="progress-fill" id="placementProgressFill"></div></div>
+    </div>
+
+    <div class="account-wrap" id="placementIntro">
+      <div class="account-hero">
+        <div class="account-hero-emoji">🧪</div>
+        <h2>Kiểm tra nhỏ cho bé</h2>
+        <p>Chỉ khoảng 5–10 câu, không tính điểm và không mất sao. Ba mẹ ngồi cùng bé nhé — câu nào bé chưa biết cứ chọn đại, mình chỉ cần biết bé đang ở đâu để xếp lớp cho hợp.</p>
+      </div>
+      <button class="account-primary-btn" id="placementStartBtn">Bắt đầu kiểm tra</button>
+      <button class="account-link-btn" id="placementLaterBtn">Để sau</button>
+    </div>
+
+    <div class="quiz-wrap placement-wrap" id="placementQuestion" hidden>
+      <div class="placement-part" id="placementPart"></div>
+      <div class="quiz-prompt" id="placementPrompt"></div>
+      <div class="placement-visual" id="placementVisual"></div>
+      <button class="ghost-btn spelling-listen-btn" id="placementListenBtn" hidden>🔊 Nghe</button>
+      <div class="quiz-options placement-options" id="placementOptions"></div>
+    </div>
+
+    <div class="account-wrap" id="placementResult" hidden>
+      <div class="account-hero">
+        <div class="account-hero-emoji" id="placementResultEmoji">🌱</div>
+        <h2 id="placementResultTitle"></h2>
+        <p id="placementResultMsg"></p>
+      </div>
+      <div class="account-detail-list" id="placementResultDetail"></div>
+      <button class="account-primary-btn" id="placementGoHomeBtn">Bắt đầu học thôi!</button>
+      <button class="ghost-btn" id="placementPickBtn">Chọn lớp khác cho bé</button>
+      <div class="placement-picker" id="placementPicker" hidden></div>
+      <button class="ghost-btn ghost-btn--muted" id="placementRetakeBtn">🔁 Làm lại bài kiểm tra</button>
+    </div>
+  </section>
+
   <!-- ============ ACCOUNT SCREEN ============ -->
   <section class="screen" id="screen-account">
     <div class="card-topbar">
@@ -340,6 +389,7 @@
           <div class="account-detail-row"><span class="account-detail-label">📧 Email</span><span class="account-detail-value" id="accountEmailDisplay">—</span></div>
           <div class="account-detail-row"><span class="account-detail-label">✅ Trạng thái</span><span class="account-detail-value">Đã xác thực</span></div>
           <div class="account-detail-row"><span class="account-detail-label">📱 SĐT ba mẹ</span><span class="account-detail-value" id="accountPhoneDisplay">—</span></div>
+          <div class="account-detail-row"><span class="account-detail-label">🎓 Lớp học</span><span class="account-detail-value" id="accountLevelDisplay">Chưa kiểm tra</span></div>
         </div>
         <p class="account-note">Hồ sơ và tiến trình học của bé được lưu theo email này — đăng nhập cùng email ở thiết bị khác cũng thấy lại đúng tiến trình.</p>
         <button class="ghost-btn" id="editProfileBtn">✏️ Sửa hồ sơ của bé</button>
@@ -746,6 +796,10 @@
         <span><strong>Chia sẻ</strong> — tạo ảnh thành tích học tập đẹp mắt để ba mẹ lưu lại hoặc khoe với mọi người.</span>
       </div>
       <div class="onboarding-step">
+        <span class="onboarding-step-icon">🧪</span>
+        <span><strong>Kiểm tra trình độ</strong> — bấm thẻ "Kiểm tra nhỏ" ở trang Học để bé làm bài 5–10 câu (không mất sao). App sẽ gợi ý lớp Mầm, Chồi hoặc Lá cho hợp với bé; ba mẹ có thể đổi lớp hoặc làm lại bất cứ lúc nào.</span>
+      </div>
+      <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
         <span><strong>Tài khoản</strong> — bấm biểu tượng người ở góc trên để xem hoặc sửa hồ sơ của bé (tên, tuổi, hình đại diện, số điện thoại ba mẹ) bất cứ lúc nào.</span>
       </div>
@@ -810,6 +864,7 @@
 <script src="data/alphabet.js"></script>
 <script src="data/phonics.js"></script>
 <script src="data/stories.js"></script>
+<script src="data/placement.js"></script>
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>
 <script src="app.js"></script>
