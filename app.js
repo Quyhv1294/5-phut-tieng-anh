@@ -2796,6 +2796,8 @@
     matchRightCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.en, matched: false })));
     renderMatchGame();
     showScreen('match');
+    // Lần vẽ đầu màn hình còn ẩn (bề rộng thẻ = 0) nên chưa tính được cỡ chữ — tính lại khi đã hiện.
+    fitMatchWordCards(document.getElementById('matchGridRight'));
   }
 
   function renderMatchGame() {
@@ -2827,6 +2829,20 @@
       btn.disabled = card.matched;
       btn.addEventListener('click', () => handleMatchClick('right', idx));
       rightGrid.appendChild(btn);
+    });
+    fitMatchWordCards(rightGrid);
+  }
+
+  // Thẻ chữ chỉ rộng ~1/4 màn hình nên cỡ chữ cố định sẽ tràn với từ dài (HELICOPTER, WATERMELON...).
+  // Tính cỡ chữ cho từng thẻ theo bề rộng thẻ thật đang hiển thị và số chữ cái (≈0.66em/chữ in hoa),
+  // chặn trong khoảng 10–20px: từ ngắn vẫn to rõ, từ dài tự thu nhỏ vừa 1 dòng.
+  function fitMatchWordCards(grid) {
+    const first = grid.firstElementChild;
+    if (!first || !first.clientWidth) return;
+    const usable = first.clientWidth - 14; // trừ viền 3px x2 + đệm 2px x2 + chút dư
+    Array.from(grid.children).forEach(btn => {
+      const len = Math.max(btn.textContent.length, 1);
+      btn.style.fontSize = Math.max(10, Math.min(20, usable / (len * 0.66))) + 'px';
     });
   }
 

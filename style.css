@@ -902,28 +902,32 @@
   .match-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding-top: 6px; }
   .match-prompt { font-family: 'Baloo 2'; font-weight: 700; font-size: 19.5px; text-align: center; }
   .match-columns {
-    display: flex; gap: 14px;
+    display: flex; gap: 12px;
     width: 100%; max-width: 460px;
   }
+  /* Mỗi bên (hình / chữ) chia 2 cột → tổng 4 cột: 10 cặp chỉ cao 5 hàng, vừa 1 màn hình điện thoại. */
   .match-grid {
-    flex: 1;
-    display: flex; flex-direction: column; gap: 14px;
+    flex: 1; min-width: 0;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+    align-content: start;
   }
   .match-card {
-    min-height: 78px;
+    min-height: 72px;
     border: 3px solid var(--line);
     background: var(--surface);
     color: var(--ink);
-    border-radius: 18px;
+    border-radius: 16px;
     font-family: 'Baloo 2'; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    padding: 8px 6px;
+    padding: 4px 2px;
     text-align: center;
-    word-break: break-word;
+    min-width: 0;
   }
-  .match-card.match-card--emoji { font-size: 48px; }
-  .match-card.match-card--word { font-size: 22px; }
+  .match-card.match-card--emoji { font-size: 38px; }
+  /* Cỡ chữ của thẻ chữ do app.js tự tính theo độ dài từ + bề rộng thẻ (xem fitMatchWordCards),
+     để từ dài như HELICOPTER vẫn nằm gọn 1 dòng, không bị bẻ đôi giữa từ. */
+  .match-card.match-card--word { font-size: 16px; white-space: nowrap; }
   .match-card:disabled { cursor: default; }
   .match-card.is-selected { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 18%, var(--surface)); }
   .match-card.is-wrong { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 16%, var(--surface)); }
