@@ -67,6 +67,13 @@
 
   const STORAGE_KEY = '5phut_progress_v1';
   const SPELLING_WORD_COUNT = 4; // Xếp chữ chỉ lấy ngẫu nhiên 4 từ/lượt cho vừa sức bé
+  const SPELLING_MIN_LETTERS = 3; // Xếp chữ chỉ dùng từ 3-4 chữ cái cho vừa sức bé — từ dài hơn để dành sau
+  const SPELLING_MAX_LETTERS = 4;
+  // Các từ của chủ đề đủ điều kiện cho Xếp chữ (có thể ít hơn SPELLING_WORD_COUNT, hoặc rỗng — chủ
+  // đề rỗng bị ẩn khỏi danh sách game, xem renderGamesScreen).
+  function getSpellingPool(topic) {
+    return topic.words.filter(w => w.en.length >= SPELLING_MIN_LETTERS && w.en.length <= SPELLING_MAX_LETTERS);
+  }
   const SPEED_WORD_COUNT = 8; // Đố vui tính giờ: lấy tối đa 8 từ/lượt để có đủ thời gian "đua"
   const SPEED_TIME_LIMIT = 30; // giây cho mỗi lượt chơi
   const QUIZPARENT_WORD_COUNT = 8; // Đố ba mẹ: lấy tối đa 8 từ/lượt, đủ dài nhưng không quá dài
@@ -1656,11 +1663,13 @@
     const grid = document.getElementById('gamesTopicGrid');
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
+      // Xếp chữ: chủ đề không có từ 3-4 chữ cái nào thì không đưa vào game.
+      if (gamesMode === 'spell' && getSpellingPool(topic).length === 0) return;
       const btn = document.createElement('button');
       btn.className = 'topic-card ' + topic.cls + practiceLockClasses(topic);
       const countText = isTopicLockedForPractice(topic) ? practiceLockReasonText(topic) :
         gamesMode === 'match' ? 'Nối ' + topic.words.length + ' cặp' :
-        gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, topic.words.length) + ' từ' :
+        gamesMode === 'spell' ? 'Xếp ' + Math.min(SPELLING_WORD_COUNT, getSpellingPool(topic).length) + ' từ' :
         gamesMode === 'speed' ? 'Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's' :
         'Đố ba mẹ ' + Math.min(QUIZPARENT_WORD_COUNT, topic.words.length) + ' từ';
       btn.innerHTML =
@@ -2915,7 +2924,9 @@
     if (!topic) return;
     if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
     currentTopic = topic;
-    spellingWords = shuffle(topic.words).slice(0, Math.min(SPELLING_WORD_COUNT, topic.words.length));
+    const pool = getSpellingPool(topic);
+    if (pool.length === 0) return;
+    spellingWords = shuffle(pool).slice(0, Math.min(SPELLING_WORD_COUNT, pool.length));
     spellingIndex = 0;
     document.getElementById('spellingWrap').hidden = false;
     document.getElementById('spellingDoneWrap').hidden = true;
