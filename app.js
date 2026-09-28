@@ -1435,10 +1435,28 @@
     document.getElementById('placementProgressTrack').hidden = name !== 'question';
   }
 
+  function openPlacementIntro(firstRun) {
+    const name = profile ? profile.name : 'bé';
+    document.getElementById('placementIntroTitle').textContent = firstRun ? 'Xếp lớp cho ' + name : 'Kiểm tra nhỏ cho bé';
+    document.getElementById('placementIntroText').textContent = firstRun
+      ? 'Hồ sơ của ' + name + ' đã sẵn sàng! Giờ bé làm bài kiểm tra nhỏ (5–10 câu, không mất sao) để mình xếp lớp cho hợp. Ba mẹ ngồi cùng bé nhé — câu nào bé chưa biết cứ chọn đại.'
+      : 'Chỉ khoảng 5–10 câu, không tính điểm và không mất sao. Ba mẹ ngồi cùng bé nhé — câu nào bé chưa biết cứ chọn đại, mình chỉ cần biết bé đang ở đâu để xếp lớp cho hợp.';
+    showPlacementPanel('intro');
+    showScreen('placement');
+  }
+
   function openPlacement() {
     if (!enforceGate()) return;
-    if (progress.placement) showPlacementResult(); else showPlacementPanel('intro');
-    showScreen('placement');
+    if (progress.placement) { showPlacementResult(); showScreen('placement'); }
+    else openPlacementIntro(false);
+  }
+
+  // Rời khỏi bài kiểm tra (Để sau / Bắt đầu học / nút quay lại). Dùng bootAfterGate thay vì goHome:
+  // lần đầu (ngay sau khi tạo hồ sơ) nó mới chạy phần khởi động 1 lần — hướng dẫn sử dụng, bài ôn
+  // tập tuần; các lần sau nó chỉ đơn giản về trang chủ.
+  function leavePlacement() {
+    placementState = null;
+    bootAfterGate();
   }
 
   function startPlacement() {
@@ -1567,9 +1585,9 @@
   document.getElementById('openPlacementBtn').addEventListener('click', openPlacement);
   document.getElementById('placementStartBtn').addEventListener('click', startPlacement);
   document.getElementById('placementRetakeBtn').addEventListener('click', startPlacement);
-  document.getElementById('placementLaterBtn').addEventListener('click', () => goHome());
-  document.getElementById('placementGoHomeBtn').addEventListener('click', () => goHome());
-  document.getElementById('backFromPlacement').addEventListener('click', () => { placementState = null; goHome(); });
+  document.getElementById('placementLaterBtn').addEventListener('click', leavePlacement);
+  document.getElementById('placementGoHomeBtn').addEventListener('click', leavePlacement);
+  document.getElementById('backFromPlacement').addEventListener('click', leavePlacement);
   document.getElementById('placementPickBtn').addEventListener('click', () => {
     const picker = document.getElementById('placementPicker');
     picker.hidden = !picker.hidden;
@@ -1796,7 +1814,11 @@
     saveProfileLocal(profile);
     logProfileToSheet(profile);
     if (!wasEditing) showToast('Tạo hồ sơ thành công!', '🎉');
-    if (enforceGate()) bootAfterGate();
+    if (!enforceGate()) return;
+    // Hồ sơ vừa tạo mới và bé chưa được xếp lớp → dẫn thẳng vào bài kiểm tra trình độ; bootAfterGate
+    // (trang chủ + hướng dẫn lần đầu) chạy sau khi bé xem xong kết quả xếp lớp — xem leavePlacement.
+    if (!wasEditing && !progress.placement) openPlacementIntro(true);
+    else bootAfterGate();
   });
 
   document.getElementById('editProfileBtn').addEventListener('click', () => {
