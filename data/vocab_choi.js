@@ -1,5 +1,7 @@
   // Từ vựng RIÊNG của lớp Chồi (5–6 tuổi), bám chương trình lớp 1: đồ dùng lớp học, thứ trong tuần,
-  // hình khối, quần áo, phòng trong nhà, động từ. Không trùng từ nào với 12 chủ đề của lớp Mầm (TOPICS).
+  // hình khối, quần áo, phòng trong nhà, động từ, nghề nghiệp, nơi chốn, cảm xúc. Không trùng từ nào
+  // với 12 chủ đề của lớp Mầm (TOPICS) — trừ vài từ hay gặp/cảm xúc cơ bản có thể trùng khái niệm
+  // (VD "HAPPY/SAD" ở Mầm vs "EXCITED/SCARED..." ở đây là từ khác nhau, không trùng chữ).
   // Cùng shape với TOPICS ({ en, vi, emoji, example, exampleVi }) nên dùng lại được luồng học
   // (thẻ → đố → hoàn thành) và ôn tập ngắt quãng; khác là luôn mở sẵn (không khoá tuần tự), không
   // có mảnh ghép tranh, và ôn tập của lớp Chồi chỉ gồm từ ở đây (xem classOfWordKey trong app.js).
@@ -66,5 +68,38 @@
         { en: 'SLEEP', vi: 'Ngủ', emoji: '😴', example: 'I SLEEP at night.', exampleVi: 'Con ngủ vào ban đêm.' },
         { en: 'CLAP', vi: 'Vỗ tay', emoji: '👏', example: 'I CLAP my hands.', exampleVi: 'Con vỗ tay.' },
         { en: 'EAT', vi: 'Ăn', emoji: '🍽️', example: 'I EAT with my family.', exampleVi: 'Con ăn cùng gia đình.' },
+      ] },
+    { id: 'choi_jobs', label: 'Nghề nghiệp', emoji: '👮', cls: 't-gold',
+      words: [
+        { en: 'DOCTOR', vi: 'Bác sĩ', emoji: '🩺', example: 'The DOCTOR helps sick people.', exampleVi: 'Bác sĩ giúp người bị ốm.' },
+        { en: 'FARMER', vi: 'Nông dân', emoji: '🚜', example: 'The FARMER works on a farm.', exampleVi: 'Nông dân làm việc ở trang trại.' },
+        { en: 'POLICE', vi: 'Cảnh sát', emoji: '👮', example: 'The POLICE keeps us safe.', exampleVi: 'Cảnh sát giữ an toàn cho mọi người.' },
+        { en: 'FIREFIGHTER', vi: 'Lính cứu hỏa', emoji: '🚒', example: 'The FIREFIGHTER puts out fires.', exampleVi: 'Lính cứu hỏa dập tắt đám cháy.' },
+        { en: 'DRIVER', vi: 'Tài xế', emoji: '🚖', example: 'The DRIVER drives a car.', exampleVi: 'Tài xế lái xe ô tô.' },
+        { en: 'SINGER', vi: 'Ca sĩ', emoji: '🎤', example: 'The SINGER sings a song.', exampleVi: 'Ca sĩ hát một bài hát.' },
+        { en: 'ARTIST', vi: 'Họa sĩ', emoji: '🎨', example: 'The ARTIST paints a picture.', exampleVi: 'Họa sĩ vẽ một bức tranh.' },
+        { en: 'PILOT', vi: 'Phi công', emoji: '✈️', example: 'The PILOT flies a plane.', exampleVi: 'Phi công lái máy bay.' },
+      ] },
+    { id: 'choi_places', label: 'Nơi chốn', emoji: '🏞️', cls: 't-mint',
+      words: [
+        { en: 'PARK', vi: 'Công viên', emoji: '🏞️', example: 'I play at the PARK.', exampleVi: 'Con chơi ở công viên.' },
+        { en: 'MARKET', vi: 'Chợ', emoji: '🏪', example: 'I buy fruit at the MARKET.', exampleVi: 'Con mua trái cây ở chợ.' },
+        { en: 'HOSPITAL', vi: 'Bệnh viện', emoji: '🏥', example: 'The doctor works at the HOSPITAL.', exampleVi: 'Bác sĩ làm việc ở bệnh viện.' },
+        { en: 'LIBRARY', vi: 'Thư viện', emoji: '📚', example: 'I read books at the LIBRARY.', exampleVi: 'Con đọc sách ở thư viện.' },
+        { en: 'BEACH', vi: 'Bãi biển', emoji: '🏖️', example: 'We swim at the BEACH.', exampleVi: 'Chúng con bơi ở bãi biển.' },
+        { en: 'MOUNTAIN', vi: 'Núi', emoji: '⛰️', example: 'The MOUNTAIN is very tall.', exampleVi: 'Ngọn núi rất cao.' },
+        { en: 'RIVER', vi: 'Dòng sông', emoji: '🌊', example: 'The RIVER is long.', exampleVi: 'Dòng sông dài.' },
+        { en: 'FOREST', vi: 'Khu rừng', emoji: '🌲', example: 'Many animals live in the FOREST.', exampleVi: 'Nhiều con vật sống trong rừng.' },
+      ] },
+    { id: 'choi_feelings', label: 'Cảm xúc', emoji: '🤩', cls: 't-blue',
+      words: [
+        { en: 'EXCITED', vi: 'Hào hứng', emoji: '🤩', example: 'I am EXCITED for the trip.', exampleVi: 'Con hào hứng cho chuyến đi.' },
+        { en: 'SCARED', vi: 'Sợ hãi', emoji: '😱', example: 'I am SCARED of the dark.', exampleVi: 'Con sợ bóng tối.' },
+        { en: 'TIRED', vi: 'Mệt mỏi', emoji: '😪', example: 'I am TIRED after school.', exampleVi: 'Con mệt sau giờ học.' },
+        { en: 'ANGRY', vi: 'Tức giận', emoji: '😠', example: 'Dad is ANGRY.', exampleVi: 'Ba đang tức giận.' },
+        { en: 'HUNGRY', vi: 'Đói bụng', emoji: '😋', example: 'I am HUNGRY now.', exampleVi: 'Bây giờ con đói bụng.' },
+        { en: 'THIRSTY', vi: 'Khát nước', emoji: '🥤', example: 'I am THIRSTY.', exampleVi: 'Con khát nước.' },
+        { en: 'SURPRISED', vi: 'Ngạc nhiên', emoji: '😲', example: 'I am SURPRISED!', exampleVi: 'Con ngạc nhiên quá!' },
+        { en: 'BORED', vi: 'Chán', emoji: '😑', example: 'I am BORED today.', exampleVi: 'Hôm nay con thấy chán.' },
       ] },
   ];

@@ -1,5 +1,5 @@
   // Từ hay gặp (sight words) — nội dung RIÊNG của lớp Chồi (5–6 tuổi): 40 từ ngắn xuất hiện gần như
-  // trong mọi câu tiếng Anh (chọn từ danh sách Dolch pre-primer/primer), chia 5 nhóm × 8 từ. Bé cần nhận ra
+  // trong mọi câu tiếng Anh (chọn từ danh sách Dolch pre-primer/primer), chia 9 nhóm × 8 từ. Bé cần nhận ra
   // ngay các từ này để sau này tự đọc được câu. Từ loại này không có hình minh hoạ nên khác các bài từ vựng:
   // học bằng thẻ chữ (nghe từ + câu ví dụ + nghĩa) rồi đố "nghe từ, chọn chữ" (xem startSight trong app.js).
   const SIGHT_TOPICS = [
@@ -57,5 +57,49 @@
         { en: 'yellow', vi: 'Màu vàng', example: 'The sun is yellow.', exampleVi: 'Mặt trời màu vàng.' },
         { en: 'for', vi: 'Cho', example: 'This is for you.', exampleVi: 'Cái này là cho bạn.' },
         { en: 'said', vi: 'Đã nói', example: 'Mom said yes.', exampleVi: 'Mẹ nói được.' },
+      ] },
+    { id: 'sight_6', label: 'Từ hay gặp 6', emoji: '👫', cls: 't-pink',
+      words: [
+        { en: 'he', vi: 'Anh ấy, cậu ấy', example: 'He is my friend.', exampleVi: 'Cậu ấy là bạn con.' },
+        { en: 'she', vi: 'Cô ấy, chị ấy', example: 'She is happy.', exampleVi: 'Chị ấy vui.' },
+        { en: 'they', vi: 'Họ, chúng nó', example: 'They play together.', exampleVi: 'Họ chơi cùng nhau.' },
+        { en: 'are', vi: 'Thì, là (nhiều người/vật)', example: 'We are friends.', exampleVi: 'Chúng con là bạn bè.' },
+        { en: 'was', vi: 'Đã là (quá khứ)', example: 'It was fun.', exampleVi: 'Nó đã rất vui.' },
+        { en: 'this', vi: 'Cái này', example: 'This is my book.', exampleVi: 'Đây là sách của con.' },
+        { en: 'that', vi: 'Cái kia', example: 'That is my house.', exampleVi: 'Kia là nhà của con.' },
+        { en: 'there', vi: 'Ở đó', example: 'The cat is there.', exampleVi: 'Con mèo ở đó.' },
+      ] },
+    { id: 'sight_7', label: 'Từ hay gặp 7', emoji: '🙋', cls: 't-blue',
+      words: [
+        { en: 'do', vi: 'Làm (trợ động từ)', example: 'Do you like cats?', exampleVi: 'Bạn có thích mèo không?' },
+        { en: 'did', vi: 'Đã làm (trợ động từ)', example: 'Did you eat?', exampleVi: 'Bạn đã ăn chưa?' },
+        { en: 'have', vi: 'Có', example: 'I have a dog.', exampleVi: 'Con có một con chó.' },
+        { en: 'has', vi: 'Có (số ít)', example: 'She has a ball.', exampleVi: 'Chị ấy có một quả bóng.' },
+        { en: 'like', vi: 'Thích', example: 'I like ice cream.', exampleVi: 'Con thích kem.' },
+        { en: 'want', vi: 'Muốn', example: 'I want water.', exampleVi: 'Con muốn nước.' },
+        { en: 'will', vi: 'Sẽ', example: 'I will play.', exampleVi: 'Con sẽ chơi.' },
+        { en: 'with', vi: 'Với, cùng', example: 'I play with you.', exampleVi: 'Con chơi cùng bạn.' },
+      ] },
+    { id: 'sight_8', label: 'Từ hay gặp 8', emoji: '❓', cls: 't-gold',
+      words: [
+        { en: 'what', vi: 'Cái gì', example: 'What is this?', exampleVi: 'Đây là cái gì?' },
+        { en: 'who', vi: 'Ai', example: 'Who is that?', exampleVi: 'Kia là ai?' },
+        { en: 'now', vi: 'Bây giờ', example: 'Come here now.', exampleVi: 'Lại đây ngay bây giờ.' },
+        { en: 'too', vi: 'Cũng, quá', example: 'Me too!', exampleVi: 'Con cũng vậy!' },
+        { en: 'so', vi: 'Vậy nên, rất', example: 'I am so happy.', exampleVi: 'Con rất vui.' },
+        { en: 'please', vi: 'Làm ơn, xin', example: 'Help me, please.', exampleVi: 'Làm ơn giúp con.' },
+        { en: 'good', vi: 'Tốt, giỏi', example: 'Good job!', exampleVi: 'Làm tốt lắm!' },
+        { en: 'new', vi: 'Mới', example: 'I have a new toy.', exampleVi: 'Con có một món đồ chơi mới.' },
+      ] },
+    { id: 'sight_9', label: 'Từ hay gặp 9', emoji: '📌', cls: 't-mint',
+      words: [
+        { en: 'on', vi: 'Trên', example: 'The cat is on the bed.', exampleVi: 'Con mèo ở trên giường.' },
+        { en: 'at', vi: 'Ở, tại', example: 'I am at school.', exampleVi: 'Con đang ở trường.' },
+        { en: 'but', vi: 'Nhưng', example: 'I am tired, but happy.', exampleVi: 'Con mệt nhưng vui.' },
+        { en: 'out', vi: 'Ra ngoài', example: 'Go out and play.', exampleVi: 'Ra ngoài chơi đi.' },
+        { en: 'under', vi: 'Ở dưới', example: 'The ball is under the chair.', exampleVi: 'Quả bóng ở dưới ghế.' },
+        { en: 'four', vi: 'Bốn', example: 'I have four crayons.', exampleVi: 'Con có bốn cây bút sáp màu.' },
+        { en: 'no', vi: 'Không', example: 'No, thank you.', exampleVi: 'Không, con cảm ơn.' },
+        { en: 'yes', vi: 'Có, vâng', example: 'Yes, I can!', exampleVi: 'Vâng, con làm được!' },
       ] },
   ];

@@ -598,9 +598,9 @@
       check: p => p.choi && p.choi.spellWords >= 30 },
     { id: 'choi_sentences', group: 'choi', icon: '🧩', label: 'Nhà văn nhí', desc: 'Ghép đúng 30 câu ở tab Câu (+10 sao)', bonus: 10,
       check: p => p.choi && p.choi.sentencesBuilt >= 30 },
-    { id: 'choi_vocab', group: 'choi', icon: '📚', label: 'Bạn của từ mới', desc: 'Học xong cả 6 chủ đề từ vựng Lớp Chồi (+20 sao)', bonus: 20,
+    { id: 'choi_vocab', group: 'choi', icon: '📚', label: 'Bạn của từ mới', desc: 'Học xong cả 9 chủ đề từ vựng Lớp Chồi (+20 sao)', bonus: 20,
       check: p => CHOI_TOPICS.every(t => p.doneTopics[t.id]) },
-    { id: 'choi_sight', group: 'choi', icon: '👀', label: 'Đọc nhanh như chớp', desc: 'Học xong cả 5 nhóm Từ hay gặp (+20 sao)', bonus: 20,
+    { id: 'choi_sight', group: 'choi', icon: '👀', label: 'Đọc nhanh như chớp', desc: 'Học xong cả 9 nhóm Từ hay gặp (+20 sao)', bonus: 20,
       check: p => SIGHT_TOPICS.every(t => p.doneTopics[t.id]) },
     { id: 'choi_writer', group: 'choi', icon: '✍️', label: 'Bàn tay vàng', desc: 'Tô đẹp cả 6 nhóm chữ ở Tập viết (+20 sao)', bonus: 20,
       check: p => WRITE_GROUPS.every(g => p.choi && p.choi.writeGroups[g.id]) },
@@ -2571,7 +2571,7 @@
     });
   }
 
-  // Từ vựng lớp Chồi (CHOI_TOPICS, data/vocab_choi.js): 6 chủ đề, luôn mở, học theo luồng thẻ → đố → hoàn thành
+  // Từ vựng lớp Chồi (CHOI_TOPICS, data/vocab_choi.js): 9 chủ đề, luôn mở, học theo luồng thẻ → đố → hoàn thành
   // như chủ đề lớp Mầm nhưng không khoá tuần tự và không có mảnh ghép tranh (xem startTopic / finishTopic).
   function renderChoiVocab() {
     const grid = document.getElementById('choiVocabGrid');
@@ -3775,7 +3775,7 @@
   document.getElementById('songDoneBtn').addEventListener('click', () => finishSong());
 
   // ---------- TỪ HAY GẶP (lớp Chồi, tab Học) ----------
-  // 5 nhóm × 8 từ (SIGHT_TOPICS, data/sight_choi.js). Từ loại này không có hình nên có màn riêng: thẻ chữ
+  // 9 nhóm × 8 từ (SIGHT_TOPICS, data/sight_choi.js). Từ loại này không có hình nên có màn riêng: thẻ chữ
   // (nghe từ + câu ví dụ + nghĩa) rồi đố "nghe từ, chọn chữ". Xong nhóm lần đầu: thưởng sao = số câu đúng,
   // đánh dấu progress.doneTopics[id] (giống Ngữ âm) — không đi qua finishTopic vì không nằm trong TOPICS.
   let currentSight = null;
