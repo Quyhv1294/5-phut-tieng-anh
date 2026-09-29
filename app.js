@@ -71,6 +71,9 @@
   // Chồi: từ 3-6 chữ cái, 5 từ/lượt.
   const MEMORY_PAIRS = 6; // Lật thẻ (lớp Chồi): 6 cặp = 12 thẻ
   let choiGamesMode = 'spell'; // Trò chơi lớp Chồi đang chọn: 'spell' (Xếp chữ) | 'memory' (Lật thẻ) | 'simon' (Simon nói)
+  let laGamesMode = 'spell'; // Trò chơi lớp Lá đang chọn: 'spell' (Xếp chữ dài) | 'speed' (Đố nhanh) | 'order' (Sắp xếp câu)
+  let laSentencesMode = 'qa'; // Câu lớp Lá đang chọn: 'qa' (Hỏi-đáp) | 'dialogue' (Đối thoại) | 'write' (Viết câu)
+  const QA_ROUND_COUNT = 6; // Hỏi-đáp (lớp Lá): mỗi lượt nối 6 cặp câu hỏi-trả lời
   const SIMON_ROUNDS = 8; // Simon nói (lớp Chồi): 8 lượt mỗi ván
   const SIMON_SAYS_CHANCE = 0.65; // xác suất 1 lượt có "Simon says" (còn lại là lượt gài bẫy)
   const SENTENCE_BUILD_COUNT = 5; // Ghép câu (lớp Chồi): mỗi lượt 5 câu
@@ -78,6 +81,7 @@
   const SPELLING_RULES = {
     mam: { minLetters: 3, maxLetters: 4, count: SPELLING_WORD_COUNT },
     choi: { minLetters: 3, maxLetters: 6, count: 5 },
+    la: { minLetters: 5, maxLetters: 9, count: 5 },
   };
   // Các từ của chủ đề đủ điều kiện cho Xếp chữ của lớp (có thể ít hơn số từ/lượt, hoặc rỗng — chủ
   // đề rỗng bị ẩn khỏi danh sách game, xem renderGamesScreen / renderChoiSpellGrid).
@@ -257,6 +261,21 @@
         simonPlayed: (p.choi && p.choi.simonPlayed) || {},     // đã chơi xong 1 ván Simon nói (key cố định 'simon')
         songsPlayed: (p.choi && p.choi.songsPlayed) || {},     // bài hát đã hát xong ít nhất 1 lần
       },
+      // Tiến độ riêng của lớp Lá (Xếp chữ dài + Sắp xếp câu ở tab Trò chơi; Hỏi-đáp + Đối thoại +
+      // Viết câu ở tab Câu) — xem finishLaRound.
+      la: {
+        spellWords: (p.la && p.la.spellWords) || 0,
+        sentencesBuilt: (p.la && p.la.sentencesBuilt) || 0,
+        spellTopics: (p.la && p.la.spellTopics) || {},
+        sentenceGroups: (p.la && p.la.sentenceGroups) || {},
+        qaGroups: (p.la && p.la.qaGroups) || {},
+        dialogueGroups: (p.la && p.la.dialogueGroups) || {},
+        writeSentGroups: (p.la && p.la.writeSentGroups) || {},
+        paragraphGroups: (p.la && p.la.paragraphGroups) || {},
+        memoryTopics: (p.la && p.la.memoryTopics) || {},
+        simonPlayed: (p.la && p.la.simonPlayed) || {},
+        songsPlayed: (p.la && p.la.songsPlayed) || {},
+      },
       topicsSeen: topicsSeen,
       // Di trú equippedOutfits qua 3 đời schema, cũ nhất trước:
       //  (a) chưa từng có slot: progress.equippedOutfit là 1 string (hoặc null) — coi là 1 món đầu.
@@ -285,6 +304,7 @@
       perfectCount: 0, badges: {}, wordStats: {}, placedPieces: {},
       outfitsSeen: {}, topicsSeen: {}, equippedOutfits: { head: [], body: null }, placement: null, promotions: {},
       choi: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, memoryTopics: {}, writeGroups: {}, lettersWritten: 0, simonPlayed: {}, songsPlayed: {} },
+      la: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, qaGroups: {}, dialogueGroups: {}, writeSentGroups: {}, paragraphGroups: {}, memoryTopics: {}, simonPlayed: {}, songsPlayed: {} },
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -309,20 +329,30 @@
 
   const WORD_TO_TOPIC = new Map();
   const WORD_BY_KEY = new Map();
-  TOPICS.concat(CHOI_TOPICS).forEach(topic => {
+  TOPICS.concat(CHOI_TOPICS).concat(LA_TOPICS).forEach(topic => {
     topic.words.forEach(w => {
       WORD_TO_TOPIC.set(w, topic);
       WORD_BY_KEY.set(topic.id + ':' + w.en, w);
     });
   });
-  // Ôn tập ngắt quãng tách theo lớp: từ vựng lớp Chồi có id chủ đề bắt đầu bằng "choi_" nên khoá
-  // wordStats ("choi_school:PENCIL") phân biệt được; mọi khoá khác thuộc lớp Mầm.
-  function classOfWordKey(key) { return key.indexOf('choi_') === 0 ? 'choi' : 'mam'; }
-  function reviewClassId() { return getActiveClassId() === 'choi' ? 'choi' : 'mam'; }
-  function isChoiVocabWord(word) {
-    const t = WORD_TO_TOPIC.get(word);
-    return !!t && t.id.indexOf('choi_') === 0;
+  // Ôn tập ngắt quãng tách theo lớp: từ vựng lớp Chồi/Lá có id chủ đề bắt đầu bằng "choi_"/"la_" nên
+  // khoá wordStats ("choi_school:PENCIL") phân biệt được; mọi khoá khác thuộc lớp Mầm.
+  function classOfWordKey(key) {
+    return key.indexOf('choi_') === 0 ? 'choi' : key.indexOf('la_') === 0 ? 'la' : 'mam';
   }
+  function reviewClassId() {
+    const c = getActiveClassId();
+    return (c === 'choi' || c === 'la') ? c : 'mam';
+  }
+  // Lớp của 1 từ vựng (tra theo chủ đề chứa nó) — dùng để ôn tập tách lớp và độ khó đố.
+  function wordClassId(word) {
+    const t = WORD_TO_TOPIC.get(word);
+    return t ? classOfWordKey(t.id) : 'mam';
+  }
+  // Độ khó nâng cao (đố nhiều lựa chọn hơn, xem renderQuiz): áp dụng cho cả Chồi lẫn Lá, không riêng Chồi.
+  function isAdvancedVocabWord(word) { return wordClassId(word) !== 'mam'; }
+  // Danh sách chủ đề từ vựng dùng để đếm "đã học bao nhiêu chủ đề" / gom pool ôn tập tổng hợp theo lớp.
+  function vocabTopicsOf(cls) { return cls === 'choi' ? CHOI_TOPICS : cls === 'la' ? LA_TOPICS : TOPICS; }
 
   function wordKey(word) {
     const topic = WORD_TO_TOPIC.get(word);
@@ -406,6 +436,8 @@
     cards: document.getElementById('screen-cards'),
     phonicsLearn: document.getElementById('screen-phonics-learn'),
     phonicsQuiz: document.getElementById('screen-phonics-quiz'),
+    grammarLearn: document.getElementById('screen-grammar-learn'),
+    grammarQuiz: document.getElementById('screen-grammar-quiz'),
     storyRead: document.getElementById('screen-story-read'),
     storyQuiz: document.getElementById('screen-story-quiz'),
     quiz: document.getElementById('screen-quiz'),
@@ -418,6 +450,9 @@
     fillblank: document.getElementById('screen-fillblank'),
     weekly: document.getElementById('screen-weekly'),
     done: document.getElementById('screen-done'),
+    laQa: document.getElementById('screen-la-qa'),
+    laDialogue: document.getElementById('screen-la-dialogue'),
+    laWrite: document.getElementById('screen-la-write'),
   };
   const TOP_LEVEL_SCREENS = ['home', 'games', 'sentences', 'badges', 'progress'];
 
@@ -463,7 +498,7 @@
     thumb.style.transform = 'translateX(' + active.offsetLeft + 'px)';
   }
   window.addEventListener('resize', () => {
-    ['gamesModeToggle', 'sentencesModeToggle', 'collectionModeToggle', 'homeModeToggle', 'choiHomeModeToggle', 'choiGamesModeToggle'].forEach(id => {
+    ['gamesModeToggle', 'sentencesModeToggle', 'laSentencesModeToggle', 'collectionModeToggle', 'homeModeToggle', 'choiHomeModeToggle', 'laHomeModeToggle', 'choiGamesModeToggle', 'laGamesModeToggle'].forEach(id => {
       const el = document.getElementById(id);
       if (el && el.offsetParent !== null) moveSegmentThumb(el);
     });
@@ -612,6 +647,40 @@
       check: p => !!(p.choi && p.choi.songsPlayed && Object.keys(p.choi.songsPlayed).length > 0) },
     { id: 'choi_master', group: 'choi', icon: '🏅', label: 'Học trò xuất sắc lớp Chồi', desc: 'Đạt cả 6 huy hiệu: Thợ ghép vần, Bạn của từ mới, Đọc nhanh như chớp, Bàn tay vàng, Thợ xếp chữ, Nhà văn nhí (+40 sao)', bonus: 40,
       check: p => !!(p.badges.choi_phonics_all && p.badges.choi_vocab && p.badges.choi_sight && p.badges.choi_writer && p.badges.choi_speller && p.badges.choi_sentences) },
+    // ----- Huy hiệu riêng của Lớp Lá (group: 'la' → nhóm riêng ở tab Sưu tập, xem renderBadgesScreen) -----
+    { id: 'la_vocab', group: 'la', icon: '📚', label: 'Học giả nhí', desc: 'Học xong cả 5 chủ đề từ vựng Lớp Lá (+20 sao)', bonus: 20,
+      check: p => LA_TOPICS.every(t => p.doneTopics[t.id]) },
+    { id: 'la_grammar', group: 'la', icon: '🔤', label: 'Bậc thầy ngữ pháp', desc: 'Học xong cả 9 bài Ngữ pháp cơ bản (+20 sao)', bonus: 20,
+      check: p => GRAMMAR_LA_TOPICS.every(t => p.doneTopics[t.id]) },
+    { id: 'la_phonics', group: 'la', icon: '🧱', label: 'Cao thủ ghép âm', desc: 'Học xong cả 3 nhóm Ngữ âm 3 (+15 sao)', bonus: 15,
+      check: p => PHONICS3_TOPICS.every(t => p.doneTopics[t.id]) },
+    { id: 'la_reader', group: 'la', icon: '📗', label: 'Độc giả nhí', desc: 'Đọc hết cả 3 truyện của Lớp Lá (+15 sao)', bonus: 15,
+      check: p => STORY_TOPICS_LA.every(t => p.doneTopics[t.id]) },
+    { id: 'la_speller', group: 'la', icon: '🔤', label: 'Thợ xếp chữ dài', desc: 'Xếp đúng 30 từ ở trò chơi Xếp chữ dài (+10 sao)', bonus: 10,
+      check: p => p.la && p.la.spellWords >= 30 },
+    { id: 'la_sentence_builder', group: 'la', icon: '🧩', label: 'Cao thủ sắp câu', desc: 'Sắp xếp đúng 30 câu ở trò chơi Sắp xếp câu (+10 sao)', bonus: 10,
+      check: p => p.la && p.la.sentencesBuilt >= 30 },
+    { id: 'la_qa', group: 'la', icon: '❓', label: 'Nhà hùng biện nhí', desc: 'Chơi xong cả 5 nhóm Hỏi-đáp (+15 sao)', bonus: 15,
+      check: p => p.la && QA_LA_TOPICS.every(t => p.la.qaGroups[t.id]) },
+    { id: 'la_dialogue', group: 'la', icon: '🗣️', label: 'Diễn viên nhí', desc: 'Đóng vai xong cả 4 hội thoại (+15 sao)', bonus: 15,
+      check: p => p.la && DIALOGUE_LA_TOPICS.every(t => p.la.dialogueGroups[t.id]) },
+    { id: 'la_writer', group: 'la', icon: '✍️', label: 'Cây bút nhí', desc: 'Viết xong cả 5 nhóm câu ở Viết câu ngắn (+15 sao)', bonus: 15,
+      check: p => p.la && WRITE_LA_TOPICS.every(t => p.la.writeSentGroups[t.id]) },
+    { id: 'la_phrases', group: 'la', icon: '🗣️', label: 'Giao tiếp giỏi', desc: 'Học xong cả 5 nhóm Cụm từ thông dụng (+20 sao)', bonus: 20,
+      check: p => PHRASES_LA_TOPICS.every(t => p.doneTopics[t.id]) },
+    { id: 'la_reading', group: 'la', icon: '📋', label: 'Chuyên gia tra cứu', desc: 'Đọc hiểu xong cả 3 bài văn bản thông tin (+15 sao)', bonus: 15,
+      check: p => READING_LA_TOPICS.every(t => p.doneTopics[t.id]) },
+    { id: 'la_paragraph', group: 'la', icon: '📝', label: 'Nhà văn nhí lớp Lá', desc: 'Viết xong cả 4 đoạn văn ngắn (+15 sao)', bonus: 15,
+      check: p => p.la && PARAGRAPH_LA_TOPICS.every(t => p.la.paragraphGroups[t.id]) },
+    // choi_simon/choi_singer (xem BADGES nhóm 'choi') KHÔNG bắt buộc cho choi_master — Lật thẻ/Simon
+    // nói/Bài hát là nội dung "thêm" (bonus), không phải nội dung cốt lõi — la_memory (không có, xem
+    // finishLaRound comment), la_simon, la_songs cũng theo đúng tinh thần đó: không bắt buộc cho la_master.
+    { id: 'la_simon', group: 'la', icon: '🕺', label: 'Nhanh như Simon', desc: 'Chơi xong 1 ván Simon nói nâng cao (+5 sao)', bonus: 5,
+      check: p => !!(p.la && p.la.simonPlayed && p.la.simonPlayed.simon) },
+    { id: 'la_songs', group: 'la', icon: '🎤', label: 'Ca sĩ nhí lớp Lá', desc: 'Hát xong 1 bài hát tiếng Anh (+5 sao)', bonus: 5,
+      check: p => !!(p.la && p.la.songsPlayed && Object.keys(p.la.songsPlayed).length > 0) },
+    { id: 'la_master', group: 'la', icon: '🏅', label: 'Học trò xuất sắc lớp Lá', desc: 'Đạt đủ 12 huy hiệu Lớp Lá: Học giả nhí, Bậc thầy ngữ pháp, Cao thủ ghép âm, Độc giả nhí, Thợ xếp chữ dài, Cao thủ sắp câu, Nhà hùng biện nhí, Diễn viên nhí, Cây bút nhí, Giao tiếp giỏi, Chuyên gia tra cứu, Nhà văn nhí lớp Lá (+40 sao)', bonus: 40,
+      check: p => !!(p.badges.la_vocab && p.badges.la_grammar && p.badges.la_phonics && p.badges.la_reader && p.badges.la_speller && p.badges.la_sentence_builder && p.badges.la_qa && p.badges.la_dialogue && p.badges.la_writer && p.badges.la_phrases && p.badges.la_reading && p.badges.la_paragraph) },
   ];
 
   // Kiểm tra sau mỗi lần hoàn thành bài học xem có mở khoá huy hiệu mới không.
@@ -829,8 +898,18 @@
     { id: 'game', icon: '🎮', label: 'Chơi 1 trò chơi (Xếp chữ, Lật thẻ hoặc Simon nói)', check: s => s.games >= 1 },
     { id: 'sentence', icon: '🧩', label: 'Ghép 1 nhóm câu ở tab Câu', check: s => (s.sentences || 0) >= 1 },
   ];
+  // Nhiệm vụ của lớp Lá: nay Trò chơi VÀ Câu đều đã có nội dung nên dùng cùng dạng 3 việc như Chồi
+  // (session + game + hoàn thành 1 hoạt động ở tab Câu) thay vì "kiếm 5 sao".
+  const DAILY_MISSIONS_LA = [
+    { id: 'session', icon: '📚', label: 'Học hoặc ôn tập 1 lượt', check: s => s.sessions >= 1 },
+    { id: 'game', icon: '🎮', label: 'Chơi 1 trò chơi (Xếp chữ, Đố nhanh hoặc Sắp xếp câu)', check: s => s.games >= 1 },
+    { id: 'sentence', icon: '💬', label: 'Hoàn thành 1 hoạt động ở tab Câu', check: s => (s.sentences || 0) >= 1 },
+  ];
   // Danh sách nhiệm vụ của lớp bé đang xem. Thưởng chung 1 lần/ngày (dm.claimed) dù bé làm ở lớp nào.
-  function getDailyMissions() { return getActiveClassId() === 'choi' ? DAILY_MISSIONS_CHOI : DAILY_MISSIONS; }
+  function getDailyMissions() {
+    const c = getActiveClassId();
+    return c === 'choi' ? DAILY_MISSIONS_CHOI : c === 'la' ? DAILY_MISSIONS_LA : DAILY_MISSIONS;
+  }
   function blankDailyStats() { return { sessions: 0, games: 0, starsEarned: 0, sentences: 0 }; }
   function ensureDailyMissions() {
     const todayStr = toDateStr(new Date());
@@ -953,6 +1032,41 @@
       return;
     }
 
+    if (cls === 'la') {
+      // Tiến độ của Lớp Lá: Học (doneTopics) + Trò chơi/Câu (progress.la, như Chồi).
+      const c = progress.la;
+      tile2.textContent = laLessonsDone() + '/' + laLessonsTotal();
+      tile2Label.textContent = '📖 Bài đã học';
+      tile3.textContent = c.spellWords + c.sentencesBuilt;
+      tile3Label.textContent = '🧩 Từ & câu đã luyện';
+      listLabel.textContent = 'Chi tiết Lớp Lá';
+      const rowsOf = (arr, doneText, todoText) => arr.map(t => progressRowHtml(t.emoji, t.label, !!progress.doneTopics[t.id], doneText, todoText)).join('');
+      const rowsOfLa = (arr, map, doneText, todoText) => arr.map(t => progressRowHtml(t.emoji, t.label, !!map[t.id], doneText, todoText)).join('');
+      const spellList = getLaSpellTopics().filter(t => getSpellingPool(t, 'la').length > 0);
+      const memList = getLaSpellTopics().filter(t => getLaMemoryPool(t).length >= MEMORY_PAIRS);
+      const played = (map, list) => list.filter(t => map[t.id]).length;
+      const sumRow = (emoji, label, n, total) => progressRowHtml(emoji, label, n >= total, '✓ ' + n + '/' + total, n + '/' + total + ' chủ đề đã chơi');
+      list.innerHTML =
+        '<div class="progress-subhead">📚 Từ vựng Lớp Lá</div>' + rowsOf(LA_TOPICS, '✓ Đã học', 'Chưa học') +
+        '<div class="progress-subhead">🔤 Ngữ pháp cơ bản</div>' + rowsOf(GRAMMAR_LA_TOPICS, '✓ Đã học', 'Chưa học') +
+        '<div class="progress-subhead">🔊 Ngữ âm 3</div>' + rowsOf(PHONICS3_TOPICS, '✓ Đã học', 'Chưa học') +
+        '<div class="progress-subhead">📗 Truyện</div>' + rowsOf(STORY_TOPICS_LA, '✓ Đã đọc', 'Chưa đọc') +
+        '<div class="progress-subhead">🗣️ Cụm từ thông dụng</div>' + rowsOf(PHRASES_LA_TOPICS, '✓ Đã học', 'Chưa học') +
+        '<div class="progress-subhead">📋 Đọc hiểu văn bản</div>' + rowsOf(READING_LA_TOPICS, '✓ Đã đọc', 'Chưa đọc') +
+        '<div class="progress-subhead">🎵 Bài hát</div>' + rowsOfLa(SONGS_LA.map(s => ({ id: s.id, emoji: s.emoji, label: s.titleVi })), c.songsPlayed, '✓ Đã hát', 'Chưa hát') +
+        '<div class="progress-subhead">🎮 Trò chơi</div>' +
+        sumRow('🔤', 'Xếp chữ dài', played(c.spellTopics, spellList), spellList.length) +
+        sumRow('🧠', 'Lật thẻ nâng cao', played(c.memoryTopics, memList), memList.length) +
+        progressRowHtml('🕺', 'Simon nói nâng cao', !!c.simonPlayed.simon, '✓ Đã chơi', 'Chưa chơi') +
+        rowsOfLa(SENTENCE_BUILD_LA_TOPICS, c.sentenceGroups, '✓ Đã chơi', 'Chưa chơi') +
+        '<div class="progress-subhead">💬 Câu</div>' +
+        rowsOfLa(QA_LA_TOPICS, c.qaGroups, '✓ Đã chơi', 'Chưa chơi') +
+        rowsOfLa(DIALOGUE_LA_TOPICS, c.dialogueGroups, '✓ Đã chơi', 'Chưa chơi') +
+        rowsOfLa(WRITE_LA_TOPICS, c.writeSentGroups, '✓ Đã viết', 'Chưa viết') +
+        rowsOfLa(PARAGRAPH_LA_TOPICS, c.paragraphGroups, '✓ Đã viết', 'Chưa viết');
+      return;
+    }
+
     if (!CLASS_CONTENT[cls].screens.home) {
       // Lớp chưa có nội dung (Lớp Lá): chưa có gì để thống kê.
       tile2.textContent = '—'; tile2Label.textContent = '📚 Bài học';
@@ -993,6 +1107,12 @@
           const head = document.createElement('div');
           head.className = 'badge-group-label';
           head.textContent = '🌿 Huy hiệu Lớp Chồi';
+          badgeGrid.appendChild(head);
+        }
+        if (lastGroup === 'la') {
+          const head = document.createElement('div');
+          head.className = 'badge-group-label';
+          head.textContent = '🍃 Huy hiệu Lớp Lá';
           badgeGrid.appendChild(head);
         }
       }
@@ -1831,7 +1951,7 @@
       }
     });
     renderClassSwitches();
-    ['homeModeToggle', 'choiHomeModeToggle', 'gamesModeToggle', 'choiGamesModeToggle', 'sentencesModeToggle'].forEach(tid => { // thumb chỉ đo được khi màn đang hiện
+    ['homeModeToggle', 'choiHomeModeToggle', 'laHomeModeToggle', 'gamesModeToggle', 'choiGamesModeToggle', 'laGamesModeToggle', 'sentencesModeToggle', 'laSentencesModeToggle'].forEach(tid => { // thumb chỉ đo được khi màn đang hiện
       const el = document.getElementById(tid);
       if (el && el.offsetParent !== null) moveSegmentThumb(el);
     });
@@ -2242,9 +2362,64 @@
     });
   }
 
+  // Lưới trò chơi của lớp Lá (tab Trò chơi, khi đang chọn Lớp Lá): 5 chế độ Xếp chữ dài / Đố nhanh
+  // nâng cao / Sắp xếp câu / Lật thẻ / Simon nói — không khoá theo doneTopics như Học (giống Chồi:
+  // chọn lớp Lá là chơi được ngay, xem [[project_games_sentences_unlock]] trong bộ nhớ về vì sao Học
+  // vẫn khoá còn đây thì không).
+  function renderLaGamesGrid() {
+    const grid = document.getElementById('laGamesTopicGrid');
+    // Simon nói không cần chọn chủ đề — ẩn lưới, hiện thẻ giới thiệu thay vào đó (giống Chồi).
+    grid.hidden = laGamesMode === 'simon';
+    document.getElementById('laSimonIntro').hidden = laGamesMode !== 'simon';
+    if (laGamesMode === 'simon') return;
+    grid.innerHTML = '';
+    if (laGamesMode === 'spell' || laGamesMode === 'memory') {
+      const memory = laGamesMode === 'memory'; // cùng danh sách chủ đề cho Xếp chữ dài và Lật thẻ, giống Chồi
+      getLaSpellTopics().forEach(topic => {
+        const pool = memory ? getLaMemoryPool(topic) : getSpellingPool(topic, 'la');
+        if (memory ? pool.length < MEMORY_PAIRS : pool.length === 0) return;
+        const done = memory ? !!progress.la.memoryTopics[topic.id] : !!progress.la.spellTopics[topic.id];
+        const btn = document.createElement('button');
+        btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+        btn.innerHTML =
+          (done ? '<span class="done-badge">✓ Đã chơi</span>' : '') +
+          '<span class="emoji">' + topic.emoji + '</span>' +
+          '<span><span class="label">' + topic.label + '</span><br>' +
+          '<span class="count">' + (memory ? 'Lật ' + MEMORY_PAIRS + ' cặp' : 'Xếp ' + Math.min(SPELLING_RULES.la.count, pool.length) + ' từ') + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
+        btn.addEventListener('click', () => memory ? startMemory(topic.id, 'la') : startSpelling(topic.id, 'la'));
+        grid.appendChild(btn);
+      });
+    } else if (laGamesMode === 'speed') {
+      LA_TOPICS.forEach(topic => {
+        const btn = document.createElement('button');
+        btn.className = 'topic-card ' + topic.cls;
+        btn.innerHTML =
+          '<span class="emoji">' + topic.emoji + '</span>' +
+          '<span><span class="label">' + topic.label + '</span><br>' +
+          '<span class="count">Đố ' + Math.min(SPEED_WORD_COUNT, topic.words.length) + ' từ / ' + SPEED_TIME_LIMIT + 's</span></span>';
+        btn.addEventListener('click', () => startSpeedQuiz(topic.id, 'la'));
+        grid.appendChild(btn);
+      });
+    } else { // order (Sắp xếp câu)
+      SENTENCE_BUILD_LA_TOPICS.forEach(topic => {
+        const done = !!progress.la.sentenceGroups[topic.id];
+        const btn = document.createElement('button');
+        btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+        btn.innerHTML =
+          (done ? '<span class="done-badge">✓ Đã chơi</span>' : '') +
+          '<span class="emoji">' + topic.emoji + '</span>' +
+          '<span><span class="label">' + topic.label + '</span><br>' +
+          '<span class="count">Sắp xếp ' + Math.min(SENTENCE_BUILD_COUNT, topic.sentences.length) + ' câu' + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
+        btn.addEventListener('click', () => startSentenceBuild(topic.id, 'la'));
+        grid.appendChild(btn);
+      });
+    }
+  }
+
   function renderGamesScreen() {
     applyClassScope();
     renderChoiSpellGrid();
+    renderLaGamesGrid();
     const grid = document.getElementById('gamesTopicGrid');
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
@@ -2289,9 +2464,71 @@
 
   // ---------- SENTENCES TAB ----------
   let sentencesMode = 'read'; // 'read' (đọc câu), 'reverse' (đoán nghĩa) hoặc 'fill' (điền từ)
+
+  // Lưới tab Câu của lớp Lá: 3 chế độ Hỏi-đáp / Đối thoại nhập vai / Viết câu — như Trò chơi của Lá,
+  // không khoá theo doneTopics (mở sẵn khi đã chọn lớp Lá).
+  function renderLaSentencesGrid() {
+    const grid = document.getElementById('laSentencesTopicGrid');
+    grid.innerHTML = '';
+    if (laSentencesMode === 'qa') {
+      QA_LA_TOPICS.forEach(topic => {
+        const done = !!progress.la.qaGroups[topic.id];
+        const btn = document.createElement('button');
+        btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+        btn.innerHTML =
+          (done ? '<span class="done-badge">✓ Đã chơi</span>' : '') +
+          '<span class="emoji">' + topic.emoji + '</span>' +
+          '<span><span class="label">' + topic.label + '</span><br>' +
+          '<span class="count">Nối ' + Math.min(QA_ROUND_COUNT, topic.pairs.length) + ' câu' + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
+        btn.addEventListener('click', () => startLaQa(topic.id));
+        grid.appendChild(btn);
+      });
+    } else if (laSentencesMode === 'dialogue') {
+      DIALOGUE_LA_TOPICS.forEach(topic => {
+        const done = !!progress.la.dialogueGroups[topic.id];
+        const btn = document.createElement('button');
+        btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+        btn.innerHTML =
+          (done ? '<span class="done-badge">✓ Đã chơi</span>' : '') +
+          '<span class="emoji">' + topic.emoji + '</span>' +
+          '<span><span class="label">' + topic.label + '</span><br>' +
+          '<span class="count">' + topic.turns.length + ' lượt thoại' + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
+        btn.addEventListener('click', () => startLaDialogue(topic.id));
+        grid.appendChild(btn);
+      });
+    } else if (laSentencesMode === 'write') {
+      WRITE_LA_TOPICS.forEach(topic => {
+        const done = !!progress.la.writeSentGroups[topic.id];
+        const btn = document.createElement('button');
+        btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+        btn.innerHTML =
+          (done ? '<span class="done-badge">✓ Đã chơi</span>' : '') +
+          '<span class="emoji">' + topic.emoji + '</span>' +
+          '<span><span class="label">' + topic.label + '</span><br>' +
+          '<span class="count">Viết ' + topic.sentences.length + ' câu' + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
+        btn.addEventListener('click', () => startLaWrite(topic.id, WRITE_LA_TOPICS));
+        grid.appendChild(btn);
+      });
+    } else { // paragraph (Viết đoạn văn)
+      PARAGRAPH_LA_TOPICS.forEach(topic => {
+        const done = !!progress.la.paragraphGroups[topic.id];
+        const btn = document.createElement('button');
+        btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+        btn.innerHTML =
+          (done ? '<span class="done-badge">✓ Đã viết</span>' : '') +
+          '<span class="emoji">' + topic.emoji + '</span>' +
+          '<span><span class="label">' + topic.label + '</span><br>' +
+          '<span class="count">Viết ' + topic.sentences.length + ' câu' + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
+        btn.addEventListener('click', () => startLaWrite(topic.id, PARAGRAPH_LA_TOPICS));
+        grid.appendChild(btn);
+      });
+    }
+  }
+
   function renderSentencesScreen() {
     applyClassScope();
     renderChoiSentenceGrid();
+    renderLaSentencesGrid();
     const grid = document.getElementById('sentencesTopicGrid');
     grid.innerHTML = '';
     TOPICS.forEach(topic => {
@@ -2327,6 +2564,20 @@
   document.getElementById('sentenceModeReadBtn').addEventListener('click', () => setSentencesMode('read'));
   document.getElementById('sentenceModeReverseBtn').addEventListener('click', () => setSentencesMode('reverse'));
   document.getElementById('sentenceModeFillBtn').addEventListener('click', () => setSentencesMode('fill'));
+
+  function setLaSentencesMode(mode) {
+    laSentencesMode = mode;
+    document.getElementById('laSentModeQaBtn').classList.toggle('active', mode === 'qa');
+    document.getElementById('laSentModeDialogueBtn').classList.toggle('active', mode === 'dialogue');
+    document.getElementById('laSentModeWriteBtn').classList.toggle('active', mode === 'write');
+    document.getElementById('laSentModeParagraphBtn').classList.toggle('active', mode === 'paragraph');
+    renderLaSentencesGrid();
+    moveSegmentThumb(document.getElementById('laSentencesModeToggle'));
+  }
+  document.getElementById('laSentModeQaBtn').addEventListener('click', () => setLaSentencesMode('qa'));
+  document.getElementById('laSentModeDialogueBtn').addEventListener('click', () => setLaSentencesMode('dialogue'));
+  document.getElementById('laSentModeWriteBtn').addEventListener('click', () => setLaSentencesMode('write'));
+  document.getElementById('laSentModeParagraphBtn').addEventListener('click', () => setLaSentencesMode('paragraph'));
 
   function startSentenceTopic(topicId) {
     const topic = TOPICS.find(t => t.id === topicId);
@@ -2514,7 +2765,7 @@
 
   // Cập nhật text/trạng thái disabled của 3 nút ôn tập (đặt ở màn Học) theo dữ liệu mới nhất.
   function renderReviewButtons() {
-    const doneCount = (reviewClassId() === 'choi' ? CHOI_TOPICS : TOPICS).filter(t => progress.doneTopics[t.id]).length;
+    const doneCount = vocabTopicsOf(reviewClassId()).filter(t => progress.doneTopics[t.id]).length;
     const mixedBtn = document.getElementById('mixedReviewBtn');
     mixedBtn.disabled = doneCount === 0;
     mixedBtn.title = doneCount === 0 ? 'Bé cần học xong ít nhất 1 chủ đề trước nhé!' : '';
@@ -2666,8 +2917,267 @@
     });
   }
 
+  // ---------- LỚP LÁ (tab Học) ----------
+  // Từ vựng riêng (LA_TOPICS, data/vocab_la.js) — cùng nguyên tắc CHOI_TOPICS: luôn mở sẵn, không khoá
+  // tuần tự, dùng chung màn thẻ/đố với TOPICS/CHOI_TOPICS (xem startTopic ở trên).
+  function renderLaVocab() {
+    const grid = document.getElementById('laVocabGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    LA_TOPICS.forEach(topic => {
+      const done = !!progress.doneTopics[topic.id];
+      const btn = document.createElement('button');
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã học</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.words.length + ' từ vựng</span></span>';
+      btn.addEventListener('click', () => startTopic(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
+  // Ngữ âm 3 (PHONICS3_TOPICS, data/phonics3.js) — nối tiếp Ngữ âm 2 của lớp Chồi, dùng chung 2 màn
+  // học/đố của phonics (xem startPhonicsGroup, isAdvancedPhonicsTopic).
+  function renderPhonics3Section() {
+    const grid = document.getElementById('phonics3TopicGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    PHONICS3_TOPICS.forEach(topic => {
+      const btn = document.createElement('button');
+      const done = !!progress.doneTopics[topic.id];
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã học</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.words.length + ' từ</span></span>';
+      btn.addEventListener('click', () => startPhonicsGroup(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
+  // Truyện tranh song ngữ RIÊNG của lớp Lá (STORY_TOPICS_LA, data/stories_la.js) — dài và khó hơn cả
+  // truyện lớp Chồi, dùng chung màn đọc/đố (xem startStory ở trên tìm theo id trong cả 3 mảng).
+  function renderStoryLaSection() {
+    const grid = document.getElementById('storyLaTopicGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    STORY_TOPICS_LA.forEach(topic => {
+      const btn = document.createElement('button');
+      const done = !!progress.doneTopics[topic.id];
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã đọc</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.pages.length + ' trang truyện</span></span>';
+      btn.addEventListener('click', () => startStory(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
+  // Đọc hiểu văn bản thông tin (READING_LA_TOPICS, data/reading_la.js) — dùng lại nguyên màn đọc/đố
+  // của Truyện (startStory tìm theo id ở CẢ 4 mảng giờ đây), chỉ khác nội dung là văn bản thông tin.
+  function renderReadingSection() {
+    const grid = document.getElementById('readingLaTopicGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    READING_LA_TOPICS.forEach(topic => {
+      const btn = document.createElement('button');
+      const done = !!progress.doneTopics[topic.id];
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã đọc</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.pages.length + ' trang</span></span>';
+      btn.addEventListener('click', () => startStory(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
+  // Chọn phần học trên trang Học của lớp Lá (cùng kiểu segment-toggle như lớp Chồi).
+  const LA_HOME_MODES = [
+    { key: 'vocab', btn: 'laModeVocabBtn', panel: 'laPanelVocab' },
+    { key: 'grammar', btn: 'laModeGrammarBtn', panel: 'laPanelGrammar' },
+    { key: 'phonics', btn: 'laModePhonicsBtn', panel: 'laPanelPhonics' },
+    { key: 'stories', btn: 'laModeStoriesBtn', panel: 'laPanelStories' },
+    { key: 'phrases', btn: 'laModePhrasesBtn', panel: 'laPanelPhrases' },
+    { key: 'songs', btn: 'laModeSongsBtn', panel: 'laPanelSongs' },
+    { key: 'reading', btn: 'laModeReadingBtn', panel: 'laPanelReading' },
+  ];
+  function setLaHomeMode(mode) {
+    LA_HOME_MODES.forEach(m => {
+      document.getElementById(m.btn).classList.toggle('active', m.key === mode);
+      document.getElementById(m.panel).hidden = m.key !== mode;
+    });
+    moveSegmentThumb(document.getElementById('laHomeModeToggle'));
+  }
+  LA_HOME_MODES.forEach(m => document.getElementById(m.btn).addEventListener('click', () => setLaHomeMode(m.key)));
+
+  function laVocabDoneCount() { return LA_TOPICS.filter(t => progress.doneTopics[t.id]).length; }
+  function laGrammarDoneCount() { return GRAMMAR_LA_TOPICS.filter(t => progress.doneTopics[t.id]).length; }
+  function laPhonicsDoneCount() { return PHONICS3_TOPICS.filter(t => progress.doneTopics[t.id]).length; }
+  function laStoryDoneCount() { return STORY_TOPICS_LA.filter(t => progress.doneTopics[t.id]).length; }
+  function laPhraseDoneCount() { return PHRASES_LA_TOPICS.filter(t => progress.doneTopics[t.id]).length; }
+  function laReadingDoneCount() { return READING_LA_TOPICS.filter(t => progress.doneTopics[t.id]).length; }
+  function laLessonsDone() { return laVocabDoneCount() + laGrammarDoneCount() + laPhonicsDoneCount() + laStoryDoneCount() + laPhraseDoneCount() + laReadingDoneCount(); }
+  function laLessonsTotal() { return LA_TOPICS.length + GRAMMAR_LA_TOPICS.length + PHONICS3_TOPICS.length + STORY_TOPICS_LA.length + PHRASES_LA_TOPICS.length + READING_LA_TOPICS.length; }
+
+  // Thẻ tóm tắt ở đầu phần Lớp Lá trên trang Học — cùng kiểu choiSummary.
+  function renderLaSummary() {
+    const el = document.getElementById('laSummary');
+    if (!el) return;
+    const c = progress.la;
+    const next = BADGES.find(b => b.group === 'la' && !progress.badges[b.id]);
+    el.innerHTML =
+      '<div class="cs-chips">' +
+        '<span class="cs-chip">📚 ' + laVocabDoneCount() + '/' + LA_TOPICS.length + ' chủ đề</span>' +
+        '<span class="cs-chip">🔤 ' + laGrammarDoneCount() + '/' + GRAMMAR_LA_TOPICS.length + ' bài ngữ pháp</span>' +
+        '<span class="cs-chip">🔊 ' + laPhonicsDoneCount() + '/' + PHONICS3_TOPICS.length + ' nhóm âm</span>' +
+        '<span class="cs-chip">📗 ' + laStoryDoneCount() + '/' + STORY_TOPICS_LA.length + ' truyện</span>' +
+        '<span class="cs-chip">📋 ' + laReadingDoneCount() + '/' + READING_LA_TOPICS.length + ' bài đọc hiểu</span>' +
+        '<span class="cs-chip">🗣️ ' + laPhraseDoneCount() + '/' + PHRASES_LA_TOPICS.length + ' cụm từ</span>' +
+        '<span class="cs-chip">🔤 ' + c.spellWords + ' từ đã xếp</span>' +
+        '<span class="cs-chip">🧩 ' + c.sentencesBuilt + ' câu đã sắp</span>' +
+      '</div>' +
+      (next ? '<div class="choi-next">🎯 Huy hiệu tiếp theo: <strong>' + next.icon + ' ' + next.label + '</strong> — ' + next.desc + '</div>'
+            : '<div class="choi-next">🏅 Bé đã đạt hết huy hiệu của Lớp Lá — giỏi quá!</div>');
+  }
+
+  // ---------- NGỮ PHÁP CƠ BẢN (GRAMMAR_LA_TOPICS, data/grammar_la.js, tab Học lớp Lá) ----------
+  // Khác các bài từ vựng/ngữ âm: không có thẻ hình từng từ, chỉ có 1 "thẻ quy tắc" (rule) + vài câu ví
+  // dụ (dùng lại .sentence-card như tab Câu), rồi làm đố điền từ vào chỗ trống (dùng lại .fillblank-sentence
+  // + .blank như Điền từ). Hoàn thành đánh dấu progress.doneTopics như Ngữ âm/Từ hay gặp — không đi qua
+  // finishTopic() vì GRAMMAR_LA_TOPICS không nằm trong TOPICS.
+  let currentGrammar = null;
+  let grammarQuizIndex = 0;
+  let grammarQuizCorrectCount = 0;
+
+  function renderGrammarSection() {
+    const grid = document.getElementById('grammarTopicGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    GRAMMAR_LA_TOPICS.forEach(topic => {
+      const done = !!progress.doneTopics[topic.id];
+      const btn = document.createElement('button');
+      btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
+      btn.innerHTML =
+        (done ? '<span class="done-badge">✓ Đã học</span>' : '') +
+        '<span class="emoji">' + topic.emoji + '</span>' +
+        '<span><span class="label">' + topic.label + '</span><br>' +
+        '<span class="count">' + topic.questions.length + ' câu đố</span></span>';
+      btn.addEventListener('click', () => startGrammar(topic.id));
+      grid.appendChild(btn);
+    });
+  }
+
+  function startGrammar(topicId) {
+    const topic = GRAMMAR_LA_TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    currentGrammar = topic;
+    document.getElementById('grammarTitle').textContent = topic.label;
+    document.getElementById('grammarRule').textContent = '💡 ' + topic.rule;
+    const list = document.getElementById('grammarExamples');
+    list.innerHTML = '';
+    topic.examples.forEach(ex => {
+      const card = document.createElement('div');
+      card.className = 'sentence-card';
+      card.innerHTML =
+        '<span class="sentence-emoji">' + topic.emoji + '</span>' +
+        '<span class="sentence-text">' +
+          '<span class="sentence-en"><span class="lang-flag">🇬🇧</span>' + ex.en + '</span>' +
+          '<span class="sentence-vi"><span class="lang-flag">🇻🇳</span>' + ex.vi + '</span>' +
+        '</span>' +
+        '<button class="sentence-listen-btn" aria-label="Nghe câu">🔊</button>';
+      card.querySelector('.sentence-listen-btn').addEventListener('click', () => speak(ex.en));
+      list.appendChild(card);
+    });
+    showScreen('grammarLearn');
+  }
+
+  function startGrammarQuiz() {
+    grammarQuizIndex = 0;
+    grammarQuizCorrectCount = 0;
+    renderGrammarQuizQuestion();
+    showScreen('grammarQuiz');
+  }
+
+  function renderGrammarQuizQuestion() {
+    document.getElementById('grammarQuizFeedback').textContent = '';
+    document.getElementById('grammarQuizFeedback').className = 'quiz-feedback';
+    document.getElementById('grammarQuizProgressFill').style.width = (grammarQuizIndex / currentGrammar.questions.length) * 100 + '%';
+    const q = currentGrammar.questions[grammarQuizIndex];
+    document.getElementById('grammarQuizSentence').innerHTML = q.sentence.replace('____', '<span class="blank">____</span>');
+    const options = shuffle([q.answer].concat(q.others));
+    const wrap = document.getElementById('grammarQuizOptions');
+    wrap.innerHTML = '';
+    options.forEach(opt => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt text-opt';
+      b.textContent = opt;
+      b.addEventListener('click', () => handleGrammarAnswer(b, opt === q.answer));
+      wrap.appendChild(b);
+    });
+  }
+
+  function handleGrammarAnswer(btn, isCorrect) {
+    document.querySelectorAll('#grammarQuizOptions .quiz-opt').forEach(o => o.disabled = true);
+    const q = currentGrammar.questions[grammarQuizIndex];
+    const fb = document.getElementById('grammarQuizFeedback');
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.textContent = 'Chính xác! 🎉';
+      fb.className = 'quiz-feedback ok';
+      grammarQuizCorrectCount++;
+    } else {
+      btn.classList.add('wrong');
+      fb.textContent = 'Chưa đúng rồi, đáp án là "' + q.answer + '"';
+      fb.className = 'quiz-feedback no';
+    }
+    setTimeout(() => {
+      grammarQuizIndex++;
+      if (grammarQuizIndex < currentGrammar.questions.length) renderGrammarQuizQuestion();
+      else finishGrammar();
+    }, 1100);
+  }
+
+  // Không đi qua finishTopic(): tự lo sao thưởng/doneTopics/màn Hoàn thành riêng, giống finishStory().
+  // Sao thưởng = 2 sao nền (học xong quy tắc) + số câu đố trả lời đúng.
+  function finishGrammar() {
+    const total = currentGrammar.questions.length;
+    const isPerfect = grammarQuizCorrectCount === total;
+    const starsEarned = grammarQuizCorrectCount + 2;
+    const oldLifetimeStars = progress.lifetimeStars;
+    const isNew = !progress.doneTopics[currentGrammar.id];
+    if (isNew) { addStars(starsEarned); progress.doneTopics[currentGrammar.id] = true; }
+    if (isPerfect) progress.perfectCount = (progress.perfectCount || 0) + 1;
+    saveProgress(progress);
+    updateStreakOnComplete();
+
+    document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : 'Giỏi quá!';
+    document.getElementById('doneSubtitle').textContent = 'Bé trả lời đúng ' + grammarQuizCorrectCount + '/' + total + ' câu về "' + currentGrammar.label + '".';
+    document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, starsEarned));
+    document.getElementById('parentTip').innerHTML = '💬 Ba mẹ thử ra thêm vài câu có "' + currentGrammar.label + '" để bé luyện nói nhé.';
+    document.getElementById('printBtn').hidden = true;
+    const replayBtn = document.getElementById('replayBtn');
+    replayBtn.textContent = 'Học lại bài này';
+    replayBtn.onclick = () => startGrammar(currentGrammar.id);
+    renderTotalStars();
+    celebrate(isPerfect, oldLifetimeStars, null);
+    resetChest();
+    showScreen('done');
+  }
+
+  document.getElementById('backFromGrammarLearn').addEventListener('click', () => goHome());
+  document.getElementById('grammarStartQuizBtn').addEventListener('click', () => startGrammarQuiz());
+  document.getElementById('backFromGrammarQuiz').addEventListener('click', () => goHome());
+
   function renderHome() {
     applyClassScope();
+    renderGrammarSection();
     renderPhonics2Section();
     renderChoiVocab();
     renderSightSection();
@@ -2675,6 +3185,13 @@
     renderSongsSection();
     renderStoryChoiSection();
     renderChoiSummary();
+    renderLaVocab();
+    renderPhonics3Section();
+    renderStoryLaSection();
+    renderPhraseSection();
+    renderSongsSection('la');
+    renderReadingSection();
+    renderLaSummary();
     renderPromoCards();
     renderAbcSection();
     renderPhonicsSection();
@@ -2729,10 +3246,10 @@
       showScreen('cards');
       return;
     }
-    // Từ vựng lớp Chồi (CHOI_TOPICS) cũng tách khỏi TOPICS: luôn mở sẵn, không khoá tuần tự.
-    const choiTopic = CHOI_TOPICS.find(t => t.id === topicId);
-    if (choiTopic) {
-      currentTopic = choiTopic;
+    // Từ vựng lớp Chồi (CHOI_TOPICS) / lớp Lá (LA_TOPICS) cũng tách khỏi TOPICS: luôn mở sẵn, không khoá tuần tự.
+    const advTopic = CHOI_TOPICS.find(t => t.id === topicId) || LA_TOPICS.find(t => t.id === topicId);
+    if (advTopic) {
+      currentTopic = advTopic;
       cardIndex = 0;
       isMixedReview = false;
       renderCard();
@@ -2762,7 +3279,7 @@
     document.getElementById('cardEmoji').textContent = w.emoji;
     document.getElementById('cardWordEn').textContent = w.en;
     document.getElementById('cardWordVi').textContent = w.vi;
-    setViHidden(document.getElementById('cardWordVi'), document.getElementById('cardRevealViBtn'), CHOI_TOPICS.includes(currentTopic));
+    setViHidden(document.getElementById('cardWordVi'), document.getElementById('cardRevealViBtn'), CHOI_TOPICS.includes(currentTopic) || LA_TOPICS.includes(currentTopic));
     const pct = ((cardIndex) / currentTopic.words.length) * 100;
     document.getElementById('cardProgressFill').style.width = pct + '%';
     document.getElementById('prevCardBtn').disabled = cardIndex === 0;
@@ -3005,9 +3522,12 @@
   let phonicsQuizIndex = 0;
   let phonicsQuizCorrectCount = 0;
   const PHONICS_DISTRACTOR_LETTERS = ['B','C','D','F','G','H','J','K','L','M','N','P','R','S','T','V','W'];
+  // Ngữ âm 2 (Chồi) / Ngữ âm 3 (Lá) đều "nâng cao" hơn Ngữ âm cơ bản của Mầm: ẩn nghĩa tiếng Việt +
+  // đố 5 lựa chọn (xem renderPhonicsLearnCard / renderPhonicsQuizQuestion).
+  function isAdvancedPhonicsTopic(topic) { return PHONICS2_TOPICS.includes(topic) || PHONICS3_TOPICS.includes(topic); }
 
   function startPhonicsGroup(topicId) {
-    const topic = PHONICS_TOPICS.concat(PHONICS2_TOPICS).find(t => t.id === topicId);
+    const topic = PHONICS_TOPICS.concat(PHONICS2_TOPICS).concat(PHONICS3_TOPICS).find(t => t.id === topicId);
     if (!topic) return;
     currentPhonicsTopic = topic;
     phonicsIndex = 0;
@@ -3024,7 +3544,7 @@
     const w = currentPhonicsTopic.words[phonicsIndex];
     document.getElementById('phonicsCardEmoji').textContent = w.emoji;
     document.getElementById('phonicsCardVi').textContent = w.vi;
-    setViHidden(document.getElementById('phonicsCardVi'), document.getElementById('phonicsRevealViBtn'), PHONICS2_TOPICS.includes(currentPhonicsTopic));
+    setViHidden(document.getElementById('phonicsCardVi'), document.getElementById('phonicsRevealViBtn'), isAdvancedPhonicsTopic(currentPhonicsTopic));
     const tiles = document.getElementById('phonicsLetterTiles');
     tiles.innerHTML = '';
     (w.units || w.en.split('')).forEach(letter => {
@@ -3082,7 +3602,7 @@
     const correctLetter = (word.units || word.en.split(''))[0]; // chữ đầu, hoặc ô âm ghép đầu (SH/CH/TH)
     const pool = correctLetter.length > 1 ? PHONICS2_DIGRAPH_POOL : PHONICS_DISTRACTOR_LETTERS;
     // Độ khó nâng cao lớp Chồi: đố 5 lựa chọn thay vì 4 (xem PHONICS2_TOPICS — nhóm Ngữ âm 2 của lớp Chồi).
-    const wantDistractors = PHONICS2_TOPICS.includes(currentPhonicsTopic) ? 4 : 3;
+    const wantDistractors = isAdvancedPhonicsTopic(currentPhonicsTopic) ? 4 : 3;
     const letterPool = pool.filter(l => l !== correctLetter);
     const distractors = shuffle(letterPool).slice(0, Math.min(wantDistractors, letterPool.length));
     const options = shuffle([correctLetter, ...distractors]);
@@ -3172,8 +3692,9 @@
   let storyQuizCorrectCount = 0;
 
   function startStory(topicId) {
-    // Tìm ở cả STORY_TOPICS (lớp Mầm) lẫn STORY_TOPICS_CHOI (lớp Chồi) — dùng chung 1 màn đọc + đố.
-    const topic = STORY_TOPICS.find(t => t.id === topicId) || STORY_TOPICS_CHOI.find(t => t.id === topicId);
+    // Tìm ở cả 4 mảng STORY_TOPICS (Mầm) / STORY_TOPICS_CHOI (Chồi) / STORY_TOPICS_LA (Lá, truyện) /
+    // READING_LA_TOPICS (Lá, đọc hiểu văn bản thông tin) — dùng chung 1 màn đọc + đố.
+    const topic = STORY_TOPICS.find(t => t.id === topicId) || STORY_TOPICS_CHOI.find(t => t.id === topicId) || STORY_TOPICS_LA.find(t => t.id === topicId) || READING_LA_TOPICS.find(t => t.id === topicId);
     if (!topic) return;
     currentStory = topic;
     storyPageIndex = 0;
@@ -3282,17 +3803,19 @@
     saveProgress(progress);
     updateStreakOnComplete();
 
+    const isReading = READING_LA_TOPICS.includes(currentStory);
     document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : 'Giỏi quá!';
     document.getElementById('doneSubtitle').textContent =
-      'Bé trả lời đúng ' + storyQuizCorrectCount + '/' + totalQuestions + ' câu hỏi về truyện "' + currentStory.label + '".';
+      'Bé trả lời đúng ' + storyQuizCorrectCount + '/' + totalQuestions + (isReading ? ' câu hỏi về văn bản "' : ' câu hỏi về truyện "') + currentStory.label + '".';
     document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, starsEarned));
 
-    document.getElementById('parentTip').innerHTML =
-      '💬 Ba mẹ thử hỏi bé: "Trong truyện vừa đọc có những ai/những gì?" để bé kể lại bằng tiếng Anh nhé.';
+    document.getElementById('parentTip').innerHTML = isReading
+      ? '💬 Ba mẹ thử hỏi bé lại 1 thông tin trong bài vừa đọc để bé tra cứu và trả lời bằng tiếng Anh nhé.'
+      : '💬 Ba mẹ thử hỏi bé: "Trong truyện vừa đọc có những ai/những gì?" để bé kể lại bằng tiếng Anh nhé.';
 
     document.getElementById('printBtn').hidden = true;
     const replayBtn = document.getElementById('replayBtn');
-    replayBtn.textContent = 'Đọc lại truyện này';
+    replayBtn.textContent = isReading ? 'Đọc lại văn bản này' : 'Đọc lại truyện này';
     replayBtn.onclick = () => startStory(currentStory.id);
 
     renderTotalStars();
@@ -3343,7 +3866,7 @@
   // giúp chống quên thay vì chỉ ôn trong phạm vi 1 chủ đề.
   function startMixedReview() {
     const pool = [];
-    (reviewClassId() === 'choi' ? CHOI_TOPICS : TOPICS).forEach(t => { if (progress.doneTopics[t.id]) pool.push(...t.words); });
+    vocabTopicsOf(reviewClassId()).forEach(t => { if (progress.doneTopics[t.id]) pool.push(...t.words); });
     if (pool.length < 4) {
       alert('Bé cần học xong ít nhất 1 chủ đề trước khi ôn tập tổng hợp nhé!');
       return;
@@ -3391,8 +3914,8 @@
     document.getElementById('quizWord').textContent = correctWord.en;
     speak(correctWord.en);
 
-    // Độ khó nâng cao lớp Chồi: đố 5 lựa chọn thay vì 4 (khó đoán mò hơn) — xem isChoiVocabWord.
-    const wantDistractors = isChoiVocabWord(correctWord) ? 4 : 3;
+    // Độ khó nâng cao lớp Chồi/Lá: đố 5 lựa chọn thay vì 4 (khó đoán mò hơn) — xem isAdvancedVocabWord.
+    const wantDistractors = isAdvancedVocabWord(correctWord) ? 4 : 3;
     const pool = currentTopic.words.filter((_, i) => i !== wIdx);
     const distractors = shuffle(pool).slice(0, Math.min(wantDistractors, pool.length));
     const options = shuffle([correctWord, ...distractors]);
@@ -3650,6 +4173,29 @@
     if (msgEl) msgEl.textContent = baseText + (isFirst ? ' Nhận thêm ⭐ ' + CHOI_FIRST_ROUND_STARS + ' sao vì lần đầu hoàn thành nhóm này!' : '');
   }
 
+  // ---------- TIẾN ĐỘ RIÊNG CỦA LỚP LÁ (Xếp chữ dài + Sắp xếp câu, cả 2 đều ở tab Trò chơi) ----------
+  // Giống hệt finishChoiRound nhưng chỉ 2 kind (không có memory/write/simon/song vì Lá chưa có các
+  // trò đó) và bumpDailyMission('games') thay vì ('sentences') cho kind 'sentence' — vì Sắp xếp câu
+  // của Lá sống ở tab Trò chơi (Lá chưa có tab Câu), khác Ghép câu của Chồi sống ở tab Câu.
+  function finishLaRound(kind, groupId, msgEl, baseText) {
+    const c = progress.la;
+    // spell/sentence sống ở tab Trò chơi (bumpDailyMission 'games'); qa/dialogue/write sống ở tab Câu
+    // (bumpDailyMission 'sentences') — 2 tab khác nhau nên 2 nhiệm vụ hằng ngày khác nhau.
+    const seen = { spell: c.spellTopics, sentence: c.sentenceGroups, qa: c.qaGroups, dialogue: c.dialogueGroups, write: c.writeSentGroups, paragraph: c.paragraphGroups, memory: c.memoryTopics, simon: c.simonPlayed, song: c.songsPlayed }[kind];
+    const oldLifetimeStars = progress.lifetimeStars;
+    const isFirst = !seen[groupId];
+    if (isFirst) { seen[groupId] = true; addStars(CHOI_FIRST_ROUND_STARS); }
+    if (kind === 'sentence') bumpDailyMission('games');
+    else if (kind === 'qa' || kind === 'dialogue' || kind === 'write' || kind === 'paragraph') bumpDailyMission('sentences');
+    updateStreakOnComplete();
+    celebrate(false, oldLifetimeStars, null); // mở huy hiệu mới / lên cấp nếu có
+    saveProgress(progress);
+    renderLaGamesGrid();
+    renderLaSentencesGrid();
+    renderLaSummary();
+    if (msgEl) msgEl.textContent = baseText + (isFirst ? ' Nhận thêm ⭐ ' + CHOI_FIRST_ROUND_STARS + ' sao vì lần đầu hoàn thành nhóm này!' : '');
+  }
+
   function choiVocabDoneCount() {
     return CHOI_TOPICS.filter(t => progress.doneTopics[t.id]).length;
   }
@@ -3683,11 +4229,11 @@
             : '<div class="choi-next">🏅 Bé đã đạt hết huy hiệu của Lớp Chồi — giỏi quá!</div>');
   }
 
-  // Số liệu thứ 2 trên bảng chứng nhận / ảnh chia sẻ: lớp Chồi tính theo nhóm Ngữ âm 2, các lớp khác theo chủ đề từ vựng.
+  // Số liệu thứ 2 trên bảng chứng nhận / ảnh chia sẻ: lớp Chồi/Lá tính theo tổng số bài đã học, lớp Mầm theo chủ đề từ vựng.
   function getClassStat() {
-    if (getActiveClassId() === 'choi') {
-      return { icon: '📖', value: choiLessonsDone() + '/' + choiLessonsTotal(), label: 'Bài đã học' };
-    }
+    const cls = getActiveClassId();
+    if (cls === 'choi') return { icon: '📖', value: choiLessonsDone() + '/' + choiLessonsTotal(), label: 'Bài đã học' };
+    if (cls === 'la') return { icon: '📖', value: laLessonsDone() + '/' + laLessonsTotal(), label: 'Bài đã học' };
     return { icon: '📚', value: TOPICS.filter(t => progress.doneTopics[t.id]).length + '/' + TOPICS.length, label: 'Chủ đề' };
   }
 
@@ -3702,13 +4248,19 @@
   // nghe bằng giọng đọc máy (TTS), giống cách các dòng câu ở tab Câu dùng chung .sentence-card/.sentence-list.
   // Không phải bài học có đáp án nên bé bấm "Xong" để tự báo đã hát xong (không tự dò xem TTS đã đọc hết chưa,
   // vì onend của SpeechSynthesis không đáng tin cậy trên mọi trình duyệt/WebView).
+  // classId 'choi' (mặc định): SONGS_CHOI, lưới #songsTopicGrid, progress.choi.songsPlayed.
+  // classId 'la': SONGS_LA (6 bài khác hẳn, không trùng), lưới #songsLaTopicGrid, progress.la.songsPlayed.
   let songId = null;
-  function renderSongsSection() {
-    const grid = document.getElementById('songsTopicGrid');
+  let songClassId = 'choi';
+  function renderSongsSection(classId) {
+    classId = classId || 'choi';
+    const grid = document.getElementById(classId === 'la' ? 'songsLaTopicGrid' : 'songsTopicGrid');
     if (!grid) return;
+    const songs = classId === 'la' ? SONGS_LA : SONGS_CHOI;
+    const played = classId === 'la' ? progress.la.songsPlayed : progress.choi.songsPlayed;
     grid.innerHTML = '';
-    SONGS_CHOI.forEach(song => {
-      const done = !!progress.choi.songsPlayed[song.id];
+    songs.forEach(song => {
+      const done = !!played[song.id];
       const btn = document.createElement('button');
       btn.className = 'topic-card ' + song.cls + (done ? ' is-done' : '');
       btn.innerHTML =
@@ -3716,15 +4268,17 @@
         '<span class="emoji">' + song.emoji + '</span>' +
         '<span><span class="label">' + song.titleVi + '</span><br>' +
         '<span class="count">' + song.lines.length + ' câu' + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
-      btn.addEventListener('click', () => startSong(song.id));
+      btn.addEventListener('click', () => startSong(song.id, classId));
       grid.appendChild(btn);
     });
   }
 
-  function startSong(id) {
-    const song = SONGS_CHOI.find(s => s.id === id);
+  function startSong(id, classId) {
+    classId = classId || 'choi';
+    const song = (classId === 'la' ? SONGS_LA : SONGS_CHOI).find(s => s.id === id);
     if (!song) return;
     songId = id;
+    songClassId = classId;
     document.getElementById('songTitle').textContent = song.title + ' 🎵 ' + song.titleVi;
     const list = document.getElementById('songLineList');
     list.innerHTML = '';
@@ -3750,7 +4304,7 @@
   // (không dựa vào sự kiện 'end' của SpeechSynthesis vì không đáng tin cậy trên mọi thiết bị).
   let songPlayToken = 0;
   async function playSongAll() {
-    const song = SONGS_CHOI.find(s => s.id === songId);
+    const song = (songClassId === 'la' ? SONGS_LA : SONGS_CHOI).find(s => s.id === songId);
     if (!song) return;
     const myToken = ++songPlayToken;
     const cards = document.querySelectorAll('#songLineList .sentence-card');
@@ -3767,27 +4321,34 @@
   }
 
   function finishSong() {
-    finishChoiRound('song', songId, document.getElementById('songDoneMsg'), 'Bé đã hát xong bài này rồi!');
+    const msgEl = document.getElementById('songDoneMsg');
+    if (songClassId === 'la') finishLaRound('song', songId, msgEl, 'Bé đã hát xong bài này rồi!');
+    else finishChoiRound('song', songId, msgEl, 'Bé đã hát xong bài này rồi!');
   }
 
   document.getElementById('backFromSong').addEventListener('click', () => { songPlayToken++; showScreen('home'); });
   document.getElementById('songPlayAllBtn').addEventListener('click', () => playSongAll());
   document.getElementById('songDoneBtn').addEventListener('click', () => finishSong());
 
-  // ---------- TỪ HAY GẶP (lớp Chồi, tab Học) ----------
-  // 9 nhóm × 8 từ (SIGHT_TOPICS, data/sight_choi.js). Từ loại này không có hình nên có màn riêng: thẻ chữ
-  // (nghe từ + câu ví dụ + nghĩa) rồi đố "nghe từ, chọn chữ". Xong nhóm lần đầu: thưởng sao = số câu đúng,
-  // đánh dấu progress.doneTopics[id] (giống Ngữ âm) — không đi qua finishTopic vì không nằm trong TOPICS.
+  // ---------- TỪ HAY GẶP / CỤM TỪ THÔNG DỤNG (lớp Chồi + lớp Lá, tab Học) ----------
+  // Từ hay gặp (Chồi, SIGHT_TOPICS): 9 nhóm × 8 từ đơn. Cụm từ thông dụng (Lá, PHRASES_LA_TOPICS):
+  // 5 nhóm × 6 cụm/câu nguyên vẹn — CÙNG shape { en, vi, example, exampleVi } nên dùng lại NGUYÊN màn
+  // học/đố (renderSightCard/startSightQuiz/renderSightQuestion/handleSightAnswer/finishSight bên dưới
+  // đều thao tác trên "currentSight" một cách chung chung, không hardcode SIGHT_TOPICS ở đâu khác
+  // ngoài startSight() — chỉ cần truyền mảng chủ đề khác là dùng lại được hết). Không có hình nên có
+  // màn riêng: thẻ chữ (nghe + câu ví dụ + nghĩa) rồi đố "nghe, chọn đúng". Xong nhóm lần đầu: thưởng
+  // sao = số câu đúng, đánh dấu progress.doneTopics[id] (giống Ngữ âm) — không đi qua finishTopic.
   let currentSight = null;
   let sightIndex = 0;
   let sightOrder = [];
   let sightQuizIndex = 0;
   let sightCorrect = 0;
 
-  function renderSightSection() {
-    const grid = document.getElementById('sightTopicGrid');
+  function renderSightGrid(topics, gridId) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
     grid.innerHTML = '';
-    SIGHT_TOPICS.forEach(topic => {
+    topics.forEach(topic => {
       const done = !!progress.doneTopics[topic.id];
       const btn = document.createElement('button');
       btn.className = 'topic-card ' + topic.cls + (done ? ' is-done' : '');
@@ -3795,14 +4356,16 @@
         (done ? '<span class="done-badge">✓ Đã học</span>' : '') +
         '<span class="emoji">' + topic.emoji + '</span>' +
         '<span><span class="label">' + topic.label + '</span><br>' +
-        '<span class="count">' + topic.words.length + ' từ</span></span>';
-      btn.addEventListener('click', () => startSight(topic.id));
+        '<span class="count">' + topic.words.length + (topics === PHRASES_LA_TOPICS ? ' cụm' : ' từ') + '</span></span>';
+      btn.addEventListener('click', () => startSight(topic.id, topics));
       grid.appendChild(btn);
     });
   }
+  function renderSightSection() { renderSightGrid(SIGHT_TOPICS, 'sightTopicGrid'); }
+  function renderPhraseSection() { renderSightGrid(PHRASES_LA_TOPICS, 'phraseTopicGrid'); }
 
-  function startSight(topicId) {
-    const topic = SIGHT_TOPICS.find(t => t.id === topicId);
+  function startSight(topicId, topicsArr) {
+    const topic = (topicsArr || SIGHT_TOPICS).find(t => t.id === topicId);
     if (!topic) return;
     currentSight = topic;
     sightIndex = 0;
@@ -3847,7 +4410,7 @@
     document.getElementById('sightFeedback').className = 'quiz-feedback';
     document.getElementById('sightProgressFill').style.width = (sightQuizIndex / sightOrder.length) * 100 + '%';
     const word = currentSight.words[sightOrder[sightQuizIndex]];
-    // Từ hay gặp chỉ có ở lớp Chồi nên luôn đố khó hơn: 5 lựa chọn thay vì 4.
+    // Từ hay gặp/Cụm từ chỉ có ở lớp Chồi/Lá (không phải Mầm) nên luôn đố khó hơn: 5 lựa chọn thay vì 4.
     const othersPool = currentSight.words.filter(w => w !== word);
     const others = shuffle(othersPool).slice(0, Math.min(4, othersPool.length));
     const wrap = document.getElementById('sightOptions');
@@ -3892,30 +4455,36 @@
     saveProgress(progress);
     updateStreakOnComplete();
 
+    const isPhrase = PHRASES_LA_TOPICS.includes(currentSight);
     document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : 'Giỏi quá!';
-    document.getElementById('doneSubtitle').textContent = 'Bé nhận ra đúng ' + sightCorrect + '/' + total + ' từ trong nhóm "' + currentSight.label + '".';
+    document.getElementById('doneSubtitle').textContent = 'Bé nhận ra đúng ' + sightCorrect + '/' + total + (isPhrase ? ' cụm' : ' từ') + ' trong nhóm "' + currentSight.label + '".';
     document.getElementById('earnedStars').textContent = '⭐'.repeat(Math.max(1, sightCorrect));
     const tip = currentSight.words[Math.floor(Math.random() * total)];
-    document.getElementById('parentTip').innerHTML = '💬 Ba mẹ thử chỉ vào chữ "<strong>' + tip.en + '</strong>" rồi hỏi bé: "Chữ này đọc là gì?" (đáp án: <strong>' + tip.en + '</strong> — ' + tip.vi + ')';
+    document.getElementById('parentTip').innerHTML = isPhrase
+      ? '💬 Ba mẹ thử hỏi bé tình huống nào thì nói "<strong>' + tip.en + '</strong>" (' + tip.vi + ') nhé.'
+      : '💬 Ba mẹ thử chỉ vào chữ "<strong>' + tip.en + '</strong>" rồi hỏi bé: "Chữ này đọc là gì?" (đáp án: <strong>' + tip.en + '</strong> — ' + tip.vi + ')';
     document.getElementById('printBtn').hidden = true;
     const replayBtn = document.getElementById('replayBtn');
-    replayBtn.textContent = 'Học lại nhóm từ này';
-    replayBtn.onclick = () => startSight(currentSight.id);
+    replayBtn.textContent = isPhrase ? 'Học lại nhóm cụm từ này' : 'Học lại nhóm từ này';
+    replayBtn.onclick = () => startSight(currentSight.id, isPhrase ? PHRASES_LA_TOPICS : SIGHT_TOPICS);
     renderTotalStars();
     celebrate(isPerfect, oldLifetimeStars, null);
     resetChest();
     showScreen('done');
   }
 
-  // ---------- LẬT THẺ TRÍ NHỚ (lớp Chồi, tab Trò chơi) ----------
-  // 12 thẻ úp (6 hình + 6 chữ tương ứng), bé lật 2 thẻ mỗi lượt để tìm cặp đúng. Chủ đề lấy từ cùng danh sách
-  // với Xếp chữ của lớp Chồi (getChoiSpellTopics); chỉ dùng từ có hình riêng (không trùng emoji) và không quá dài.
+  // ---------- LẬT THẺ TRÍ NHỚ (lớp Chồi + lớp Lá, tab Trò chơi) ----------
+  // 12 thẻ úp, bé lật 2 thẻ mỗi lượt để tìm cặp đúng. classId 'choi' (mặc định): 6 hình + 6 chữ
+  // tương ứng (getChoiSpellTopics), chỉ dùng từ có hình riêng (không trùng emoji) và không quá dài —
+  // dễ hơn vì có hình gợi ý. classId 'la': "nâng cao" — bỏ hẳn hình, ghép CHỮ TIẾNG ANH với NGHĨA
+  // TIẾNG VIỆT (getLaSpellTopics), khó hơn hẳn vì phải nhớ thuần chữ-nghĩa, không có hình để đoán.
   let memCards = [];
   let memFirst = null;
   let memLock = false;
   let memMoves = 0;
   let memFound = 0;
   let memTopicId = null;
+  let memClassId = 'choi';
 
   function getMemoryPool(topic) {
     const seenEmoji = new Set();
@@ -3925,18 +4494,30 @@
       return true;
     });
   }
+  // Lá không ghép theo hình nên không cần lọc trùng emoji — chỉ giới hạn độ dài chữ cho vừa thẻ
+  // (nới hơn Chồi 1 chút vì từ vựng Lá dài hơn, xem SPELLING_RULES.la).
+  function getLaMemoryPool(topic) {
+    return topic.words.filter(w => w.en.length <= 12);
+  }
 
-  function startMemory(topicId) {
-    const topic = getChoiSpellTopics().find(t => t.id === topicId);
+  function startMemory(topicId, classId) {
+    classId = classId || 'choi';
+    memClassId = classId;
+    const topic = (classId === 'la' ? getLaSpellTopics() : getChoiSpellTopics()).find(t => t.id === topicId);
     if (!topic) return;
-    const pool = getMemoryPool(topic);
+    const pool = classId === 'la' ? getLaMemoryPool(topic) : getMemoryPool(topic);
     if (pool.length < MEMORY_PAIRS) return;
     memTopicId = topicId;
     const chosen = shuffle(pool).slice(0, MEMORY_PAIRS);
     const cards = [];
     chosen.forEach((w, i) => {
-      cards.push({ pairId: i, kind: 'emoji', content: w.emoji, en: w.en });
-      cards.push({ pairId: i, kind: 'word', content: w.en, en: w.en });
+      if (classId === 'la') {
+        cards.push({ pairId: i, kind: 'en', content: w.en, en: w.en });
+        cards.push({ pairId: i, kind: 'vi', content: w.vi, en: w.en });
+      } else {
+        cards.push({ pairId: i, kind: 'emoji', content: w.emoji, en: w.en });
+        cards.push({ pairId: i, kind: 'word', content: w.en, en: w.en });
+      }
     });
     memCards = shuffle(cards).map(c => Object.assign(c, { flipped: false, matched: false }));
     memFirst = null; memLock = false; memMoves = 0; memFound = 0;
@@ -3956,7 +4537,7 @@
     memCards.forEach((c, idx) => {
       const b = document.createElement('button');
       const faceUp = c.flipped || c.matched;
-      b.className = 'mem-card' + (faceUp ? ' is-up' : '') + (c.matched ? ' is-matched' : '') + (faceUp && c.kind === 'emoji' ? ' mem-emoji' : '') + (faceUp && c.kind === 'word' ? ' mem-word' : '');
+      b.className = 'mem-card' + (faceUp ? ' is-up' : '') + (c.matched ? ' is-matched' : '') + (faceUp && c.kind === 'emoji' ? ' mem-emoji' : '') + (faceUp && c.kind !== 'emoji' ? ' mem-word' : '');
       b.textContent = faceUp ? c.content : '❓';
       b.disabled = c.matched;
       b.addEventListener('click', () => handleMemoryClick(idx));
@@ -3981,7 +4562,7 @@
     const c = memCards[idx];
     if (c.flipped || c.matched) return;
     c.flipped = true;
-    if (c.kind === 'word') speak(c.en);
+    if (c.kind === 'word' || c.kind === 'en') speak(c.en);
     if (memFirst === null) { memFirst = idx; renderMemory(); return; }
     memMoves++;
     const first = memCards[memFirst];
@@ -4006,39 +4587,48 @@
     document.getElementById('memWrap').hidden = true;
     document.getElementById('memDoneWrap').hidden = false;
     bumpDailyMission('games'); // lật thẻ là 1 trò chơi của tab Trò chơi
-    finishChoiRound('memory', memTopicId, document.querySelector('#memDoneWrap p'), 'Bé tìm hết ' + MEMORY_PAIRS + ' cặp sau ' + memMoves + ' lượt lật!');
+    const msgEl = document.querySelector('#memDoneWrap p');
+    const baseText = 'Bé tìm hết ' + MEMORY_PAIRS + ' cặp sau ' + memMoves + ' lượt lật!';
+    if (memClassId === 'la') finishLaRound('memory', memTopicId, msgEl, baseText);
+    else finishChoiRound('memory', memTopicId, msgEl, baseText);
   }
 
   document.getElementById('backFromMemory').addEventListener('click', () => showScreen('games'));
-  document.getElementById('memReplayBtn').addEventListener('click', () => startMemory(memTopicId));
+  document.getElementById('memReplayBtn').addEventListener('click', () => startMemory(memTopicId, memClassId));
   document.getElementById('memOtherBtn').addEventListener('click', () => showScreen('games'));
 
-  // ---------- SIMON NÓI (lớp Chồi, tab Trò chơi) ----------
+  // ---------- SIMON NÓI (lớp Chồi + lớp Lá, tab Trò chơi) ----------
   // Trò chơi vận động: Simon ra lệnh bằng tiếng Anh. Có "Simon says" ở đầu thì bé làm theo hành động
-  // (bấm Làm theo), không có thì là lượt gài bẫy, bé phải đứng yên (bấm Đứng yên). Không cần chọn chủ đề,
-  // chỉ dùng 8 từ hành động của choi_actions (data/vocab_choi.js) — vừa đủ SIMON_ROUNDS mỗi ván.
+  // (bấm Làm theo), không có thì là lượt gài bẫy, bé phải đứng yên (bấm Đứng yên). Không cần chọn chủ đề.
+  // classId 'choi' (mặc định): 8 từ hành động của choi_actions (data/vocab_choi.js) — vừa đủ
+  // SIMON_ROUNDS mỗi ván. classId 'la': "nâng cao" — SIMON_LA_COMMANDS (data/simon_la.js), mỗi lệnh
+  // có 2 hành động liền nhau trong 1 câu thay vì 1 từ đơn, khó nghe-hiểu hơn hẳn.
   let simonRounds = [];
   let simonIdx = 0;
   let simonCorrect = 0;
   let simonLocked = false;
+  let simonClassId = 'choi';
 
-  function getSimonPool() {
+  function getSimonPool(classId) {
+    if (classId === 'la') return SIMON_LA_COMMANDS;
     const topic = CHOI_TOPICS.find(t => t.id === 'choi_actions');
     return topic ? topic.words : [];
   }
 
   // ~SIMON_SAYS_CHANCE tỉ lệ lượt có "Simon says", còn lại là bẫy — cố định số lượng rồi xáo vị trí
   // để mỗi ván đều có đủ cả 2 loại lượt (không may rủi toàn 1 loại).
-  function buildSimonRounds() {
-    const pool = shuffle(getSimonPool()).slice(0, SIMON_ROUNDS);
+  function buildSimonRounds(classId) {
+    const pool = shuffle(getSimonPool(classId)).slice(0, SIMON_ROUNDS);
     const simonCount = Math.round(SIMON_ROUNDS * SIMON_SAYS_CHANCE);
     const flags = shuffle(pool.map((_, i) => i < simonCount));
     return pool.map((w, i) => ({ en: w.en, emoji: w.emoji, isSimon: flags[i] }));
   }
 
-  function startSimon() {
-    if (getSimonPool().length < SIMON_ROUNDS) return;
-    simonRounds = buildSimonRounds();
+  function startSimon(classId) {
+    classId = classId || 'choi';
+    simonClassId = classId;
+    if (getSimonPool(classId).length < SIMON_ROUNDS) return;
+    simonRounds = buildSimonRounds(classId);
     simonIdx = 0; simonCorrect = 0; simonLocked = false;
     document.getElementById('simonWrap').hidden = false;
     document.getElementById('simonDoneWrap').hidden = true;
@@ -4085,15 +4675,19 @@
     document.getElementById('simonWrap').hidden = true;
     document.getElementById('simonDoneWrap').hidden = false;
     bumpDailyMission('games'); // Simon nói cũng là 1 trò chơi của tab Trò chơi
-    finishChoiRound('simon', 'simon', document.querySelector('#simonDoneWrap p'), 'Bé trả lời đúng ' + simonCorrect + '/' + SIMON_ROUNDS + ' lượt của Simon!');
+    const msgEl = document.querySelector('#simonDoneWrap p');
+    const baseText = 'Bé trả lời đúng ' + simonCorrect + '/' + SIMON_ROUNDS + ' lượt của Simon!';
+    if (simonClassId === 'la') finishLaRound('simon', 'simon', msgEl, baseText);
+    else finishChoiRound('simon', 'simon', msgEl, baseText);
   }
 
   document.getElementById('backFromSimon').addEventListener('click', () => showScreen('games'));
   document.getElementById('simonYesBtn').addEventListener('click', () => handleSimonChoice(true));
   document.getElementById('simonNoBtn').addEventListener('click', () => handleSimonChoice(false));
-  document.getElementById('simonReplayBtn').addEventListener('click', () => startSimon());
+  document.getElementById('simonReplayBtn').addEventListener('click', () => startSimon(simonClassId));
   document.getElementById('simonOtherBtn').addEventListener('click', () => showScreen('games'));
-  document.getElementById('simonStartBtn').addEventListener('click', () => startSimon());
+  document.getElementById('simonStartBtn').addEventListener('click', () => startSimon('choi'));
+  document.getElementById('laSimonStartBtn').addEventListener('click', () => startSimon('la'));
 
   // Chồi > Trò chơi: chọn Xếp chữ hoặc Lật thẻ (cùng danh sách chủ đề).
   function setChoiGamesMode(mode) {
@@ -4107,6 +4701,22 @@
   document.getElementById('choiGameSpellBtn').addEventListener('click', () => setChoiGamesMode('spell'));
   document.getElementById('choiGameMemoryBtn').addEventListener('click', () => setChoiGamesMode('memory'));
   document.getElementById('choiGameSimonBtn').addEventListener('click', () => setChoiGamesMode('simon'));
+
+  function setLaGamesMode(mode) {
+    laGamesMode = mode;
+    document.getElementById('laGameSpellBtn').classList.toggle('active', mode === 'spell');
+    document.getElementById('laGameSpeedBtn').classList.toggle('active', mode === 'speed');
+    document.getElementById('laGameOrderBtn').classList.toggle('active', mode === 'order');
+    document.getElementById('laGameMemoryBtn').classList.toggle('active', mode === 'memory');
+    document.getElementById('laGameSimonBtn').classList.toggle('active', mode === 'simon');
+    renderLaGamesGrid();
+    moveSegmentThumb(document.getElementById('laGamesModeToggle'));
+  }
+  document.getElementById('laGameSpellBtn').addEventListener('click', () => setLaGamesMode('spell'));
+  document.getElementById('laGameSpeedBtn').addEventListener('click', () => setLaGamesMode('speed'));
+  document.getElementById('laGameOrderBtn').addEventListener('click', () => setLaGamesMode('order'));
+  document.getElementById('laGameMemoryBtn').addEventListener('click', () => setLaGamesMode('memory'));
+  document.getElementById('laGameSimonBtn').addEventListener('click', () => setLaGamesMode('simon'));
 
   // ---------- TẬP VIẾT CHỮ (lớp Chồi, tab Học) ----------
   // 26 chữ chia 6 nhóm; mỗi chữ tô 2 lần: chữ HOA rồi chữ thường. Bé tô bằng ngón tay lên nét chữ mờ; bấm "Xong"
@@ -4285,11 +4895,16 @@
   document.getElementById('writeReplayBtn').addEventListener('click', () => startWrite(wGroup.id));
   document.getElementById('writeOtherBtn').addEventListener('click', () => goHome());
 
-  // ---------- GHÉP CÂU (lớp Chồi, tab Câu) ----------
-  // Bé bấm các từ ở dưới theo đúng thứ tự để ghép thành câu 3–4 từ (SENTENCE_BUILD_TOPICS,
-  // data/sentences_choi.js). Là bài luyện tự do như Điền từ của lớp Mầm: không tính sao, chơi lại
-  // thoải mái, không ghi vào ôn tập từ vựng (nội dung riêng của lớp Chồi).
+  // ---------- GHÉP CÂU / SẮP XẾP CÂU (lớp Chồi tab Câu, lớp Lá tab Trò chơi) ----------
+  // Bé bấm các từ ở dưới theo đúng thứ tự để ghép thành câu. classId 'choi' (mặc định): câu 3–4 từ
+  // (SENTENCE_BUILD_TOPICS, data/sentences_choi.js), sống ở tab Câu. classId 'la': câu 5–8 từ, mỗi
+  // nhóm bám 1 cấu trúc Ngữ pháp cơ bản (SENTENCE_BUILD_LA_TOPICS, data/sentences_la.js), sống ở tab
+  // Trò chơi (Lá chưa có tab Câu) — sbReturnScreen nhớ màn nào để "Quay lại"/"Chọn nhóm khác" về đúng
+  // chỗ. Là bài luyện tự do như Điền từ của lớp Mầm: không tính sao mỗi câu, chơi lại thoải mái,
+  // không ghi vào ôn tập từ vựng (nội dung riêng của mỗi lớp).
   let sbTopic = null;
+  let sbClassId = 'choi';
+  let sbReturnScreen = 'sentences';
   let sbSentences = [];  // [{ en, vi, emoji, tokens: ['I','see','a','cat'] }]
   let sbIndex = 0;
   let sbTiles = [];      // [{ word, id, used }]
@@ -4313,9 +4928,12 @@
     });
   }
 
-  function startSentenceBuild(topicId) {
-    const topic = SENTENCE_BUILD_TOPICS.find(t => t.id === topicId);
+  function startSentenceBuild(topicId, classId) {
+    classId = classId || 'choi';
+    const topic = (classId === 'la' ? SENTENCE_BUILD_LA_TOPICS : SENTENCE_BUILD_TOPICS).find(t => t.id === topicId);
     if (!topic) return;
+    sbClassId = classId;
+    sbReturnScreen = classId === 'la' ? 'games' : 'sentences';
     sbTopic = topic;
     sbSentences = shuffle(topic.sentences).slice(0, Math.min(SENTENCE_BUILD_COUNT, topic.sentences.length)).map(s => ({
       en: s.en, vi: s.vi, emoji: s.emoji,
@@ -4405,7 +5023,7 @@
       slotBtns.forEach(b => b.classList.add('is-correct'));
       fb.textContent = 'Chính xác! 🎉';
       fb.className = 'quiz-feedback ok';
-      progress.choi.sentencesBuilt++;
+      progress[sbClassId].sentencesBuilt++;
       speak(s.en);
       setTimeout(() => {
         sbIndex++;
@@ -4413,7 +5031,9 @@
           document.getElementById('sbProgressFill').style.width = '100%';
           document.getElementById('sbWrap').hidden = true;
           document.getElementById('sbDoneWrap').hidden = false;
-          finishChoiRound('sentence', sbTopic.id, document.querySelector('#sbDoneWrap p'), 'Bé đã ghép đúng hết các câu rồi đó!');
+          const doneMsgEl = document.querySelector('#sbDoneWrap p');
+          if (sbClassId === 'la') finishLaRound('sentence', sbTopic.id, doneMsgEl, 'Bé đã sắp xếp đúng hết các câu rồi đó!');
+          else finishChoiRound('sentence', sbTopic.id, doneMsgEl, 'Bé đã ghép đúng hết các câu rồi đó!');
         } else {
           renderSentenceBuild();
         }
@@ -4433,10 +5053,303 @@
     }
   }
 
-  document.getElementById('backFromSb').addEventListener('click', () => showScreen('sentences'));
+  document.getElementById('backFromSb').addEventListener('click', () => showScreen(sbReturnScreen));
   document.getElementById('sbListenBtn').addEventListener('click', () => speak(sbSentences[sbIndex].en));
-  document.getElementById('sbReplayBtn').addEventListener('click', () => startSentenceBuild(sbTopic.id));
-  document.getElementById('sbOtherTopicBtn').addEventListener('click', () => showScreen('sentences'));
+  document.getElementById('sbReplayBtn').addEventListener('click', () => startSentenceBuild(sbTopic.id, sbClassId));
+  document.getElementById('sbOtherTopicBtn').addEventListener('click', () => showScreen(sbReturnScreen));
+
+  // ---------- HỎI-ĐÁP (nối câu hỏi–câu trả lời, lớp Lá, tab Câu) ----------
+  // Cơ chế nối 2 cột giống Ghép tranh (startMatchGame) nhưng viết RIÊNG (không tái dùng
+  // startMatchGame/handleMatchClick) vì bản gốc gắn chặt với currentTopic.words dạng {emoji, en} và
+  // luôn quay về 'games'/'home' — ở đây là 2 câu văn dài (q/a) và luôn quay về tab Câu.
+  let laQaTopic = null;
+  let laQaPairs = [];       // [{ pairId, q, a }], tập con đã xáo của topic.pairs
+  let laQaLeftCards = [];   // [{ pairId, content: q, matched }]
+  let laQaRightCards = [];  // [{ pairId, content: a, matched }]
+  let laQaSelectedLeft = null;
+  let laQaSelectedRight = null;
+  let laQaWrong = false;
+  let laQaFoundCount = 0;
+  let laQaLock = false;
+
+  function startLaQa(topicId) {
+    const topic = QA_LA_TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    laQaTopic = topic;
+    laQaPairs = shuffle(topic.pairs).slice(0, Math.min(QA_ROUND_COUNT, topic.pairs.length)).map((p, i) => ({ pairId: i, q: p.q, a: p.a }));
+    laQaFoundCount = 0;
+    laQaSelectedLeft = null;
+    laQaSelectedRight = null;
+    laQaWrong = false;
+    laQaLock = false;
+    document.getElementById('laQaWrap').hidden = false;
+    document.getElementById('laQaDoneWrap').hidden = true;
+    laQaLeftCards = shuffle(laQaPairs.map(p => ({ pairId: p.pairId, content: p.q, matched: false })));
+    laQaRightCards = shuffle(laQaPairs.map(p => ({ pairId: p.pairId, content: p.a, matched: false })));
+    renderLaQa();
+    showScreen('laQa');
+    fitMatchWordCards(document.getElementById('laQaGridRight'));
+    fitMatchWordCards(document.getElementById('laQaGridLeft'));
+  }
+
+  function renderLaQa() {
+    document.getElementById('laQaProgressFill').style.width = (laQaFoundCount / laQaPairs.length) * 100 + '%';
+    const leftGrid = document.getElementById('laQaGridLeft');
+    const rightGrid = document.getElementById('laQaGridRight');
+    leftGrid.innerHTML = '';
+    rightGrid.innerHTML = '';
+    laQaLeftCards.forEach((card, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'match-card match-card--word' + (card.matched ? ' is-matched' : '')
+        + (idx === laQaSelectedLeft ? (laQaWrong ? ' is-wrong' : ' is-selected') : '');
+      btn.textContent = card.content;
+      btn.disabled = card.matched;
+      btn.addEventListener('click', () => handleLaQaClick('left', idx));
+      leftGrid.appendChild(btn);
+    });
+    laQaRightCards.forEach((card, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'match-card match-card--word' + (card.matched ? ' is-matched' : '')
+        + (idx === laQaSelectedRight ? (laQaWrong ? ' is-wrong' : ' is-selected') : '');
+      btn.textContent = card.content;
+      btn.disabled = card.matched;
+      btn.addEventListener('click', () => handleLaQaClick('right', idx));
+      rightGrid.appendChild(btn);
+    });
+    fitMatchWordCards(leftGrid);
+    fitMatchWordCards(rightGrid);
+  }
+
+  function handleLaQaClick(side, idx) {
+    if (laQaLock) return;
+    if (side === 'left') {
+      if (laQaLeftCards[idx].matched) return;
+      laQaSelectedLeft = idx;
+    } else {
+      if (laQaRightCards[idx].matched) return;
+      laQaSelectedRight = idx;
+    }
+    renderLaQa();
+    if (laQaSelectedLeft === null || laQaSelectedRight === null) return;
+
+    const l = laQaLeftCards[laQaSelectedLeft];
+    const r = laQaRightCards[laQaSelectedRight];
+    if (l.pairId === r.pairId) {
+      l.matched = true;
+      r.matched = true;
+      laQaFoundCount++;
+      laQaSelectedLeft = null;
+      laQaSelectedRight = null;
+      renderLaQa();
+      if (laQaFoundCount === laQaPairs.length) {
+        setTimeout(() => {
+          document.getElementById('laQaWrap').hidden = true;
+          document.getElementById('laQaDoneWrap').hidden = false;
+          finishLaRound('qa', laQaTopic.id, document.getElementById('laQaDoneText'), 'Bé đã nối đúng hết các câu rồi đó!');
+        }, 500);
+      }
+    } else {
+      laQaLock = true;
+      laQaWrong = true;
+      renderLaQa();
+      setTimeout(() => {
+        laQaSelectedLeft = null;
+        laQaSelectedRight = null;
+        laQaWrong = false;
+        laQaLock = false;
+        renderLaQa();
+      }, 700);
+    }
+  }
+
+  document.getElementById('backFromLaQa').addEventListener('click', () => showScreen('sentences'));
+  document.getElementById('laQaReplayBtn').addEventListener('click', () => startLaQa(laQaTopic.id));
+  document.getElementById('laQaOtherTopicBtn').addEventListener('click', () => showScreen('sentences'));
+
+  // ---------- ĐỐI THOẠI NHẬP VAI (lớp Lá, tab Câu) ----------
+  // Bé đóng vai nhân vật B: mỗi lượt thoại hiện câu A (đọc/nghe được) rồi bé CHỌN đúng câu trả lời
+  // của B trong vài lựa chọn (giống 1 câu hỏi trắc nghiệm, không cần gõ) — trả lời xong luôn đi tiếp
+  // (không bắt làm lại như Xếp chữ/Sắp xếp câu), giống hệt luồng renderGrammarQuizQuestion/handleGrammarAnswer.
+  let laDlgTopic = null;
+  let laDlgIndex = 0;
+  let laDlgCorrectCount = 0;
+
+  function startLaDialogue(topicId) {
+    const topic = DIALOGUE_LA_TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+    laDlgTopic = topic;
+    laDlgIndex = 0;
+    laDlgCorrectCount = 0;
+    document.getElementById('laDlgWrap').hidden = false;
+    document.getElementById('laDlgDoneWrap').hidden = true;
+    renderLaDialogueTurn();
+    showScreen('laDialogue');
+  }
+
+  function renderLaDialogueTurn() {
+    document.getElementById('laDlgProgressFill').style.width = (laDlgIndex / laDlgTopic.turns.length) * 100 + '%';
+    document.getElementById('laDlgFeedback').textContent = '';
+    document.getElementById('laDlgFeedback').className = 'quiz-feedback';
+    const turn = laDlgTopic.turns[laDlgIndex];
+    document.getElementById('laDlgEmoji').textContent = laDlgTopic.emoji;
+    document.getElementById('laDlgAEn').textContent = turn.a.en;
+    document.getElementById('laDlgAVi').textContent = turn.a.vi;
+    speak(turn.a.en);
+    const options = shuffle([turn.b.en].concat(turn.distractors));
+    const wrap = document.getElementById('laDlgOptions');
+    wrap.innerHTML = '';
+    options.forEach(opt => {
+      const b = document.createElement('button');
+      b.className = 'quiz-opt text-opt';
+      b.textContent = opt;
+      b.addEventListener('click', () => handleLaDialogueAnswer(b, opt === turn.b.en));
+      wrap.appendChild(b);
+    });
+  }
+
+  document.getElementById('laDlgListenBtn').addEventListener('click', () => speak(laDlgTopic.turns[laDlgIndex].a.en));
+
+  function handleLaDialogueAnswer(btn, isCorrect) {
+    document.querySelectorAll('#laDlgOptions .quiz-opt').forEach(o => o.disabled = true);
+    const turn = laDlgTopic.turns[laDlgIndex];
+    const fb = document.getElementById('laDlgFeedback');
+    if (isCorrect) {
+      btn.classList.add('correct');
+      fb.textContent = 'Chính xác! 🎉';
+      fb.className = 'quiz-feedback ok';
+      laDlgCorrectCount++;
+      speak(turn.b.en);
+    } else {
+      btn.classList.add('wrong');
+      fb.textContent = 'Chưa đúng rồi, câu trả lời đúng là "' + turn.b.en + '"';
+      fb.className = 'quiz-feedback no';
+    }
+    setTimeout(() => {
+      laDlgIndex++;
+      if (laDlgIndex < laDlgTopic.turns.length) renderLaDialogueTurn();
+      else finishLaDialogue();
+    }, 1500);
+  }
+
+  function finishLaDialogue() {
+    document.getElementById('laDlgProgressFill').style.width = '100%';
+    document.getElementById('laDlgWrap').hidden = true;
+    document.getElementById('laDlgDoneWrap').hidden = false;
+    finishLaRound('dialogue', laDlgTopic.id, document.getElementById('laDlgDoneText'),
+      'Bé trả lời đúng ' + laDlgCorrectCount + '/' + laDlgTopic.turns.length + ' lượt thoại!');
+  }
+
+  document.getElementById('backFromLaDialogue').addEventListener('click', () => showScreen('sentences'));
+  document.getElementById('laDlgReplayBtn').addEventListener('click', () => startLaDialogue(laDlgTopic.id));
+  document.getElementById('laDlgOtherTopicBtn').addEventListener('click', () => showScreen('sentences'));
+
+  // ---------- VIẾT CÂU NGẮN / VIẾT ĐOẠN VĂN (lớp Lá, tab Câu) ----------
+  // Bé tự gõ cả câu tiếng Anh (không có sẵn từ để bấm như Sắp xếp câu) nhìn theo nghĩa tiếng Việt +
+  // hình gợi ý. So khớp nới lỏng: bỏ khác biệt hoa/thường, khoảng trắng thừa và dấu câu cuối câu —
+  // xem normalizeWrittenSentence. Trả lời xong (đúng hay sai) đều bấm "Câu tiếp theo" mới đi tiếp,
+  // không tự động chuyển như đố trắc nghiệm, để bé có thời gian đọc câu đúng khi gõ sai.
+  // Viết đoạn văn (PARAGRAPH_LA_TOPICS) dùng chung NGUYÊN màn/hàm này (topicsArr khác WRITE_LA_TOPICS)
+  // — khác biệt duy nhất: mỗi chủ đề đúng 3 câu NỐI TIẾP nhau kể 1 chuyện, nên hiện thêm khung "đoạn
+  // văn của bé" gom dần từng câu đã gõ đúng để bé thấy rõ đang ghép thành 1 đoạn văn hoàn chỉnh.
+  let laWriteTopic = null;
+  let laWriteTopicsArr = WRITE_LA_TOPICS;
+  let laWriteIndex = 0;
+  let laWriteCorrectCount = 0;
+  let laWriteAnswered = false;
+
+  function startLaWrite(topicId, topicsArr) {
+    topicsArr = topicsArr || WRITE_LA_TOPICS;
+    const topic = topicsArr.find(t => t.id === topicId);
+    if (!topic) return;
+    laWriteTopic = topic;
+    laWriteTopicsArr = topicsArr;
+    laWriteIndex = 0;
+    laWriteCorrectCount = 0;
+    document.getElementById('laWriteWrap').hidden = false;
+    document.getElementById('laWriteDoneWrap').hidden = true;
+    const isParagraph = topicsArr === PARAGRAPH_LA_TOPICS;
+    document.getElementById('laWriteParagraphBox').hidden = !isParagraph;
+    document.getElementById('laWriteParagraphText').textContent = '';
+    renderLaWriteQuestion();
+    showScreen('laWrite');
+  }
+
+  function renderLaWriteQuestion() {
+    document.getElementById('laWriteProgressFill').style.width = (laWriteIndex / laWriteTopic.sentences.length) * 100 + '%';
+    const s = laWriteTopic.sentences[laWriteIndex];
+    document.getElementById('laWriteEmoji').textContent = s.emoji;
+    document.getElementById('laWriteVi').textContent = s.vi;
+    const input = document.getElementById('laWriteInput');
+    input.value = '';
+    input.classList.remove('is-correct', 'is-wrong');
+    input.disabled = false;
+    input.focus();
+    document.getElementById('laWriteFeedback').textContent = '';
+    document.getElementById('laWriteFeedback').className = 'quiz-feedback';
+    document.getElementById('laWriteAnswer').hidden = true;
+    document.getElementById('laWriteSubmitBtn').hidden = false;
+    document.getElementById('laWriteNextBtn').hidden = true;
+    laWriteAnswered = false;
+  }
+
+  // Bỏ khác biệt hoa/thường, dấu câu cuối câu (.!?) và khoảng trắng thừa — gõ đúng nội dung câu là
+  // được, không bắt gõ nguyên văn dấu câu/viết hoa như sách giáo khoa.
+  function normalizeWrittenSentence(s) {
+    return s.trim().toLowerCase().replace(/[.!?]+$/, '').replace(/\s+/g, ' ');
+  }
+
+  function checkLaWriteAnswer() {
+    if (laWriteAnswered) return;
+    laWriteAnswered = true;
+    const s = laWriteTopic.sentences[laWriteIndex];
+    const input = document.getElementById('laWriteInput');
+    const isCorrect = normalizeWrittenSentence(input.value) === normalizeWrittenSentence(s.en);
+    const fb = document.getElementById('laWriteFeedback');
+    input.disabled = true;
+    if (isCorrect) {
+      input.classList.add('is-correct');
+      fb.textContent = 'Chính xác! 🎉';
+      fb.className = 'quiz-feedback ok';
+      laWriteCorrectCount++;
+      speak(s.en);
+      if (laWriteTopicsArr === PARAGRAPH_LA_TOPICS) {
+        const box = document.getElementById('laWriteParagraphText');
+        box.textContent = (box.textContent ? box.textContent + ' ' : '') + s.en;
+      }
+    } else {
+      input.classList.add('is-wrong');
+      fb.textContent = 'Chưa đúng rồi, xem câu đúng nhé:';
+      fb.className = 'quiz-feedback no';
+      const ansEl = document.getElementById('laWriteAnswer');
+      ansEl.textContent = s.en;
+      ansEl.hidden = false;
+      speak(s.en);
+    }
+    document.getElementById('laWriteSubmitBtn').hidden = true;
+    document.getElementById('laWriteNextBtn').hidden = false;
+  }
+
+  document.getElementById('laWriteSubmitBtn').addEventListener('click', checkLaWriteAnswer);
+  document.getElementById('laWriteInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkLaWriteAnswer(); });
+  document.getElementById('laWriteNextBtn').addEventListener('click', () => {
+    laWriteIndex++;
+    if (laWriteIndex < laWriteTopic.sentences.length) renderLaWriteQuestion();
+    else finishLaWrite();
+  });
+
+  function finishLaWrite() {
+    document.getElementById('laWriteProgressFill').style.width = '100%';
+    document.getElementById('laWriteWrap').hidden = true;
+    document.getElementById('laWriteDoneWrap').hidden = false;
+    const isParagraph = laWriteTopicsArr === PARAGRAPH_LA_TOPICS;
+    const kind = isParagraph ? 'paragraph' : 'write';
+    const baseText = 'Bé viết đúng ' + laWriteCorrectCount + '/' + laWriteTopic.sentences.length + (isParagraph ? ' câu trong đoạn văn!' : ' câu!');
+    finishLaRound(kind, laWriteTopic.id, document.getElementById('laWriteDoneText'), baseText);
+  }
+
+  document.getElementById('backFromLaWrite').addEventListener('click', () => showScreen('sentences'));
+  document.getElementById('laWriteReplayBtn').addEventListener('click', () => startLaWrite(laWriteTopic.id, laWriteTopicsArr));
+  document.getElementById('laWriteOtherTopicBtn').addEventListener('click', () => showScreen('sentences'));
 
   // ---------- SPELLING GAME (Xếp chữ) ----------
   // Trò chơi luyện tập tự do trong tab "Trò chơi" (không tính sao, chơi lại thoải mái),
@@ -4458,12 +5371,25 @@
       words: PHONICS2_TOPICS.reduce((all, t) => all.concat(t.words), []) };
     return vocab.concat(choiVocab, [phonics]);
   }
+  // Xếp chữ dài của lớp Lá: gộp CẢ 3 lớp (bé lớp Lá đã học xong Mầm/Chồi trước đó) + cả 2 đời Ngữ âm
+  // (2 và 3) — SPELLING_RULES.la (5-9 chữ cái) tự lọc ra đúng những từ đủ dài, không cần lọc tay ở đây.
+  function getLaSpellTopics() {
+    const vocab = TOPICS.map(t => ({ id: t.id, label: t.label, emoji: t.emoji, cls: t.cls, words: t.words }));
+    const choiVocab = CHOI_TOPICS.map(t => ({ id: t.id, label: t.label, emoji: t.emoji, cls: t.cls, words: t.words }));
+    const laVocab = LA_TOPICS.map(t => ({ id: t.id, label: t.label, emoji: t.emoji, cls: t.cls, words: t.words }));
+    const phonics = { id: 'phonics23_words', label: 'Họ vần & âm ghép', emoji: '🔊', cls: 't-accent',
+      words: PHONICS2_TOPICS.concat(PHONICS3_TOPICS).reduce((all, t) => all.concat(t.words), []) };
+    return vocab.concat(choiVocab, laVocab, [phonics]);
+  }
 
   function startSpelling(topicId, classId) {
     classId = classId || 'mam';
     let topic;
     if (classId === 'choi') {
       topic = getChoiSpellTopics().find(t => t.id === topicId);
+      if (!topic) return;
+    } else if (classId === 'la') {
+      topic = getLaSpellTopics().find(t => t.id === topicId);
       if (!topic) return;
     } else {
       topic = TOPICS.find(t => t.id === topicId);
@@ -4554,8 +5480,13 @@
     const fb = document.getElementById('spellingFeedback');
     const slotBtns = document.querySelectorAll('.spelling-slot');
     if (assembled === word.en) {
+      // Chỉ từ vựng ĐÚNG lớp đang xếp mới vào ôn tập của lớp đó (VD: xếp trúng 1 từ Mầm trong lượt
+      // Xếp chữ dài của Lá thì không tính vào ôn tập — xem SPELLING_RULES/getLaSpellTopics).
       if (spellingClassId === 'mam') recordWordAnswer(word, true);
-      else { progress.choi.spellWords++; if (isChoiVocabWord(word)) recordWordAnswer(word, true); } // chỉ từ vựng lớp Chồi mới vào ôn tập của lớp Chồi
+      else {
+        progress[spellingClassId].spellWords++;
+        if (wordClassId(word) === spellingClassId) recordWordAnswer(word, true);
+      }
       slotBtns.forEach(b => b.classList.add('is-correct'));
       fb.textContent = 'Chính xác! 🎉';
       fb.className = 'quiz-feedback ok';
@@ -4568,13 +5499,15 @@
           document.getElementById('spellingDoneWrap').hidden = false;
           bumpDailyMission('games');
           saveProgress(progress);
-          if (spellingClassId === 'choi') finishChoiRound('spell', spellingTopicId, document.querySelector('#spellingDoneWrap p'), 'Bé đã xếp đúng hết các từ rồi đó!');
+          const doneMsgEl = document.querySelector('#spellingDoneWrap p');
+          if (spellingClassId === 'choi') finishChoiRound('spell', spellingTopicId, doneMsgEl, 'Bé đã xếp đúng hết các từ rồi đó!');
+          else if (spellingClassId === 'la') finishLaRound('spell', spellingTopicId, doneMsgEl, 'Bé đã xếp đúng hết các từ rồi đó!');
         } else {
           renderSpellingWord();
         }
       }, 900);
     } else {
-      if (spellingClassId === 'mam' || isChoiVocabWord(word)) recordWordAnswer(word, false);
+      if (spellingClassId === 'mam' || wordClassId(word) === spellingClassId) recordWordAnswer(word, false);
       slotBtns.forEach(b => b.classList.add('is-wrong'));
       fb.textContent = 'Chưa đúng, thử lại nhé!';
       fb.className = 'quiz-feedback no';
@@ -4603,11 +5536,23 @@
   let speedTimeLeft = SPEED_TIME_LIMIT;
   let speedTimerId = null;
   let speedActive = false;
+  // classId 'mam' (mặc định): chủ đề phải học xong ở tab Học mới mở khoá, như mọi trò chơi khác của
+  // Mầm. classId 'la': "Đố nhanh nâng cao" riêng của lớp Lá — mở sẵn (giống Xếp chữ/Sắp xếp câu của
+  // Lá), và khó hơn vì có 5 lựa chọn thay vì 4 (xem renderSpeedQuestion).
+  let speedClassId = 'mam';
 
-  function startSpeedQuiz(topicId) {
-    const topic = TOPICS.find(t => t.id === topicId);
-    if (!topic) return;
-    if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
+  function startSpeedQuiz(topicId, classId) {
+    classId = classId || 'mam';
+    speedClassId = classId;
+    let topic;
+    if (classId === 'mam') {
+      topic = TOPICS.find(t => t.id === topicId);
+      if (!topic) return;
+      if (isTopicLockedForPractice(topic)) { showLockedPracticeTopicNotice(topic); return; }
+    } else {
+      topic = vocabTopicsOf(classId).find(t => t.id === topicId);
+      if (!topic) return;
+    }
     currentTopic = topic;
     speedWords = shuffle(topic.words).slice(0, Math.min(SPEED_WORD_COUNT, topic.words.length));
     speedIndex = 0;
@@ -4646,7 +5591,7 @@
     document.getElementById('speedWord').textContent = word.en;
     speak(word.en);
 
-    const distractors = shuffle(currentTopic.words.filter(w => w !== word)).slice(0, 3);
+    const distractors = shuffle(currentTopic.words.filter(w => w !== word)).slice(0, speedClassId === 'mam' ? 3 : 4);
     const options = shuffle([word, ...distractors]);
 
     const wrap = document.getElementById('speedOptions');
@@ -4713,7 +5658,7 @@
     speedTimerId = null;
     showScreen('games');
   });
-  document.getElementById('speedReplayBtn').addEventListener('click', () => startSpeedQuiz(currentTopic.id));
+  document.getElementById('speedReplayBtn').addEventListener('click', () => startSpeedQuiz(currentTopic.id, speedClassId));
   document.getElementById('speedOtherTopicBtn').addEventListener('click', () => showScreen('games'));
 
   // ---------- BÉ ĐỐ BA MẸ (chế độ đảo ngược: bé đã học rồi tự đố lại ba mẹ) ----------
@@ -4887,6 +5832,7 @@
     // riêng — subtitle/nút bấm cần đổi nội dung cho khớp, không nhắc "mở khoá chủ đề tiếp theo".
     const isAbcTopic = ABC_TOPICS.includes(currentTopic);
     const isChoiTopic = CHOI_TOPICS.includes(currentTopic);
+    const isLaTopic = LA_TOPICS.includes(currentTopic);
     if (isNewTopic) {
       addStars(starsEarned);
       progress.doneTopics[currentTopic.id] = true;
@@ -4900,7 +5846,7 @@
     document.getElementById('doneSubtitle').textContent = isAbcTopic
       ? 'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong nhóm "' + currentTopic.label + '". ' +
         (passed ? '🌟 Bé nhớ chữ tốt lắm, học tiếp nhóm chữ khác nhé!' : '📌 Bé ôn lại nhóm chữ này thêm 1 lần nữa cho nhớ nhé!')
-      : isChoiTopic
+      : (isChoiTopic || isLaTopic)
       ? 'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong chủ đề "' + currentTopic.label + '". ' +
         (passed ? '🌟 Bé nhớ từ tốt lắm, học tiếp chủ đề khác nhé!' : '📌 Bé ôn lại chủ đề này thêm 1 lần nữa cho nhớ nhé!')
       : 'Bé trả lời đúng ' + correctCount + '/' + totalWords + ' câu trong chủ đề "' + currentTopic.label + '". ' +

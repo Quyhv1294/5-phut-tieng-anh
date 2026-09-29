@@ -11,6 +11,14 @@
 //   • Lớp Mầm: 12 chủ đề từ vựng, Bảng chữ cái, Ngữ âm, Truyện tranh, các trò chơi, bài luyện câu.
 //   • Lớp Chồi: Từ vựng (vocab_choi.js), Ngữ âm 2 (phonics2.js), Từ hay gặp (sight_choi.js), Tập viết chữ, Xếp chữ 3–6 chữ cái,
 //     Lật thẻ trí nhớ, Ghép câu (sentences_choi.js).
+//   • Lớp Lá: tab Học xong — Từ vựng (vocab_la.js), Ngữ pháp cơ bản (grammar_la.js, 9 bài), Ngữ âm 3
+//     (phonics3.js), Truyện dài (stories_la.js), Cụm từ thông dụng (phrases_la.js), Bài hát
+//     (songs_la.js), Đọc hiểu văn bản thông tin (reading_la.js, dùng chung màn Truyện). Tab Trò chơi
+//     xong — Xếp chữ từ dài, Đố nhanh nâng cao (5 lựa chọn), Sắp xếp câu (sentences_la.js), Lật thẻ
+//     nâng cao (chữ-nghĩa thay vì hình-chữ), Simon nói nâng cao (simon_la.js, lệnh 2 hành động). Tab
+//     Câu xong — Hỏi-đáp (qa_la.js, nối câu), Đối thoại nhập vai (dialogues_la.js, chọn lời thoại
+//     đúng), Viết câu ngắn (write_la.js, tự gõ câu), Viết đoạn văn ngắn (paragraph_la.js, dùng chung
+//     màn Viết câu ngắn — 3 câu nối tiếp/chủ đề).
 const CLASS_CONTENT = {
   mam: { screens: { home: true, games: true, sentences: true } },
   choi: {
@@ -24,24 +32,13 @@ const CLASS_CONTENT = {
     },
   },
   la: {
-    screens: { home: false, games: false, sentences: false },
-    upcoming: {
-      home: [
-        '📖 Đọc hiểu đoạn văn ngắn',
-        '💬 Hội thoại 2 lượt',
-        '📗 Truyện dài, nhiều câu hỏi',
-        '📝 Ngữ pháp cơ bản (am / is / are, has / have)',
-      ],
-      games: [
-        '🔤 Xếp chữ với từ dài',
-        '⏱️ Đố nhanh có tính giờ nâng cao',
-        '🧩 Sắp xếp câu',
-      ],
-      sentences: [
-        '❓ Hỏi – đáp',
-        '🗣️ Đối thoại nhập vai',
-        '✍️ Viết câu ngắn',
-      ],
+    screens: { home: true, games: true, sentences: true },
+    upcoming: { home: [], games: [], sentences: [] },
+    // Tiêu đề + câu giới thiệu ở đầu từng tab khi chọn lớp này (không khai báo = dùng câu gốc của lớp Mầm).
+    hero: {
+      home: { title: 'Chào ba mẹ! 👋', text: 'Chọn Từ vựng, Ngữ pháp, Ngữ âm 3, Truyện, Cụm từ, Bài hát hoặc Đọc hiểu bên dưới để bé học nâng cao hơn nhé.' },
+      games: { title: 'Trò chơi 🎮', text: 'Chọn Xếp chữ, Đố nhanh, Sắp xếp câu, Lật thẻ hoặc Simon nói, rồi chọn 1 chủ đề — chơi lại bao nhiêu lần cũng được!' },
+      sentences: { title: 'Câu 💬', text: 'Chọn Hỏi-đáp, Đối thoại nhập vai, Viết câu ngắn hoặc Viết đoạn văn, rồi chọn 1 chủ đề để luyện giao tiếp nhé!' },
     },
   },
 };

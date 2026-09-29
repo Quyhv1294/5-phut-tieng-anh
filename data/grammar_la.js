@@ -1,0 +1,137 @@
+  // Ngữ pháp cơ bản — nội dung HOÀN TOÀN MỚI, riêng của lớp Lá (7–8 tuổi). Khác các bài từ vựng/ngữ âm
+  // (không có hình + chữ để học), mỗi bài là 1 QUY TẮC ngắn (rule) + vài câu ví dụ, rồi làm đố điền từ
+  // vào chỗ trống (questions: { sentence có "____", answer, others: các đáp án nhiễu }).
+  // Dùng 2 màn riêng (#screen-grammar-learn, #screen-grammar-quiz — xem startGrammar trong app.js),
+  // không dùng chung màn thẻ/đố của từ vựng vì bố cục khác hẳn. Hoàn thành đánh dấu progress.doneTopics
+  // theo id (giống Ngữ âm/Từ hay gặp) vì đây cũng là bài học có đáp án đúng/sai rõ ràng.
+  const GRAMMAR_LA_TOPICS = [
+    { id: 'grammar_be', label: 'am / is / are', emoji: '🔤', cls: 't-blue',
+      rule: 'Dùng "am" với I, "is" với he/she/it (một người/vật), "are" với you/we/they (nhiều người/vật).',
+      examples: [
+        { en: 'I am a student.', vi: 'Con là học sinh.' },
+        { en: 'She is my friend.', vi: 'Bạn ấy là bạn của con.' },
+        { en: 'We are happy.', vi: 'Chúng con vui.' },
+      ],
+      questions: [
+        { sentence: 'I ____ a boy.', answer: 'am', others: ['is', 'are'] },
+        { sentence: 'She ____ my mom.', answer: 'is', others: ['am', 'are'] },
+        { sentence: 'We ____ good friends.', answer: 'are', others: ['is', 'am'] },
+        { sentence: 'It ____ a small cat.', answer: 'is', others: ['am', 'are'] },
+        { sentence: 'They ____ students.', answer: 'are', others: ['is', 'am'] },
+      ] },
+    { id: 'grammar_have', label: 'have / has', emoji: '🎒', cls: 't-pink',
+      rule: 'Dùng "have" với I/you/we/they, "has" với he/she/it.',
+      examples: [
+        { en: 'I have a book.', vi: 'Con có một quyển sách.' },
+        { en: 'He has a dog.', vi: 'Cậu ấy có một con chó.' },
+        { en: 'They have toys.', vi: 'Họ có đồ chơi.' },
+      ],
+      questions: [
+        { sentence: 'I ____ a red ball.', answer: 'have', others: ['has'] },
+        { sentence: 'He ____ a big dog.', answer: 'has', others: ['have'] },
+        { sentence: 'She ____ two cats.', answer: 'has', others: ['have'] },
+        { sentence: 'We ____ a nice car.', answer: 'have', others: ['has'] },
+        { sentence: 'The dog ____ a bone.', answer: 'has', others: ['have'] },
+      ] },
+    { id: 'grammar_plural', label: 'Số nhiều (thêm -s)', emoji: '➕', cls: 't-gold',
+      rule: 'Thêm "-s" vào sau danh từ khi nói về từ HAI trở lên.',
+      examples: [
+        { en: 'one cat, two cats', vi: 'một con mèo, hai con mèo' },
+        { en: 'one book, three books', vi: 'một quyển sách, ba quyển sách' },
+        { en: 'one toy, many toys', vi: 'một đồ chơi, nhiều đồ chơi' },
+      ],
+      questions: [
+        { sentence: 'I have two ____.', answer: 'books', others: ['book', 'bookes'] },
+        { sentence: 'I see three ____.', answer: 'cats', others: ['cat', 'catses'] },
+        { sentence: 'She has five ____.', answer: 'toys', others: ['toy', 'toyes'] },
+        { sentence: 'We have four ____.', answer: 'pens', others: ['pen', 'penes'] },
+        { sentence: 'I eat two ____.', answer: 'apples', others: ['apple', 'appless'] },
+      ] },
+    { id: 'grammar_this', label: 'this / that / these / those', emoji: '👉', cls: 't-mint',
+      rule: '"This/these" chỉ vật ở GẦN, "that/those" chỉ vật ở XA. This/that dùng cho MỘT vật, these/those dùng cho NHIỀU vật.',
+      examples: [
+        { en: 'This is my pencil.', vi: 'Đây là bút chì của con.' },
+        { en: 'That is your book.', vi: 'Kia là sách của bạn.' },
+        { en: 'These are my shoes.', vi: 'Đây là giày của con.' },
+        { en: 'Those are your shoes.', vi: 'Kia là giày của bạn.' },
+      ],
+      questions: [
+        { sentence: '____ is my dog.', answer: 'This', others: ['That', 'These', 'Those'] },
+        { sentence: '____ are my friends.', answer: 'These', others: ['This', 'That', 'Those'] },
+        { sentence: '____ is your house.', answer: 'That', others: ['This', 'These', 'Those'] },
+        { sentence: '____ are birds.', answer: 'Those', others: ['This', 'That', 'These'] },
+        { sentence: '____ is a red apple.', answer: 'This', others: ['That', 'These', 'Those'] },
+      ] },
+    { id: 'grammar_can', label: 'can / can\'t', emoji: '💪', cls: 't-accent',
+      rule: '"Can" nghĩa là có thể/biết làm gì đó, "can\'t" nghĩa là KHÔNG thể.',
+      examples: [
+        { en: 'I can swim.', vi: 'Con biết bơi.' },
+        { en: "I can't fly.", vi: 'Con không thể bay.' },
+        { en: 'She can sing well.', vi: 'Bạn ấy hát hay.' },
+      ],
+      questions: [
+        { sentence: 'Birds ____ fly.', answer: 'can', others: ["can't"] },
+        { sentence: 'Fish ____ walk.', answer: "can't", others: ['can'] },
+        { sentence: 'I ____ jump high.', answer: 'can', others: ["can't"] },
+        { sentence: 'A cat ____ speak English.', answer: "can't", others: ['can'] },
+        { sentence: 'We ____ play together.', answer: 'can', others: ["can't"] },
+      ] },
+    // ----- 4 bài ngữ pháp thêm sau (nối tiếp 5 bài gốc ở trên) -----
+    { id: 'grammar_past', label: 'Thì quá khứ đơn', emoji: '⏳', cls: 't-blue',
+      rule: 'Với "to be" dùng "was" (I/he/she/it) hoặc "were" (you/we/they) để nói việc ĐÃ xảy ra. Với động từ thường, thêm "-ed" vào cuối (play → played, walk → walked).',
+      examples: [
+        { en: 'I was happy yesterday.', vi: 'Hôm qua con đã rất vui.' },
+        { en: 'They were at school.', vi: 'Họ đã ở trường.' },
+        { en: 'She played football yesterday.', vi: 'Hôm qua bạn ấy đã chơi bóng đá.' },
+        { en: 'He walked to school.', vi: 'Cậu ấy đã đi bộ đến trường.' },
+      ],
+      questions: [
+        { sentence: 'Yesterday, I ____ tired.', answer: 'was', others: ['were'] },
+        { sentence: 'They ____ at the zoo.', answer: 'were', others: ['was'] },
+        { sentence: 'She ____ soccer yesterday.', answer: 'played', others: ['play'] },
+        { sentence: 'He ____ to school this morning.', answer: 'walked', others: ['walk'] },
+        { sentence: 'We ____ happy at the party.', answer: 'were', others: ['was'] },
+      ] },
+    { id: 'grammar_time', label: 'Xem giờ', emoji: '🕒', cls: 't-pink',
+      rule: 'Hỏi giờ bằng "What time is it?". Trả lời bằng "It\'s + số giờ + o\'clock" (đúng giờ) hoặc "It\'s + số giờ + thirty" (rưỡi).',
+      examples: [
+        { en: 'What time is it?', vi: 'Mấy giờ rồi?' },
+        { en: "It's three o'clock.", vi: 'Bây giờ là 3 giờ.' },
+        { en: "It's seven thirty.", vi: 'Bây giờ là 7 giờ rưỡi.' },
+      ],
+      questions: [
+        { sentence: '____ time is it?', answer: 'What', others: ['Where'] },
+        { sentence: "It's eight ____.", answer: "o'clock", others: ['thirty'] },
+        { sentence: "It's four ____.", answer: 'thirty', others: ["o'clock"] },
+        { sentence: '____ time do you wake up?', answer: 'What', others: ['Who'] },
+        { sentence: 'It ____ nine o\'clock now.', answer: 'is', others: ['are'] },
+      ] },
+    { id: 'grammar_calendar', label: 'Ngày & tháng', emoji: '📅', cls: 't-gold',
+      rule: '7 ngày trong tuần: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday. Hỏi ngày bằng "What day is it?", hỏi tháng bằng "What month is it?".',
+      examples: [
+        { en: 'What day is it today?', vi: 'Hôm nay là thứ mấy?' },
+        { en: 'Today is Monday.', vi: 'Hôm nay là thứ Hai.' },
+        { en: 'My birthday is in June.', vi: 'Sinh nhật con vào tháng Sáu.' },
+      ],
+      questions: [
+        { sentence: '____ day is it today?', answer: 'What', others: ['Where'] },
+        { sentence: 'Today is ____.', answer: 'Monday', others: ['June'] },
+        { sentence: 'My birthday is ____ June.', answer: 'in', others: ['on'] },
+        { sentence: 'After Monday comes ____.', answer: 'Tuesday', others: ['Sunday'] },
+        { sentence: 'The last month of the year is ____.', answer: 'December', others: ['January'] },
+      ] },
+    { id: 'grammar_compare', label: 'So sánh hơn', emoji: '⚖️', cls: 't-mint',
+      rule: 'Thêm "-er" vào cuối tính từ ngắn để so sánh hơn (big → bigger, tall → taller, fast → faster). Dùng với "than" khi so sánh 2 vật.',
+      examples: [
+        { en: 'An elephant is bigger than a cat.', vi: 'Con voi to hơn con mèo.' },
+        { en: 'I am taller than my sister.', vi: 'Con cao hơn em gái con.' },
+        { en: 'A car is faster than a bike.', vi: 'Ô tô nhanh hơn xe đạp.' },
+      ],
+      questions: [
+        { sentence: 'An elephant is ____ than a mouse.', answer: 'bigger', others: ['big'] },
+        { sentence: 'A car is ____ than a bike.', answer: 'faster', others: ['fast'] },
+        { sentence: 'I am ____ than my brother.', answer: 'taller', others: ['tall'] },
+        { sentence: 'This box is ____ than that one.', answer: 'smaller', others: ['small'] },
+        { sentence: 'The sun is ____ than the moon.', answer: 'bigger', others: ['big'] },
+      ] },
+  ];

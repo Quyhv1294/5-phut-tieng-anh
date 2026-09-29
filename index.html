@@ -187,6 +187,46 @@
         <div class="topic-grid" id="storyChoiTopicGrid"></div>
       </div>
     </div>
+    <div class="class-content" id="classContentHomeLa" data-class-content="la" hidden>
+      <div class="choi-summary" id="laSummary"></div>
+      <div class="segment-toggle" id="laHomeModeToggle">
+        <div class="segment-thumb"></div>
+        <button class="segment-btn active" id="laModeVocabBtn">📚 Từ vựng</button>
+        <button class="segment-btn" id="laModeGrammarBtn">🔤 Ngữ pháp</button>
+        <button class="segment-btn" id="laModePhonicsBtn">🔊 Ngữ âm 3</button>
+        <button class="segment-btn" id="laModeStoriesBtn">📗 Truyện</button>
+        <button class="segment-btn" id="laModePhrasesBtn">🗣️ Cụm từ</button>
+        <button class="segment-btn" id="laModeSongsBtn">🎵 Bài hát</button>
+        <button class="segment-btn" id="laModeReadingBtn">📋 Đọc hiểu</button>
+      </div>
+      <div class="home-mode-panel" id="laPanelVocab">
+        <div class="topic-grid" id="laVocabGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="laPanelGrammar" hidden>
+        <p class="class-intro">9 bài ngữ pháp cơ bản: am/is/are, have/has, số nhiều, this/that/these/those, can/can't, thì quá khứ đơn, xem giờ, ngày & tháng, so sánh hơn.</p>
+        <div class="topic-grid" id="grammarTopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="laPanelPhonics" hidden>
+        <p class="class-intro">Bé học thêm 2 họ vần mới (-AP, -OT) và phụ âm ghép đầu từ BL.</p>
+        <div class="topic-grid" id="phonics3TopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="laPanelStories" hidden>
+        <p class="class-intro">Truyện dài và khó hơn cả Lớp Chồi, đọc xong trả lời 4 câu hỏi hiểu truyện.</p>
+        <div class="topic-grid" id="storyLaTopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="laPanelPhrases" hidden>
+        <p class="class-intro">30 cụm từ thông dụng bé hay dùng ở lớp học, ở nhà và khi chơi cùng bạn bè.</p>
+        <div class="topic-grid" id="phraseTopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="laPanelSongs" hidden>
+        <p class="class-intro">Nghe và hát theo các bài đồng dao tiếng Anh kinh điển, vừa vui vừa nhớ từ lâu hơn!</p>
+        <div class="topic-grid" id="songsLaTopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="laPanelReading" hidden>
+        <p class="class-intro">Đọc nội quy, thực đơn, thời khoá biểu... rồi trả lời câu hỏi — khác truyện kể, đây là kỹ năng đọc-tra cứu thông tin thật.</p>
+        <div class="topic-grid" id="readingLaTopicGrid"></div>
+      </div>
+    </div>
     <div class="class-soon" id="classSoonHome" hidden></div>
 
     <div class="home-footnote">"5 Phút Tiếng Anh Mỗi Ngày" 💚</div>
@@ -223,6 +263,22 @@
         <button class="cta-btn" id="simonStartBtn">🕺 Bắt đầu chơi!</button>
       </div>
     </div>
+    <div class="class-content" id="classContentGamesLa" data-class-content="la" hidden>
+      <div class="segment-toggle" id="laGamesModeToggle">
+        <div class="segment-thumb"></div>
+        <button class="segment-btn active" id="laGameSpellBtn">🔤 Xếp chữ dài</button>
+        <button class="segment-btn" id="laGameSpeedBtn">⏱️ Đố nhanh</button>
+        <button class="segment-btn" id="laGameOrderBtn">🧩 Sắp xếp câu</button>
+        <button class="segment-btn" id="laGameMemoryBtn">🧠 Lật thẻ</button>
+        <button class="segment-btn" id="laGameSimonBtn">🕺 Simon nói</button>
+      </div>
+      <div class="topic-grid" id="laGamesTopicGrid"></div>
+      <div class="simon-intro" id="laSimonIntro" hidden>
+        <div class="simon-intro-emoji">🕺</div>
+        <p>Simon sẽ ra lệnh bằng tiếng Anh, mỗi lệnh có 2 hành động liền nhau. Nếu Simon nói <strong>"Simon says"</strong> trước, bé làm theo cả 2 hành động rồi bấm <strong>Làm theo</strong>. Nếu Simon quên nói câu đó, bé đứng yên và bấm <strong>Đứng yên</strong> nhé!</p>
+        <button class="cta-btn" id="laSimonStartBtn">🕺 Bắt đầu chơi!</button>
+      </div>
+    </div>
     <div class="class-soon" id="classSoonGames" hidden></div>
   </section>
 
@@ -244,6 +300,16 @@
     </div>
     <div class="class-content" id="classContentSentencesChoi" data-class-content="choi" hidden>
       <div class="topic-grid" id="choiSentenceGrid"></div>
+    </div>
+    <div class="class-content" id="classContentSentencesLa" data-class-content="la" hidden>
+      <div class="segment-toggle" id="laSentencesModeToggle">
+        <div class="segment-thumb"></div>
+        <button class="segment-btn active" id="laSentModeQaBtn">❓ Hỏi-đáp</button>
+        <button class="segment-btn" id="laSentModeDialogueBtn">🗣️ Đối thoại</button>
+        <button class="segment-btn" id="laSentModeWriteBtn">✍️ Viết câu</button>
+        <button class="segment-btn" id="laSentModeParagraphBtn">📝 Viết đoạn văn</button>
+      </div>
+      <div class="topic-grid" id="laSentencesTopicGrid"></div>
     </div>
     <div class="class-soon" id="classSoonSentences" hidden></div>
   </section>
@@ -619,6 +685,32 @@
     </div>
   </section>
 
+  <!-- ============ NGỮ PHÁP CƠ BẢN: HỌC QUY TẮC (lớp Lá) ============ -->
+  <section class="screen" id="screen-grammar-learn">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromGrammarLearn" aria-label="Quay lại">←</button>
+    </div>
+    <div class="sentence-wrap">
+      <div class="sentence-topic-title" id="grammarTitle">am / is / are</div>
+      <div class="grammar-rule-card" id="grammarRule"></div>
+      <div class="sentence-list" id="grammarExamples"></div>
+      <button class="cta-btn" id="grammarStartQuizBtn">📝 Làm đố ngay</button>
+    </div>
+  </section>
+
+  <!-- ============ NGỮ PHÁP CƠ BẢN: ĐỐ ĐIỀN TỪ (lớp Lá) ============ -->
+  <section class="screen" id="screen-grammar-quiz">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromGrammarQuiz" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="grammarQuizProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap">
+      <p class="fillblank-sentence" id="grammarQuizSentence"></p>
+      <div class="quiz-options" id="grammarQuizOptions"></div>
+      <div class="quiz-feedback" id="grammarQuizFeedback"></div>
+    </div>
+  </section>
+
   <!-- ============ TRUYỆN TRANH: ĐỌC TỪNG TRANG ============ -->
   <section class="screen" id="screen-story-read">
     <div class="card-topbar">
@@ -789,6 +881,84 @@
       <p>Bé đã ghép đúng hết các câu rồi đó!</p>
       <button class="cta-btn" id="sbReplayBtn">🔁 Chơi lại</button>
       <button class="ghost-btn ghost-btn--solid" id="sbOtherTopicBtn">💬 Chọn nhóm câu khác</button>
+    </div>
+  </section>
+
+  <!-- ============ HỎI-ĐÁP SCREEN (nối câu hỏi–câu trả lời — lớp Lá) ============ -->
+  <section class="screen" id="screen-la-qa">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromLaQa" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="laQaProgressFill"></div></div>
+    </div>
+    <div class="match-wrap" id="laQaWrap">
+      <div class="match-prompt">Nối câu hỏi với câu trả lời đúng nhé! ❓</div>
+      <div class="match-columns">
+        <div class="match-grid match-grid--left" id="laQaGridLeft"></div>
+        <div class="match-grid match-grid--right" id="laQaGridRight"></div>
+      </div>
+    </div>
+    <div class="match-done-wrap" id="laQaDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p id="laQaDoneText">Bé đã nối đúng hết các câu rồi đó!</p>
+      <button class="cta-btn" id="laQaReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn ghost-btn--solid" id="laQaOtherTopicBtn">💬 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
+  <!-- ============ ĐỐI THOẠI NHẬP VAI SCREEN (lớp Lá) ============ -->
+  <section class="screen" id="screen-la-dialogue">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromLaDialogue" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="laDlgProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap" id="laDlgWrap">
+      <div class="sentence-card">
+        <span class="sentence-emoji" id="laDlgEmoji">🤝</span>
+        <span class="sentence-text">
+          <span class="sentence-en"><span class="lang-flag">🇬🇧</span><span id="laDlgAEn"></span></span>
+          <span class="sentence-vi"><span class="lang-flag">🇻🇳</span><span id="laDlgAVi"></span></span>
+        </span>
+        <button class="sentence-listen-btn" id="laDlgListenBtn" aria-label="Nghe câu">🔊</button>
+      </div>
+      <div class="quiz-prompt">Con sẽ trả lời gì?</div>
+      <div class="quiz-options" id="laDlgOptions"></div>
+      <div class="quiz-feedback" id="laDlgFeedback"></div>
+    </div>
+    <div class="match-done-wrap" id="laDlgDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p id="laDlgDoneText">Bé đã đóng vai xong hội thoại rồi đó!</p>
+      <button class="cta-btn" id="laDlgReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn ghost-btn--solid" id="laDlgOtherTopicBtn">💬 Chọn hội thoại khác</button>
+    </div>
+  </section>
+
+  <!-- ============ VIẾT CÂU NGẮN SCREEN (lớp Lá) ============ -->
+  <section class="screen" id="screen-la-write">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromLaWrite" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="laWriteProgressFill"></div></div>
+    </div>
+    <div class="quiz-wrap" id="laWriteWrap">
+      <div class="write-paragraph-box" id="laWriteParagraphBox" hidden>
+        <div class="write-paragraph-label">📝 Đoạn văn của con:</div>
+        <div class="write-paragraph-text" id="laWriteParagraphText"></div>
+      </div>
+      <div class="reverse-emoji" id="laWriteEmoji">🔢</div>
+      <div class="fillblank-vi" id="laWriteVi">Con thích tiết Toán.</div>
+      <input type="text" class="write-input" id="laWriteInput" placeholder="Gõ câu tiếng Anh vào đây..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="cta-btn" id="laWriteSubmitBtn">✅ Kiểm tra</button>
+      <div class="quiz-feedback" id="laWriteFeedback"></div>
+      <div class="write-answer" id="laWriteAnswer" hidden></div>
+      <button class="ghost-btn ghost-btn--solid" id="laWriteNextBtn" hidden>Câu tiếp theo →</button>
+    </div>
+    <div class="match-done-wrap" id="laWriteDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p id="laWriteDoneText">Bé đã viết xong hết các câu rồi đó!</p>
+      <button class="cta-btn" id="laWriteReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn ghost-btn--solid" id="laWriteOtherTopicBtn">💬 Chọn chủ đề khác</button>
     </div>
   </section>
 
@@ -1016,7 +1186,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🧪</span>
-        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ở đầu các tab Học, Trò chơi và Câu có 3 ô Lớp Mầm, Lớp Chồi, Lớp Lá — mỗi lớp có bài học và trò chơi riêng (Lớp Chồi có Từ vựng, Ngữ âm 2, Từ hay gặp, Tập viết chữ, Bài hát, Truyện, Xếp chữ, Lật thẻ, Simon nói và Ghép câu; Lớp Lá đang được chuẩn bị). Mỗi lớp có tiến độ và huy hiệu riêng (xem ở tab Tiến độ và Sưu tập). Đủ điều kiện ở thẻ "Lên lớp" thì bé được làm bài kiểm tra ngắn để lên lớp trên. Ba mẹ cũng có thể chuyển lớp, đổi lớp cho bé hoặc làm lại bài kiểm tra bất cứ lúc nào (thẻ "Lớp của bé" ở trang Học).</span>
+        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ở đầu các tab Học, Trò chơi và Câu có 3 ô Lớp Mầm, Lớp Chồi, Lớp Lá — mỗi lớp có bài học và trò chơi riêng (Lớp Chồi có Từ vựng, Ngữ âm 2, Từ hay gặp, Tập viết chữ, Bài hát, Truyện, Xếp chữ, Lật thẻ, Simon nói và Ghép câu; Lớp Lá có Từ vựng, Ngữ pháp cơ bản, Ngữ âm 3, Truyện, Cụm từ thông dụng, Bài hát, Đọc hiểu văn bản ở tab Học, Xếp chữ từ dài/Đố nhanh/Sắp xếp câu/Lật thẻ nâng cao/Simon nói nâng cao ở tab Trò chơi, và Hỏi-đáp/Đối thoại nhập vai/Viết câu ngắn/Viết đoạn văn ở tab Câu). Mỗi lớp có tiến độ và huy hiệu riêng (xem ở tab Tiến độ và Sưu tập). Đủ điều kiện ở thẻ "Lên lớp" thì bé được làm bài kiểm tra ngắn để lên lớp trên. Ba mẹ cũng có thể chuyển lớp, đổi lớp cho bé hoặc làm lại bài kiểm tra bất cứ lúc nào (thẻ "Lớp của bé" ở trang Học).</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
@@ -1090,6 +1260,19 @@
 <script src="data/sentences_choi.js"></script>
 <script src="data/songs_choi.js"></script>
 <script src="data/stories_choi.js"></script>
+<script src="data/vocab_la.js"></script>
+<script src="data/grammar_la.js"></script>
+<script src="data/phonics3.js"></script>
+<script src="data/stories_la.js"></script>
+<script src="data/sentences_la.js"></script>
+<script src="data/qa_la.js"></script>
+<script src="data/dialogues_la.js"></script>
+<script src="data/write_la.js"></script>
+<script src="data/simon_la.js"></script>
+<script src="data/phrases_la.js"></script>
+<script src="data/songs_la.js"></script>
+<script src="data/paragraph_la.js"></script>
+<script src="data/reading_la.js"></script>
 <script src="data/classes.js"></script>
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>

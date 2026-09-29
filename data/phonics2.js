@@ -58,9 +58,11 @@
   ];
 
   // Cách đọc khi bé bấm 1 ô nhiều chữ cái (chữ đơn thì đọc tên chữ như Ngữ âm cơ bản).
+  // BL (data/phonics3.js — lớp Lá) dùng chung bảng này vì cũng là 1 "ô âm" nhiều chữ cái.
   const PHONICS_UNIT_SAY = {
     SH: 'sh, as in ship', CH: 'ch, as in chair', TH: 'th, as in thumb',
-    EE: 'ee', AI: 'ay', CK: 'k', ER: 'er',
+    EE: 'ee', AI: 'ay', CK: 'k', ER: 'er', BL: 'bl, as in black',
   };
   // Đáp án nhiễu cho câu đố âm đầu khi đáp án là 1 âm ghép (thêm vài chữ đơn dễ nhầm với S, C, T).
-  const PHONICS2_DIGRAPH_POOL = ['SH', 'CH', 'TH', 'WH', 'S', 'C', 'T'];
+  // BL cũng nằm ở đây để làm đáp án nhiễu cho các câu đố âm ghép/phụ âm ghép khác.
+  const PHONICS2_DIGRAPH_POOL = ['SH', 'CH', 'TH', 'WH', 'BL', 'S', 'C', 'T'];

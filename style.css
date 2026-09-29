@@ -906,6 +906,11 @@
   }
   .sentence-listen-btn:active { transform: scale(0.92); }
   .sentence-card.is-playing { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+  /* Thẻ quy tắc ngữ pháp (Ngữ pháp cơ bản, lớp Lá) */
+  .grammar-rule-card {
+    background: var(--surface); border: 3px solid var(--line); border-radius: 20px;
+    padding: 16px 18px; font-size: 16.5px; font-weight: 700; color: var(--ink); line-height: 1.55;
+  }
 
   /* MATCH GAME SCREEN — nối cột: trái = hình, phải = chữ, đều hiện sẵn (không lật úp) */
   .match-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding-top: 6px; }
@@ -979,6 +984,12 @@
      .segment-thumb đã đo cả top/height theo nút đang chọn (xem moveSegmentThumb) nên vẫn khớp đúng hàng. */
   #choiHomeModeToggle.segment-toggle { flex-wrap: wrap; }
   #choiHomeModeToggle .segment-btn { font-size: 15px; padding: 9px 3px; flex: 1 1 30%; }
+  /* Học (lớp Lá) cũng lên 6 mục (thêm Cụm từ + Bài hát) — cùng cách xếp 3 nút/hàng như trên. */
+  #laHomeModeToggle.segment-toggle { flex-wrap: wrap; }
+  #laHomeModeToggle .segment-btn { font-size: 15px; padding: 9px 3px; flex: 1 1 30%; }
+  /* Trò chơi (lớp Lá) lên 5 mục (thêm Lật thẻ + Simon nói) — xếp theo hàng thay vì tràn 1 dòng. */
+  #laGamesModeToggle.segment-toggle { flex-wrap: wrap; }
+  #laGamesModeToggle .segment-btn { font-size: 14.5px; padding: 9px 3px; flex: 1 1 30%; }
 
   /* SPELLING GAME SCREEN (Xếp chữ) */
   .spelling-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px; }
@@ -1039,6 +1050,23 @@
     border-radius: 14px; font-family: 'Baloo 2'; font-weight: 800; font-size: 22px; cursor: pointer;
   }
   .sb-tile:active { transform: scale(0.94); }
+
+  /* VIẾT CÂU NGẮN (lớp Lá, tab Câu) — ô gõ câu tiếng Anh */
+  .write-input {
+    width: 100%; box-sizing: border-box; border: 2px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; font-family: 'Quicksand'; font-weight: 600; font-size: 17px;
+    background: var(--surface); color: var(--ink); text-align: center; margin: 6px 0;
+  }
+  .write-input:focus { outline: none; border-color: var(--accent); }
+  .write-input.is-correct { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 14%, var(--surface)); }
+  .write-input.is-wrong { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
+  .write-answer { font-size: 15px; color: var(--ink-soft); font-weight: 700; }
+  .write-paragraph-box {
+    width: 100%; box-sizing: border-box; text-align: left; border: 2px dashed var(--line);
+    border-radius: 14px; padding: 10px 14px; margin-bottom: 8px; background: var(--surface-2);
+  }
+  .write-paragraph-label { font-size: 13px; font-weight: 800; color: var(--ink-soft); margin-bottom: 4px; }
+  .write-paragraph-text { font-size: 15.5px; font-weight: 600; color: var(--ink); line-height: 1.5; }
 
   /* SPEED QUIZ SCREEN (Ai nhanh hơn) */
   .speed-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
