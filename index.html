@@ -66,6 +66,7 @@
 
   <!-- ============ HOME SCREEN ============ -->
   <section class="screen active" id="screen-home">
+    <div class="class-switch" data-class-switch></div>
     <div class="home-hero">
       <h1>Chào ba mẹ! 👋</h1>
       <p>Chọn một chủ đề bên dưới, học cùng bé 10 từ mới, rồi chơi mini game ôn lại — chỉ mất khoảng 5 phút thôi ạ.</p>
@@ -106,12 +107,16 @@
       <p class="daily-mission-claimed" id="dailyMissionClaimed" hidden>🎉 Bé đã xong hết nhiệm vụ hôm nay, được thưởng thêm sao rồi!</p>
     </div>
 
+    <div class="class-content" id="classContentReview" data-class-content="mam,choi">
     <div class="section-label">🔁 Ôn tập</div>
     <div class="progress-actions">
       <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
       <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
       <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
     </div>
+    </div>
+    <div class="class-content" id="classContentHome" data-class-content="mam">
+    <div class="promo-slot" id="promoCardMam"></div>
 
     <div class="segment-toggle" id="homeModeToggle">
       <div class="segment-thumb"></div>
@@ -145,15 +150,56 @@
       <div class="topic-grid" id="storyTopicGrid"></div>
     </div>
 
+    </div>
+    <div class="class-content" id="classContentHomeChoi" data-class-content="choi" hidden>
+      <div class="choi-summary" id="choiSummary"></div>
+      <div class="promo-slot" id="promoCardChoi"></div>
+      <div class="segment-toggle" id="choiHomeModeToggle">
+        <div class="segment-thumb"></div>
+        <button class="segment-btn active" id="choiModeVocabBtn">📚 Từ vựng</button>
+        <button class="segment-btn" id="choiModePhonicsBtn">🔊 Ngữ âm 2</button>
+        <button class="segment-btn" id="choiModeSightBtn">👀 Từ hay gặp</button>
+        <button class="segment-btn" id="choiModeWriteBtn">✍️ Tập viết</button>
+        <button class="segment-btn" id="choiModeSongsBtn">🎵 Bài hát</button>
+        <button class="segment-btn" id="choiModeStoriesBtn">📗 Truyện</button>
+      </div>
+      <div class="home-mode-panel" id="choiPanelVocab">
+        <div class="topic-grid" id="choiVocabGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="choiPanelPhonics" hidden>
+        <p class="class-intro">Bé học thêm 4 họ vần mới (-EN, -IN, -OP, -UN) và các âm ghép SH, CH, TH.</p>
+        <div class="topic-grid" id="phonics2TopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="choiPanelSight" hidden>
+        <p class="class-intro">40 từ bé gặp trong hầu hết mọi câu tiếng Anh — nhận ra ngay là đọc câu được rồi!</p>
+        <div class="topic-grid" id="sightTopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="choiPanelWrite" hidden>
+        <p class="class-intro">Bé dùng ngón tay tô theo nét chữ mờ: mỗi chữ tô chữ hoa rồi chữ thường.</p>
+        <div class="topic-grid" id="writeTopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="choiPanelSongs" hidden>
+        <p class="class-intro">Nghe và hát theo các bài đồng dao tiếng Anh kinh điển, vừa vui vừa nhớ từ lâu hơn!</p>
+        <div class="topic-grid" id="songsTopicGrid"></div>
+      </div>
+      <div class="home-mode-panel" id="choiPanelStories" hidden>
+        <p class="class-intro">Truyện tranh dài hơn lớp Mầm, đọc xong trả lời 3 câu hỏi hiểu truyện.</p>
+        <div class="topic-grid" id="storyChoiTopicGrid"></div>
+      </div>
+    </div>
+    <div class="class-soon" id="classSoonHome" hidden></div>
+
     <div class="home-footnote">"5 Phút Tiếng Anh Mỗi Ngày" 💚</div>
   </section>
 
   <!-- ============ GAMES SCREEN ============ -->
   <section class="screen" id="screen-games">
+    <div class="class-switch" data-class-switch></div>
     <div class="home-hero">
       <h1>Trò chơi 🎮</h1>
       <p>Chọn 1 trò chơi và 1 chủ đề, bé luyện từ vựng thật vui — chơi lại bao nhiêu lần cũng được!</p>
     </div>
+    <div class="class-content" id="classContentGames" data-class-content="mam">
     <div class="segment-toggle" id="gamesModeToggle">
       <div class="segment-thumb"></div>
       <button class="segment-btn active" id="gameModeMatchBtn">🧩 Ghép tranh</button>
@@ -162,14 +208,32 @@
       <button class="segment-btn" id="gameModeQuizParentBtn">🎤 Đố ba mẹ</button>
     </div>
     <div class="topic-grid" id="gamesTopicGrid"></div>
+    </div>
+    <div class="class-content" id="classContentGamesChoi" data-class-content="choi" hidden>
+      <div class="segment-toggle" id="choiGamesModeToggle">
+        <div class="segment-thumb"></div>
+        <button class="segment-btn active" id="choiGameSpellBtn">🔤 Xếp chữ</button>
+        <button class="segment-btn" id="choiGameMemoryBtn">🧠 Lật thẻ</button>
+        <button class="segment-btn" id="choiGameSimonBtn">🕺 Simon nói</button>
+      </div>
+      <div class="topic-grid" id="choiSpellTopicGrid"></div>
+      <div class="simon-intro" id="simonIntro" hidden>
+        <div class="simon-intro-emoji">🕺</div>
+        <p>Simon sẽ ra lệnh bằng tiếng Anh. Nếu Simon nói <strong>"Simon says"</strong> trước, bé làm theo hành động rồi bấm <strong>Làm theo</strong>. Nếu Simon quên nói câu đó, bé đứng yên và bấm <strong>Đứng yên</strong> nhé!</p>
+        <button class="cta-btn" id="simonStartBtn">🕺 Bắt đầu chơi!</button>
+      </div>
+    </div>
+    <div class="class-soon" id="classSoonGames" hidden></div>
   </section>
 
   <!-- ============ SENTENCES SCREEN ============ -->
   <section class="screen" id="screen-sentences">
+    <div class="class-switch" data-class-switch></div>
     <div class="home-hero">
       <h1>Nghe & đọc câu 💬</h1>
       <p>Chọn 1 chế độ và 1 chủ đề để bé luyện nhớ từ vựng thật lâu!</p>
     </div>
+    <div class="class-content" id="classContentSentences" data-class-content="mam">
     <div class="segment-toggle" id="sentencesModeToggle">
       <div class="segment-thumb"></div>
       <button class="segment-btn active" id="sentenceModeReadBtn">📖 Đọc câu</button>
@@ -177,6 +241,11 @@
       <button class="segment-btn" id="sentenceModeFillBtn">✏️ Điền từ</button>
     </div>
     <div class="topic-grid" id="sentencesTopicGrid"></div>
+    </div>
+    <div class="class-content" id="classContentSentencesChoi" data-class-content="choi" hidden>
+      <div class="topic-grid" id="choiSentenceGrid"></div>
+    </div>
+    <div class="class-soon" id="classSoonSentences" hidden></div>
   </section>
 
   <!-- ============ SENTENCE PRACTICE SCREEN ============ -->
@@ -187,6 +256,20 @@
     <div class="sentence-wrap">
       <div class="sentence-topic-title" id="sentenceTopicTitle">Gia đình</div>
       <div class="sentence-list" id="sentenceList"></div>
+    </div>
+  </section>
+
+  <!-- ============ SONG SCREEN (Bài hát — lớp Chồi) ============ -->
+  <section class="screen" id="screen-song">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSong" aria-label="Quay lại">←</button>
+    </div>
+    <div class="sentence-wrap">
+      <div class="sentence-topic-title" id="songTitle">Twinkle, Twinkle, Little Star</div>
+      <button class="cta-btn" id="songPlayAllBtn">▶️ Nghe & hát theo cả bài</button>
+      <div class="sentence-list" id="songLineList"></div>
+      <button class="ghost-btn ghost-btn--solid" id="songDoneBtn">✅ Bé hát được rồi!</button>
+      <p class="quiz-feedback" id="songDoneMsg"></p>
     </div>
   </section>
 
@@ -223,6 +306,7 @@
   <section class="screen" id="screen-progress">
     <div class="progress-wrap">
       <h2>Tiến độ học của bé</h2>
+      <div class="class-switch" data-class-switch></div>
       <div class="progress-summary">
         <div class="summary-item">
           <div class="summary-num" id="progressStars">0</div>
@@ -230,11 +314,11 @@
         </div>
         <div class="summary-item">
           <div class="summary-num" id="progressTopicsDone">0/12</div>
-          <div class="summary-label">📚 Chủ đề xong</div>
+          <div class="summary-label" id="progressTile2Label">📚 Chủ đề xong</div>
         </div>
         <div class="summary-item">
           <div class="summary-num" id="progressWords">0</div>
-          <div class="summary-label">🔤 Từ đã học</div>
+          <div class="summary-label" id="progressTile3Label">🔤 Từ đã học</div>
         </div>
         <div class="summary-item">
           <div class="summary-num" id="progressStreakBest">0</div>
@@ -249,7 +333,7 @@
       <div class="section-label">🎓 Chứng nhận thành tích</div>
       <button class="cta-btn" id="certificateBtn">🎓 Xem & tải chứng nhận của bé</button>
 
-      <div class="section-label">Chi tiết chủ đề</div>
+      <div class="section-label" id="progressListLabel">Chi tiết chủ đề</div>
       <div class="progress-list" id="progressList"></div>
     </div>
   </section>
@@ -332,6 +416,16 @@
       <div class="placement-visual" id="placementVisual"></div>
       <button class="ghost-btn spelling-listen-btn" id="placementListenBtn" hidden>🔊 Nghe</button>
       <div class="quiz-options placement-options" id="placementOptions"></div>
+    </div>
+
+    <div class="account-wrap" id="placementPromo" hidden>
+      <div class="account-hero">
+        <div class="account-hero-emoji" id="promoEmoji">🎓</div>
+        <h2 id="promoTitle"></h2>
+        <p id="promoMsg"></p>
+      </div>
+      <button class="account-primary-btn" id="promoContinueBtn">Tiếp tục</button>
+      <button class="ghost-btn" id="promoRetryBtn" hidden>🔁 Thử lại bài kiểm tra</button>
     </div>
 
     <div class="account-wrap" id="placementResult" hidden>
@@ -476,6 +570,7 @@
         <div class="big-emoji" id="cardEmoji">🍎</div>
         <div class="word-en" id="cardWordEn">APPLE</div>
         <div class="word-vi" id="cardWordVi">Quả táo</div>
+        <button class="reveal-vi-btn" id="cardRevealViBtn" hidden>👁️ Bé đoán xem nghĩa là gì rồi bấm xem nhé!</button>
       </div>
       <button class="speak-btn" id="speakBtn">🔊 Nghe phát âm</button>
       <button class="mic-btn" id="readAloudBtn">🎤 Bé đọc thử</button>
@@ -498,9 +593,10 @@
         <div class="big-emoji" id="phonicsCardEmoji">🐱</div>
         <div class="phonics-letters" id="phonicsLetterTiles"></div>
         <div class="word-vi" id="phonicsCardVi">Con mèo</div>
+        <button class="reveal-vi-btn" id="phonicsRevealViBtn" hidden>👁️ Bé đoán xem nghĩa là gì rồi bấm xem nhé!</button>
       </div>
       <button class="speak-btn" id="phonicsBlendBtn">🔊 Nghe ghép âm cả từ</button>
-      <p class="phonics-hint">👆 Bấm từng chữ cái để nghe tên chữ nhé!</p>
+      <p class="phonics-hint" id="phonicsHint">👆 Bấm từng chữ cái để nghe tên chữ nhé!</p>
       <div class="nav-row">
         <button class="nav-btn" id="phonicsPrevBtn">← Trước</button>
         <button class="nav-btn primary" id="phonicsNextBtn">Tiếp →</button>
@@ -515,7 +611,7 @@
       <div class="progress-track"><div class="progress-fill" id="phonicsQuizProgressFill"></div></div>
     </div>
     <div class="quiz-wrap">
-      <div class="quiz-prompt">Từ này bắt đầu bằng chữ gì?</div>
+      <div class="quiz-prompt" id="phonicsQuizPrompt">Từ này bắt đầu bằng chữ gì?</div>
       <div class="reverse-emoji" id="phonicsQuizEmoji">🐱</div>
       <button class="speak-btn" id="phonicsQuizReplayBtn">🔊 Nghe lại từ</button>
       <div class="quiz-options" id="phonicsQuizOptions"></div>
@@ -673,6 +769,129 @@
     </div>
   </section>
 
+  <!-- ============ SENTENCE BUILDER SCREEN (Ghép câu — lớp Chồi) ============ -->
+  <section class="screen" id="screen-sentence-build">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSb" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="sbProgressFill"></div></div>
+    </div>
+    <div class="sb-wrap" id="sbWrap">
+      <div class="sb-emoji" id="sbEmoji">🐱</div>
+      <div class="sb-vi" id="sbVi">Con thấy một con mèo.</div>
+      <button class="ghost-btn spelling-listen-btn" id="sbListenBtn">🔊 Nghe câu</button>
+      <div class="sb-slots" id="sbSlots"></div>
+      <div class="sb-bank" id="sbBank"></div>
+      <div class="quiz-feedback" id="sbFeedback"></div>
+    </div>
+    <div class="match-done-wrap" id="sbDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p>Bé đã ghép đúng hết các câu rồi đó!</p>
+      <button class="cta-btn" id="sbReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn ghost-btn--solid" id="sbOtherTopicBtn">💬 Chọn nhóm câu khác</button>
+    </div>
+  </section>
+
+  <!-- ============ SIGHT WORDS SCREEN (Từ hay gặp — lớp Chồi) ============ -->
+  <section class="screen" id="screen-sight">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSight" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="sightProgressFill"></div></div>
+    </div>
+    <div class="flash-wrap" id="sightLearn">
+      <div class="flashcard sight-card">
+        <div class="sight-word" id="sightWord">the</div>
+        <div class="word-vi" id="sightVi"></div>
+        <div class="sight-example" id="sightExample"></div>
+        <div class="sight-example-vi" id="sightExampleVi"></div>
+      </div>
+      <button class="speak-btn" id="sightSpeakBtn">🔊 Nghe từ</button>
+      <button class="speak-btn" id="sightSpeakSentBtn">🔊 Nghe câu ví dụ</button>
+      <div class="nav-row">
+        <button class="nav-btn" id="sightPrevBtn">← Trước</button>
+        <button class="nav-btn primary" id="sightNextBtn">Tiếp →</button>
+      </div>
+    </div>
+    <div class="quiz-wrap" id="sightQuiz" hidden>
+      <div class="quiz-prompt">Bé nghe và chọn chữ đúng nhé!</div>
+      <button class="speak-btn" id="sightReplayBtn">🔊 Nghe lại</button>
+      <div class="quiz-options" id="sightOptions"></div>
+      <div class="quiz-feedback" id="sightFeedback"></div>
+    </div>
+  </section>
+
+  <!-- ============ MEMORY FLIP SCREEN (Lật thẻ — lớp Chồi) ============ -->
+  <section class="screen" id="screen-memory">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromMemory" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="memProgressFill"></div></div>
+    </div>
+    <div class="mem-wrap" id="memWrap">
+      <div class="match-prompt">Lật thẻ tìm cặp hình – chữ giống nhau! 🧠</div>
+      <div class="mem-moves" id="memMoves"></div>
+      <div class="mem-grid" id="memGrid"></div>
+    </div>
+    <div class="match-done-wrap" id="memDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p></p>
+      <button class="cta-btn" id="memReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn ghost-btn--solid" id="memOtherBtn">🎮 Chọn chủ đề khác</button>
+    </div>
+  </section>
+
+  <!-- ============ SIMON SAYS SCREEN (Simon nói — lớp Chồi) ============ -->
+  <section class="screen" id="screen-simon">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromSimon" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="simonProgressFill"></div></div>
+    </div>
+    <div class="simon-wrap" id="simonWrap">
+      <div class="simon-score" id="simonScore">Đúng: 0/8</div>
+      <div class="simon-stage">
+        <div class="simon-mascot">🦊</div>
+        <div class="simon-bubble" id="simonBubble"></div>
+        <div class="simon-action-emoji" id="simonActionEmoji"></div>
+      </div>
+      <div class="simon-buttons">
+        <button class="simon-btn simon-btn--yes" id="simonYesBtn">🙋 Làm theo!</button>
+        <button class="simon-btn simon-btn--no" id="simonNoBtn">🙅 Đứng yên!</button>
+      </div>
+      <div class="quiz-feedback" id="simonFeedback"></div>
+    </div>
+    <div class="match-done-wrap" id="simonDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p></p>
+      <button class="cta-btn" id="simonReplayBtn">🔁 Chơi lại</button>
+      <button class="ghost-btn ghost-btn--solid" id="simonOtherBtn">🎮 Chọn trò chơi khác</button>
+    </div>
+  </section>
+
+  <!-- ============ WRITING SCREEN (Tập viết chữ — lớp Chồi) ============ -->
+  <section class="screen" id="screen-write">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromWrite" aria-label="Quay lại">←</button>
+      <div class="progress-track"><div class="progress-fill" id="writeProgressFill"></div></div>
+    </div>
+    <div class="write-wrap" id="writeWrap">
+      <div class="write-prompt" id="writePrompt">Tô chữ hoa "A"</div>
+      <div class="write-board"><canvas id="writeCanvas" width="320" height="320"></canvas></div>
+      <div class="write-actions">
+        <button class="ghost-btn" id="writeClearBtn">🧽 Xoá</button>
+        <button class="cta-btn" id="writeDoneBtn">✅ Xong</button>
+      </div>
+      <div class="quiz-feedback" id="writeFeedback"></div>
+    </div>
+    <div class="match-done-wrap" id="writeDoneWrap" hidden>
+      <div class="big-star">🎉</div>
+      <h2>Giỏi quá!</h2>
+      <p></p>
+      <button class="cta-btn" id="writeReplayBtn">🔁 Viết lại nhóm này</button>
+      <button class="ghost-btn ghost-btn--solid" id="writeOtherBtn">✍️ Chọn nhóm chữ khác</button>
+    </div>
+  </section>
+
   <!-- ============ SPEED QUIZ SCREEN (Ai nhanh hơn) ============ -->
   <section class="screen" id="screen-speed">
     <div class="card-topbar">
@@ -797,7 +1016,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🧪</span>
-        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ba mẹ có thể đổi lớp hoặc làm lại bất cứ lúc nào bằng thẻ "Lớp của bé" ở trang Học.</span>
+        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ở đầu các tab Học, Trò chơi và Câu có 3 ô Lớp Mầm, Lớp Chồi, Lớp Lá — mỗi lớp có bài học và trò chơi riêng (Lớp Chồi có Từ vựng, Ngữ âm 2, Từ hay gặp, Tập viết chữ, Bài hát, Truyện, Xếp chữ, Lật thẻ, Simon nói và Ghép câu; Lớp Lá đang được chuẩn bị). Mỗi lớp có tiến độ và huy hiệu riêng (xem ở tab Tiến độ và Sưu tập). Đủ điều kiện ở thẻ "Lên lớp" thì bé được làm bài kiểm tra ngắn để lên lớp trên. Ba mẹ cũng có thể chuyển lớp, đổi lớp cho bé hoặc làm lại bài kiểm tra bất cứ lúc nào (thẻ "Lớp của bé" ở trang Học).</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
@@ -851,7 +1070,7 @@
 <div class="share-overlay" id="certificateOverlay" hidden>
   <div class="share-card">
     <button class="icon-btn share-close" id="certificateCloseBtn" aria-label="Đóng">✕</button>
-    <canvas id="certificateCanvas" width="700" height="500"></canvas>
+    <canvas id="certificateCanvas" width="700" height="560"></canvas>
     <div class="share-actions">
       <button class="cta-btn" id="certificateDownloadBtn">🖨️ Lưu / In chứng nhận</button>
     </div>
@@ -865,6 +1084,13 @@
 <script src="data/phonics.js"></script>
 <script src="data/stories.js"></script>
 <script src="data/placement.js"></script>
+<script src="data/phonics2.js"></script>
+<script src="data/vocab_choi.js"></script>
+<script src="data/sight_choi.js"></script>
+<script src="data/sentences_choi.js"></script>
+<script src="data/songs_choi.js"></script>
+<script src="data/stories_choi.js"></script>
+<script src="data/classes.js"></script>
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>
 <script src="app.js"></script>

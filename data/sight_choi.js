@@ -1,0 +1,61 @@
+  // Từ hay gặp (sight words) — nội dung RIÊNG của lớp Chồi (5–6 tuổi): 40 từ ngắn xuất hiện gần như
+  // trong mọi câu tiếng Anh (chọn từ danh sách Dolch pre-primer/primer), chia 5 nhóm × 8 từ. Bé cần nhận ra
+  // ngay các từ này để sau này tự đọc được câu. Từ loại này không có hình minh hoạ nên khác các bài từ vựng:
+  // học bằng thẻ chữ (nghe từ + câu ví dụ + nghĩa) rồi đố "nghe từ, chọn chữ" (xem startSight trong app.js).
+  const SIGHT_TOPICS = [
+    { id: 'sight_1', label: 'Từ hay gặp 1', emoji: '👀', cls: 't-pink',
+      words: [
+        { en: 'I', vi: 'Con, tôi', example: 'I am happy.', exampleVi: 'Con vui.' },
+        { en: 'a', vi: 'Một', example: 'I see a cat.', exampleVi: 'Con thấy một con mèo.' },
+        { en: 'the', vi: '(chỉ vật đã biết)', example: 'The sun is hot.', exampleVi: 'Mặt trời nóng.' },
+        { en: 'is', vi: 'Là', example: 'It is red.', exampleVi: 'Nó màu đỏ.' },
+        { en: 'my', vi: 'Của con', example: 'This is my bag.', exampleVi: 'Đây là cặp của con.' },
+        { en: 'you', vi: 'Bạn', example: 'I like you.', exampleVi: 'Con thích bạn.' },
+        { en: 'we', vi: 'Chúng ta', example: 'We can play.', exampleVi: 'Chúng ta chơi được.' },
+        { en: 'it', vi: 'Nó', example: 'It is big.', exampleVi: 'Nó to.' },
+      ] },
+    { id: 'sight_2', label: 'Từ hay gặp 2', emoji: '🏃', cls: 't-blue',
+      words: [
+        { en: 'can', vi: 'Có thể, biết', example: 'I can run.', exampleVi: 'Con biết chạy.' },
+        { en: 'see', vi: 'Thấy', example: 'I see a bird.', exampleVi: 'Con thấy một con chim.' },
+        { en: 'go', vi: 'Đi', example: 'We go to school.', exampleVi: 'Chúng con đi học.' },
+        { en: 'look', vi: 'Nhìn', example: 'Look at me!', exampleVi: 'Nhìn con này!' },
+        { en: 'come', vi: 'Đến', example: 'Come here.', exampleVi: 'Lại đây.' },
+        { en: 'run', vi: 'Chạy', example: 'I run fast.', exampleVi: 'Con chạy nhanh.' },
+        { en: 'jump', vi: 'Nhảy', example: 'I can jump.', exampleVi: 'Con nhảy được.' },
+        { en: 'play', vi: 'Chơi', example: 'We play ball.', exampleVi: 'Chúng con chơi bóng.' },
+      ] },
+    { id: 'sight_3', label: 'Từ hay gặp 3', emoji: '📍', cls: 't-gold',
+      words: [
+        { en: 'and', vi: 'Và', example: 'Mom and dad.', exampleVi: 'Mẹ và ba.' },
+        { en: 'to', vi: 'Đến, tới', example: 'I go to bed.', exampleVi: 'Con đi ngủ.' },
+        { en: 'in', vi: 'Trong', example: 'The cat is in the bag.', exampleVi: 'Con mèo ở trong cặp.' },
+        { en: 'up', vi: 'Lên', example: 'Jump up!', exampleVi: 'Nhảy lên!' },
+        { en: 'down', vi: 'Xuống', example: 'Sit down.', exampleVi: 'Ngồi xuống.' },
+        { en: 'here', vi: 'Ở đây', example: 'Come here.', exampleVi: 'Lại đây.' },
+        { en: 'where', vi: 'Ở đâu', example: 'Where is my hat?', exampleVi: 'Mũ của con ở đâu?' },
+        { en: 'not', vi: 'Không', example: 'I am not sad.', exampleVi: 'Con không buồn.' },
+      ] },
+    { id: 'sight_4', label: 'Từ hay gặp 4', emoji: '🔍', cls: 't-mint',
+      words: [
+        { en: 'me', vi: 'Con, tôi (tân ngữ)', example: 'Look at me.', exampleVi: 'Nhìn con này.' },
+        { en: 'little', vi: 'Nhỏ', example: 'A little cat.', exampleVi: 'Một chú mèo nhỏ.' },
+        { en: 'big', vi: 'To', example: 'A big dog.', exampleVi: 'Một chú chó to.' },
+        { en: 'funny', vi: 'Buồn cười', example: 'The clown is funny.', exampleVi: 'Chú hề buồn cười.' },
+        { en: 'help', vi: 'Giúp', example: 'Help me, please.', exampleVi: 'Giúp con với.' },
+        { en: 'make', vi: 'Làm', example: 'I make a cake.', exampleVi: 'Con làm một cái bánh.' },
+        { en: 'find', vi: 'Tìm thấy', example: 'I find my hat.', exampleVi: 'Con tìm thấy mũ của con.' },
+        { en: 'away', vi: 'Đi xa', example: 'Go away!', exampleVi: 'Đi chỗ khác!' },
+      ] },
+    { id: 'sight_5', label: 'Từ hay gặp 5', emoji: '🌈', cls: 't-accent',
+      words: [
+        { en: 'one', vi: 'Một (số 1)', example: 'I have one pen.', exampleVi: 'Con có một cây bút.' },
+        { en: 'two', vi: 'Hai', example: 'I have two eyes.', exampleVi: 'Con có hai con mắt.' },
+        { en: 'three', vi: 'Ba', example: 'I see three birds.', exampleVi: 'Con thấy ba con chim.' },
+        { en: 'red', vi: 'Màu đỏ', example: 'The apple is red.', exampleVi: 'Quả táo màu đỏ.' },
+        { en: 'blue', vi: 'Màu xanh dương', example: 'The sky is blue.', exampleVi: 'Bầu trời màu xanh.' },
+        { en: 'yellow', vi: 'Màu vàng', example: 'The sun is yellow.', exampleVi: 'Mặt trời màu vàng.' },
+        { en: 'for', vi: 'Cho', example: 'This is for you.', exampleVi: 'Cái này là cho bạn.' },
+        { en: 'said', vi: 'Đã nói', example: 'Mom said yes.', exampleVi: 'Mẹ nói được.' },
+      ] },
+  ];

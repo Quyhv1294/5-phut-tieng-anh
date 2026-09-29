@@ -1,0 +1,70 @@
+  // Từ vựng RIÊNG của lớp Chồi (5–6 tuổi), bám chương trình lớp 1: đồ dùng lớp học, thứ trong tuần,
+  // hình khối, quần áo, phòng trong nhà, động từ. Không trùng từ nào với 12 chủ đề của lớp Mầm (TOPICS).
+  // Cùng shape với TOPICS ({ en, vi, emoji, example, exampleVi }) nên dùng lại được luồng học
+  // (thẻ → đố → hoàn thành) và ôn tập ngắt quãng; khác là luôn mở sẵn (không khoá tuần tự), không
+  // có mảnh ghép tranh, và ôn tập của lớp Chồi chỉ gồm từ ở đây (xem classOfWordKey trong app.js).
+  // Thứ trong tuần: tiếng Việt gọi Thứ hai..Thứ bảy theo số nên dùng luôn số 2..7 làm hình cho dễ nhớ.
+  const CHOI_TOPICS = [
+    { id: 'choi_school', label: 'Lớp học', emoji: '🏫', cls: 't-blue',
+      words: [
+        { en: 'TEACHER', vi: 'Cô giáo', emoji: '🎓', example: 'My TEACHER is kind.', exampleVi: 'Cô giáo của con hiền.' },
+        { en: 'SCHOOL', vi: 'Trường học', emoji: '🏫', example: 'I go to SCHOOL.', exampleVi: 'Con đi học.' },
+        { en: 'PENCIL', vi: 'Bút chì', emoji: '✏️', example: 'I have a PENCIL.', exampleVi: 'Con có một cây bút chì.' },
+        { en: 'RULER', vi: 'Cây thước', emoji: '📏', example: 'The RULER is long.', exampleVi: 'Cây thước dài.' },
+        { en: 'SCISSORS', vi: 'Cái kéo', emoji: '✂️', example: 'I cut with SCISSORS.', exampleVi: 'Con cắt bằng kéo.' },
+        { en: 'CRAYON', vi: 'Bút sáp màu', emoji: '🖍️', example: 'I draw with a CRAYON.', exampleVi: 'Con vẽ bằng bút sáp màu.' },
+        { en: 'PAPER', vi: 'Tờ giấy', emoji: '📄', example: 'I need PAPER.', exampleVi: 'Con cần giấy.' },
+        { en: 'GLOBE', vi: 'Quả địa cầu', emoji: '🌍', example: 'I see a GLOBE.', exampleVi: 'Con thấy một quả địa cầu.' },
+      ] },
+    { id: 'choi_days', label: 'Thứ trong tuần', emoji: '📅', cls: 't-gold',
+      words: [
+        { en: 'MONDAY', vi: 'Thứ hai', emoji: '2️⃣', example: 'Today is MONDAY.', exampleVi: 'Hôm nay là thứ hai.' },
+        { en: 'TUESDAY', vi: 'Thứ ba', emoji: '3️⃣', example: 'Today is TUESDAY.', exampleVi: 'Hôm nay là thứ ba.' },
+        { en: 'WEDNESDAY', vi: 'Thứ tư', emoji: '4️⃣', example: 'Today is WEDNESDAY.', exampleVi: 'Hôm nay là thứ tư.' },
+        { en: 'THURSDAY', vi: 'Thứ năm', emoji: '5️⃣', example: 'Today is THURSDAY.', exampleVi: 'Hôm nay là thứ năm.' },
+        { en: 'FRIDAY', vi: 'Thứ sáu', emoji: '6️⃣', example: 'Today is FRIDAY.', exampleVi: 'Hôm nay là thứ sáu.' },
+        { en: 'SATURDAY', vi: 'Thứ bảy', emoji: '7️⃣', example: 'Today is SATURDAY.', exampleVi: 'Hôm nay là thứ bảy.' },
+        { en: 'SUNDAY', vi: 'Chủ nhật', emoji: '🌞', example: 'Today is SUNDAY.', exampleVi: 'Hôm nay là chủ nhật.' },
+      ] },
+    { id: 'choi_shapes', label: 'Hình khối', emoji: '🔷', cls: 't-mint',
+      words: [
+        { en: 'CIRCLE', vi: 'Hình tròn', emoji: '🔴', example: 'I see a CIRCLE.', exampleVi: 'Con thấy một hình tròn.' },
+        { en: 'SQUARE', vi: 'Hình vuông', emoji: '🟦', example: 'A SQUARE has four sides.', exampleVi: 'Hình vuông có bốn cạnh.' },
+        { en: 'TRIANGLE', vi: 'Hình tam giác', emoji: '🔺', example: 'I draw a TRIANGLE.', exampleVi: 'Con vẽ một hình tam giác.' },
+        { en: 'STAR', vi: 'Ngôi sao', emoji: '⭐', example: 'I see a STAR.', exampleVi: 'Con thấy một ngôi sao.' },
+        { en: 'HEART', vi: 'Hình trái tim', emoji: '❤️', example: 'I draw a HEART.', exampleVi: 'Con vẽ một trái tim.' },
+        { en: 'DIAMOND', vi: 'Hình thoi', emoji: '🔷', example: 'This is a DIAMOND.', exampleVi: 'Đây là hình thoi.' },
+      ] },
+    { id: 'choi_clothes', label: 'Quần áo', emoji: '👕', cls: 't-pink',
+      words: [
+        { en: 'SHIRT', vi: 'Áo sơ mi', emoji: '👕', example: 'I wear a SHIRT.', exampleVi: 'Con mặc áo sơ mi.' },
+        { en: 'DRESS', vi: 'Cái váy', emoji: '👗', example: 'She has a red DRESS.', exampleVi: 'Bạn ấy có chiếc váy đỏ.' },
+        { en: 'PANTS', vi: 'Quần dài', emoji: '👖', example: 'I wear PANTS.', exampleVi: 'Con mặc quần dài.' },
+        { en: 'SHOES', vi: 'Đôi giày', emoji: '👟', example: 'I have new SHOES.', exampleVi: 'Con có đôi giày mới.' },
+        { en: 'SOCKS', vi: 'Đôi tất', emoji: '🧦', example: 'My SOCKS are warm.', exampleVi: 'Đôi tất của con ấm.' },
+        { en: 'JACKET', vi: 'Áo khoác', emoji: '🧥', example: 'I wear a JACKET.', exampleVi: 'Con mặc áo khoác.' },
+        { en: 'GLOVES', vi: 'Găng tay', emoji: '🧤', example: 'I wear GLOVES.', exampleVi: 'Con đeo găng tay.' },
+        { en: 'CAP', vi: 'Mũ lưỡi trai', emoji: '🧢', example: 'I wear a CAP.', exampleVi: 'Con đội mũ lưỡi trai.' },
+      ] },
+    { id: 'choi_house', label: 'Trong nhà', emoji: '🏠', cls: 't-accent',
+      words: [
+        { en: 'HOUSE', vi: 'Ngôi nhà', emoji: '🏠', example: 'This is my HOUSE.', exampleVi: 'Đây là nhà của con.' },
+        { en: 'KITCHEN', vi: 'Nhà bếp', emoji: '🍳', example: 'Mom is in the KITCHEN.', exampleVi: 'Mẹ đang ở trong bếp.' },
+        { en: 'BEDROOM', vi: 'Phòng ngủ', emoji: '🛏️', example: 'I sleep in my BEDROOM.', exampleVi: 'Con ngủ trong phòng ngủ.' },
+        { en: 'BATHROOM', vi: 'Phòng tắm', emoji: '🛁', example: 'I wash in the BATHROOM.', exampleVi: 'Con tắm trong phòng tắm.' },
+        { en: 'GARDEN', vi: 'Khu vườn', emoji: '🌳', example: 'I play in the GARDEN.', exampleVi: 'Con chơi trong vườn.' },
+        { en: 'WINDOW', vi: 'Cửa sổ', emoji: '🪟', example: 'I open the WINDOW.', exampleVi: 'Con mở cửa sổ.' },
+        { en: 'SOFA', vi: 'Ghế sofa', emoji: '🛋️', example: 'Dad sits on the SOFA.', exampleVi: 'Ba ngồi trên ghế sofa.' },
+      ] },
+    { id: 'choi_actions', label: 'Hành động', emoji: '🏃', cls: 't-pink',
+      words: [
+        { en: 'WALK', vi: 'Đi bộ', emoji: '🚶', example: 'I WALK to school.', exampleVi: 'Con đi bộ đến trường.' },
+        { en: 'JUMP', vi: 'Nhảy', emoji: '🤸', example: 'I can JUMP high.', exampleVi: 'Con nhảy cao được.' },
+        { en: 'SWIM', vi: 'Bơi', emoji: '🏊', example: 'I can SWIM.', exampleVi: 'Con biết bơi.' },
+        { en: 'SING', vi: 'Hát', emoji: '🎤', example: 'I like to SING.', exampleVi: 'Con thích hát.' },
+        { en: 'DANCE', vi: 'Nhảy múa', emoji: '💃', example: 'We DANCE together.', exampleVi: 'Chúng con nhảy múa cùng nhau.' },
+        { en: 'SLEEP', vi: 'Ngủ', emoji: '😴', example: 'I SLEEP at night.', exampleVi: 'Con ngủ vào ban đêm.' },
+        { en: 'CLAP', vi: 'Vỗ tay', emoji: '👏', example: 'I CLAP my hands.', exampleVi: 'Con vỗ tay.' },
+        { en: 'EAT', vi: 'Ăn', emoji: '🍽️', example: 'I EAT with my family.', exampleVi: 'Con ăn cùng gia đình.' },
+      ] },
+  ];

@@ -1,7 +1,7 @@
 // Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
 // LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
 // lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v113';
+const CACHE_VERSION = 'v124';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
 
 importScripts('data/emoji-icons.js');
@@ -17,6 +17,13 @@ const APP_SHELL = [
   './data/phonics.js',
   './data/stories.js',
   './data/placement.js',
+  './data/phonics2.js',
+  './data/vocab_choi.js',
+  './data/sight_choi.js',
+  './data/sentences_choi.js',
+  './data/songs_choi.js',
+  './data/stories_choi.js',
+  './data/classes.js',
   './data/emoji-icons.js',
   './data/sheets-config.js',
   './assets/icons/icon-192.png',

@@ -505,6 +505,14 @@
   .flashcard .big-emoji { font-size: 96px; line-height: 1; }
   .flashcard .word-en { font-family: 'Baloo 2'; font-weight: 800; font-size: 46px; letter-spacing: 0.5px; }
   .flashcard .word-vi { font-family: 'Quicksand'; font-weight: 700; font-size: 20.5px; opacity: 0.85; }
+  /* Lớp Chồi: ẩn nghĩa tiếng Việt, bé đoán trước rồi mới bấm xem (xem toggleViReveal trong app.js). */
+  .flashcard .word-vi.vi-hidden { display: none; }
+  .reveal-vi-btn {
+    border: 2px dashed var(--line); background: transparent; color: var(--ink-soft);
+    font-family: 'Quicksand'; font-weight: 700; font-size: 14.5px; border-radius: 14px;
+    padding: 8px 14px; cursor: pointer; max-width: 260px;
+  }
+  .reveal-vi-btn:active { transform: scale(0.97); }
 
   /* PHONICS (Ngữ âm cơ bản) — tái dùng .spelling-tile cho từng ô chữ cái bấm được, chỉ phóng to hơn
      vì đây là màn học chính (ít ô hơn, mỗi từ chỉ 3-4 chữ) chứ không phải ngân hàng chữ xếp từ. */
@@ -897,6 +905,7 @@
     font-size: 22px; cursor: pointer;
   }
   .sentence-listen-btn:active { transform: scale(0.92); }
+  .sentence-card.is-playing { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
 
   /* MATCH GAME SCREEN — nối cột: trái = hình, phải = chữ, đều hiện sẵn (không lật úp) */
   .match-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding-top: 6px; }
@@ -950,12 +959,12 @@
     padding: 5px; margin: 0 0 16px;
   }
   .segment-thumb {
-    position: absolute; top: 5px; bottom: 5px; left: 0;
+    position: absolute; top: 5px; height: calc(100% - 10px); left: 0;
     width: 0;
     background: var(--surface);
     border-radius: 10px;
     box-shadow: var(--shadow);
-    transition: transform .4s cubic-bezier(0.34, 1.56, 0.64, 1), width .4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform .4s cubic-bezier(0.34, 1.56, 0.64, 1), width .4s cubic-bezier(0.34, 1.56, 0.64, 1), top .4s cubic-bezier(0.34, 1.56, 0.64, 1), height .4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .segment-btn {
     position: relative; z-index: 1;
@@ -966,6 +975,10 @@
     transition: color .25s ease;
   }
   .segment-btn.active { color: var(--accent-ink); }
+  /* Học (lớp Chồi) có tới 6 mục — xếp 3 nút/hàng (2 hàng) cho vừa màn hình điện thoại thay vì 1 hàng chật chội.
+     .segment-thumb đã đo cả top/height theo nút đang chọn (xem moveSegmentThumb) nên vẫn khớp đúng hàng. */
+  #choiHomeModeToggle.segment-toggle { flex-wrap: wrap; }
+  #choiHomeModeToggle .segment-btn { font-size: 15px; padding: 9px 3px; flex: 1 1 30%; }
 
   /* SPELLING GAME SCREEN (Xếp chữ) */
   .spelling-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px; }
@@ -1001,6 +1014,31 @@
     cursor: pointer; padding: 0;
   }
   .spelling-tile:active { transform: scale(0.92); }
+
+  /* GHÉP CÂU (lớp Chồi): bấm các từ theo thứ tự để ghép thành câu */
+  .sb-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px; }
+  .sb-emoji { font-size: 84px; line-height: 1.1; }
+  .sb-vi { font-size: 17.5px; color: var(--ink-soft); font-weight: 700; text-align: center; margin-top: -4px; max-width: 340px; }
+  .sb-slots, .sb-bank { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; max-width: 380px; }
+  .sb-slots { min-height: 56px; margin-top: 4px; }
+  .sb-bank { gap: 10px; margin-top: 10px; }
+  .sb-slot {
+    min-width: 72px; height: 52px; padding: 0 12px;
+    border: none; border-bottom: 4px solid var(--line);
+    background: var(--surface-2); color: var(--ink);
+    border-radius: 12px 12px 4px 4px;
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 22px; cursor: pointer;
+  }
+  .sb-slot:disabled { cursor: default; }
+  .sb-slot.is-filled { border-bottom-color: var(--blue); background: color-mix(in srgb, var(--blue) 16%, var(--surface)); }
+  .sb-slot.is-correct { border-bottom-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface)); }
+  .sb-slot.is-wrong { border-bottom-color: var(--danger); background: color-mix(in srgb, var(--danger) 16%, var(--surface)); }
+  .sb-tile {
+    min-height: 52px; padding: 0 18px;
+    border: 3px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 14px; font-family: 'Baloo 2'; font-weight: 800; font-size: 22px; cursor: pointer;
+  }
+  .sb-tile:active { transform: scale(0.94); }
 
   /* SPEED QUIZ SCREEN (Ai nhanh hơn) */
   .speed-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
@@ -1251,6 +1289,114 @@
     font-family: 'Quicksand'; font-weight: 600; font-size: 17.5px;
     background: var(--surface); color: var(--ink);
   }
+  /* Chọn lớp (Mầm / Chồi / Lá): 3 ô ở đầu các màn Học, Trò chơi, Câu */
+  .class-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 16px; }
+  .class-box {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 12px 4px 9px; border: 3px solid var(--line); border-radius: 18px;
+    background: var(--surface); color: var(--ink); cursor: pointer;
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; line-height: 1.1;
+  }
+  .class-box .cb-emoji { font-size: 30px; line-height: 1; }
+  .class-box small { font-family: 'Quicksand'; font-weight: 700; font-size: 13px; color: var(--ink-soft); }
+  .class-box.is-active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+  .class-box .cb-own {
+    position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    background: var(--teal); color: #fff; border-radius: 999px; padding: 1px 8px;
+    font-family: 'Quicksand'; font-weight: 800; font-size: 11.5px; line-height: 1.5;
+  }
+  .class-box:active { transform: scale(0.96); }
+  /* Tiến độ riêng của lớp Chồi */
+  .choi-summary { margin: 0 0 14px; }
+  .cs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cs-chip {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 999px;
+    padding: 6px 12px; font-family: 'Baloo 2'; font-weight: 800; font-size: 15.5px;
+  }
+  .choi-next { margin-top: 10px; font-size: 15.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.45; }
+  .choi-next strong { color: var(--ink); }
+  .progress-subhead { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; color: var(--ink-soft); margin: 14px 0 6px; }
+  .badge-group-label {
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: .05em; margin: 16px 0 8px;
+  }
+  /* Thẻ "Lên lớp" */
+  .promo-slot:empty { display: none; }
+  .promo-card {
+    background: var(--surface); border: 3px dashed var(--gold); border-radius: 22px;
+    padding: 16px 16px 14px; margin: 0 0 16px;
+  }
+  .promo-title { font-family: 'Baloo 2'; font-weight: 800; font-size: 20px; margin-bottom: 6px; }
+  .promo-list { list-style: none; margin: 0 0 12px; padding: 0; }
+  .promo-list li { font-size: 16px; font-weight: 700; padding: 4px 0; color: var(--ink-soft); }
+  .promo-list li.is-done { color: var(--teal-ink); }
+  .promo-list strong { color: var(--ink); }
+  .promo-note { margin: 0; font-size: 15.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.5; }
+  /* Từ hay gặp */
+  .sight-card { gap: 6px; }
+  .sight-word { font-family: 'Baloo 2'; font-weight: 800; font-size: 76px; line-height: 1.1; }
+  .sight-example { font-family: 'Baloo 2'; font-weight: 700; font-size: 24px; margin-top: 8px; }
+  .sight-example-vi { font-size: 16.5px; color: var(--ink-soft); font-weight: 600; }
+  /* Lật thẻ trí nhớ: 12 thẻ, 3 cột x 4 hàng */
+  .mem-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px; }
+  .mem-moves { font-size: 15.5px; font-weight: 700; color: var(--ink-soft); }
+  .mem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 380px; }
+  .mem-card {
+    aspect-ratio: 1 / 1.05; min-width: 0; border: 3px solid var(--line); border-radius: 18px;
+    background: var(--accent); color: var(--accent-ink); font-size: 34px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 2px; font-family: 'Baloo 2';
+  }
+  .mem-card.is-up { background: var(--surface); color: var(--ink); }
+  .mem-card.mem-emoji { font-size: 48px; }
+  .mem-card.mem-word { white-space: nowrap; }
+  .mem-card.is-matched { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface)); opacity: 0.9; }
+  .mem-card:active:not(:disabled) { transform: scale(0.95); }
+  /* Tập viết chữ */
+  .write-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 6px; }
+  .write-prompt { font-family: 'Baloo 2'; font-weight: 800; font-size: 22px; text-align: center; }
+  .write-board {
+    background: var(--surface); border: 3px solid var(--line); border-radius: 22px; padding: 6px;
+    width: min(340px, 88vw);
+  }
+  .write-board canvas { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; touch-action: none; border-radius: 16px; }
+  .write-actions { display: flex; gap: 12px; align-items: center; width: min(340px, 88vw); }
+  .write-actions .cta-btn { flex: 1; }
+  /* Simon nói (trò chơi vận động, lớp Chồi) */
+  .simon-intro {
+    text-align: center; background: var(--surface); border: 3px dashed var(--line);
+    border-radius: 24px; padding: 26px 18px 22px; margin-bottom: 18px;
+  }
+  .simon-intro-emoji { font-size: 56px; line-height: 1.1; }
+  .simon-intro p { margin: 10px auto 16px; font-size: 16.5px; font-weight: 600; color: var(--ink-soft); line-height: 1.5; max-width: 320px; }
+  .simon-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 6px; }
+  .simon-score { font-size: 15.5px; font-weight: 700; color: var(--ink-soft); }
+  .simon-stage {
+    width: min(320px, 88vw); background: var(--surface); border: 3px solid var(--line); border-radius: 22px;
+    padding: 22px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .simon-mascot { font-size: 44px; line-height: 1.1; }
+  .simon-bubble { font-family: 'Baloo 2'; font-weight: 800; font-size: 24px; text-align: center; color: var(--ink); }
+  .simon-action-emoji { font-size: 64px; line-height: 1.1; }
+  .simon-buttons { display: flex; gap: 12px; width: min(320px, 88vw); }
+  .simon-btn {
+    flex: 1; border: none; border-radius: 18px; padding: 16px 10px; font-family: 'Baloo 2'; font-weight: 800;
+    font-size: 16.5px; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .simon-btn:active:not(:disabled) { transform: scale(0.96); }
+  .simon-btn:disabled { opacity: 0.6; }
+  .simon-btn--yes { background: var(--teal); color: var(--teal-ink); }
+  .simon-btn--no { background: var(--accent); color: var(--accent-ink); }
+  .class-intro { margin: -4px 0 12px; font-size: 16.5px; font-weight: 600; color: var(--ink-soft); line-height: 1.5; }
+  .class-soon {
+    text-align: center; background: var(--surface); border: 3px dashed var(--line);
+    border-radius: 24px; padding: 26px 18px 22px; margin-bottom: 18px;
+  }
+  .class-soon .cs-emoji { font-size: 60px; line-height: 1.1; }
+  .class-soon h2 { margin: 6px 0 8px; font-size: 22px; }
+  .class-soon p { margin: 0; font-size: 16.5px; font-weight: 600; color: var(--ink-soft); line-height: 1.5; }
+  .class-soon ul { list-style: none; margin: 12px auto 18px; padding: 0; max-width: 320px; text-align: left; }
+  .class-soon li { font-size: 16.5px; font-weight: 700; padding: 6px 0; }
+
   /* Bài kiểm tra trình độ (xếp lớp Mầm/Chồi/Lá) */
   .placement-banner { background: var(--blue); }
   .placement-wrap { gap: 14px; }
