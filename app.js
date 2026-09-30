@@ -3412,12 +3412,20 @@
   // ngưỡng cho từ ngắn (xem scoreReading/readRecognition.onresult bên dưới).
   const READ_ALOUD_ENABLED = true;
   const SpeechRecognitionCtor = READ_ALOUD_ENABLED ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+  // App Android/iOS đóng gói bằng Capacitor chạy trong WebView/WKWebView — 2 nền tảng này KHÔNG
+  // thật sự chạy được SpeechRecognition dù constructor vẫn tồn tại (nên không rơi vào nhánh
+  // "!SpeechRecognitionCtor" bên dưới): gọi .start() xong không bắn sự kiện nào cả (không onresult,
+  // không onerror, không onend) — bé bấm nút thấy "không phản ứng gì" chứ không phải lỗi code. Ẩn
+  // hẳn nút ở đây thay vì để bé bấm vào một nút chết.
+  const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
   const readAloudBtn = document.getElementById('readAloudBtn');
   const readFeedbackEl = document.getElementById('readFeedback');
   let readRecognition = null;
   let isListeningRead = false;
+  let readWatchdogTimer = null;
 
   function resetReadAloud() {
+    if (readWatchdogTimer) { clearTimeout(readWatchdogTimer); readWatchdogTimer = null; }
     if (readRecognition) { try { readRecognition.abort(); } catch (e) {} }
     isListeningRead = false;
     readAloudBtn.classList.remove('is-listening');
@@ -3425,7 +3433,7 @@
     readFeedbackEl.hidden = true;
   }
 
-  if (!SpeechRecognitionCtor) {
+  if (!SpeechRecognitionCtor || isNativeApp) {
     readAloudBtn.hidden = true;
   } else {
     function normalizeSpeech(s) {
@@ -3504,11 +3512,25 @@
         }
       };
       readRecognition.onend = () => {
+        if (readWatchdogTimer) { clearTimeout(readWatchdogTimer); readWatchdogTimer = null; }
         isListeningRead = false;
         readAloudBtn.classList.remove('is-listening');
         readAloudBtn.textContent = '🎤 Bé đọc thử';
       };
-      try { readRecognition.start(); } catch (e) {}
+      try {
+        readRecognition.start();
+        // Lưới an toàn: 1 số WebView báo có SpeechRecognition nhưng .start() không bắn sự kiện nào cả
+        // (không onresult/onerror/onend) — nếu sau 4s vẫn "đang nghe" thì coi như máy không hỗ trợ,
+        // tự tắt trạng thái thay vì để nút kẹt mãi ở "Đang nghe..." trông như không phản ứng gì.
+        readWatchdogTimer = setTimeout(() => {
+          if (!isListeningRead) return;
+          try { readRecognition.abort(); } catch (e) {}
+          isListeningRead = false;
+          readAloudBtn.classList.remove('is-listening');
+          readAloudBtn.textContent = '🎤 Bé đọc thử';
+          showReadFeedback('⚠️ Máy này chưa nghe được, bé nghe cô đọc mẫu rồi tự đọc theo nhé!', 'is-retry');
+        }, 4000);
+      } catch (e) {}
     });
   }
 
