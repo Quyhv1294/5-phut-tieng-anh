@@ -33,10 +33,7 @@
         </div>
       </button>
       <div class="topbar-right">
-        <button class="donate-btn" id="donateBtn" aria-label="Ủng hộ">💚</button>
         <button class="account-btn" id="accountBtn" aria-label="Tài khoản">👤</button>
-        <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌗</button>
-        <button class="mute-btn" id="muteBtn" aria-label="Tắt âm thanh">🔊</button>
         <button class="settings-btn" id="settingsBtn" aria-label="Cài đặt">⚙️</button>
         <div class="stars-pill">⭐ <span id="totalStars">0</span> <span id="levelBadge"></span></div>
       </div>
@@ -52,11 +49,8 @@
       <button class="tab-btn" id="tabSentences" aria-label="Câu">
         <span class="tab-icon">💬</span><span>Câu</span>
       </button>
-      <button class="tab-btn" id="tabBadges" aria-label="Bộ sưu tập">
-        <span class="tab-icon">🏆</span><span>Sưu tập</span>
-      </button>
-      <button class="tab-btn" id="tabProgress" aria-label="Tiến độ">
-        <span class="tab-icon">📊</span><span>Tiến độ</span>
+      <button class="tab-btn" id="tabAchievements" aria-label="Thành tích">
+        <span class="tab-icon">🏆</span><span>Thành tích</span>
       </button>
       <button class="tab-btn" id="tabShare" aria-label="Chia sẻ tiến độ">
         <span class="tab-icon">📤</span><span>Chia sẻ</span>
@@ -154,14 +148,13 @@
     <div class="class-content" id="classContentHomeChoi" data-class-content="choi" hidden>
       <div class="choi-summary" id="choiSummary"></div>
       <div class="promo-slot" id="promoCardChoi"></div>
-      <div class="segment-toggle" id="choiHomeModeToggle">
-        <div class="segment-thumb"></div>
-        <button class="segment-btn active" id="choiModeVocabBtn">📚 Từ vựng</button>
-        <button class="segment-btn" id="choiModePhonicsBtn">🔊 Ngữ âm 2</button>
-        <button class="segment-btn" id="choiModeSightBtn">👀 Từ hay gặp</button>
-        <button class="segment-btn" id="choiModeWriteBtn">✍️ Tập viết</button>
-        <button class="segment-btn" id="choiModeSongsBtn">🎵 Bài hát</button>
-        <button class="segment-btn" id="choiModeStoriesBtn">📗 Truyện</button>
+      <div class="mode-grid" id="choiHomeModeToggle">
+        <button class="mode-grid-btn active" id="choiModeVocabBtn">📚 Từ vựng</button>
+        <button class="mode-grid-btn" id="choiModePhonicsBtn">🔊 Ngữ âm 2</button>
+        <button class="mode-grid-btn" id="choiModeSightBtn">👀 Từ hay gặp</button>
+        <button class="mode-grid-btn" id="choiModeWriteBtn">✍️ Tập viết</button>
+        <button class="mode-grid-btn" id="choiModeSongsBtn">🎵 Bài hát</button>
+        <button class="mode-grid-btn" id="choiModeStoriesBtn">📗 Truyện</button>
       </div>
       <div class="home-mode-panel" id="choiPanelVocab">
         <div class="topic-grid" id="choiVocabGrid"></div>
@@ -189,15 +182,14 @@
     </div>
     <div class="class-content" id="classContentHomeLa" data-class-content="la" hidden>
       <div class="choi-summary" id="laSummary"></div>
-      <div class="segment-toggle" id="laHomeModeToggle">
-        <div class="segment-thumb"></div>
-        <button class="segment-btn active" id="laModeVocabBtn">📚 Từ vựng</button>
-        <button class="segment-btn" id="laModeGrammarBtn">🔤 Ngữ pháp</button>
-        <button class="segment-btn" id="laModePhonicsBtn">🔊 Ngữ âm 3</button>
-        <button class="segment-btn" id="laModeStoriesBtn">📗 Truyện</button>
-        <button class="segment-btn" id="laModePhrasesBtn">🗣️ Cụm từ</button>
-        <button class="segment-btn" id="laModeSongsBtn">🎵 Bài hát</button>
-        <button class="segment-btn" id="laModeReadingBtn">📋 Đọc hiểu</button>
+      <div class="mode-grid" id="laHomeModeToggle">
+        <button class="mode-grid-btn active" id="laModeVocabBtn">📚 Từ vựng</button>
+        <button class="mode-grid-btn" id="laModeGrammarBtn">🔤 Ngữ pháp</button>
+        <button class="mode-grid-btn" id="laModePhonicsBtn">🔊 Ngữ âm 3</button>
+        <button class="mode-grid-btn" id="laModeStoriesBtn">📗 Truyện</button>
+        <button class="mode-grid-btn" id="laModePhrasesBtn">🗣️ Cụm từ</button>
+        <button class="mode-grid-btn" id="laModeSongsBtn">🎵 Bài hát</button>
+        <button class="mode-grid-btn" id="laModeReadingBtn">📋 Đọc hiểu</button>
       </div>
       <div class="home-mode-panel" id="laPanelVocab">
         <div class="topic-grid" id="laVocabGrid"></div>
@@ -264,13 +256,12 @@
       </div>
     </div>
     <div class="class-content" id="classContentGamesLa" data-class-content="la" hidden>
-      <div class="segment-toggle" id="laGamesModeToggle">
-        <div class="segment-thumb"></div>
-        <button class="segment-btn active" id="laGameSpellBtn">🔤 Xếp chữ dài</button>
-        <button class="segment-btn" id="laGameSpeedBtn">⏱️ Đố nhanh</button>
-        <button class="segment-btn" id="laGameOrderBtn">🧩 Sắp xếp câu</button>
-        <button class="segment-btn" id="laGameMemoryBtn">🧠 Lật thẻ</button>
-        <button class="segment-btn" id="laGameSimonBtn">🕺 Simon nói</button>
+      <div class="mode-grid" id="laGamesModeToggle">
+        <button class="mode-grid-btn active" id="laGameSpellBtn">🔤 Xếp chữ dài</button>
+        <button class="mode-grid-btn" id="laGameSpeedBtn">⏱️ Đố nhanh</button>
+        <button class="mode-grid-btn" id="laGameOrderBtn">🧩 Sắp xếp câu</button>
+        <button class="mode-grid-btn" id="laGameMemoryBtn">🧠 Lật thẻ</button>
+        <button class="mode-grid-btn" id="laGameSimonBtn">🕺 Simon nói</button>
       </div>
       <div class="topic-grid" id="laGamesTopicGrid"></div>
       <div class="simon-intro" id="laSimonIntro" hidden>
@@ -340,67 +331,76 @@
   </section>
 
   <!-- ============ BADGES / STICKER SCREEN ============ -->
-  <section class="screen" id="screen-badges">
+  <!-- ============ ACHIEVEMENTS SCREEN (gộp Sưu tập + Tiến độ, 2026-09-30) ============
+       Trước đây là 2 tab riêng trên thanh tab chính (6 tab tổng cộng, hơi rối) — giờ gộp vào 1 tab
+       "🏆 Thành tích" với toggle 2 nút bên trong để chuyển qua lại. Mọi id bên trong (badgeGrid,
+       progressList, collectionModeToggle...) giữ NGUYÊN như cũ nên phần code JS xử lý chúng không
+       cần đổi gì, chỉ đổi phần điều hướng cấp cao (xem setAchievementsMode trong app.js). -->
+  <section class="screen" id="screen-achievements">
     <div class="progress-wrap">
-      <h2>Bộ sưu tập của bé</h2>
-      <div class="segment-toggle" id="collectionModeToggle">
+      <h2>Thành tích của bé</h2>
+      <div class="segment-toggle" id="achievementsModeToggle">
         <div class="segment-thumb"></div>
-        <button class="segment-btn active" id="collectionBadgesBtn">🏆 Huy hiệu</button>
-        <button class="segment-btn" id="collectionPuzzleBtn">🖼️ Ghép hình</button>
-        <button class="segment-btn" id="collectionOutfitsBtn">👕 Trang phục</button>
-      </div>
-      <div class="badge-grid" id="badgeGrid"></div>
-      <div class="puzzle-wrap" id="puzzleWrap" hidden>
-        <p class="puzzle-count-label" id="puzzleCountLabel"></p>
-        <div class="puzzle-board" id="puzzleBoard"></div>
-        <p class="puzzle-tray-label" id="puzzleTrayLabel" hidden>🖼️ Kéo mảnh ghép vào đúng ô trên bức tranh nhé!</p>
-        <div class="puzzle-tray" id="puzzleTray"></div>
-      </div>
-      <div class="outfit-wrap" id="outfitWrap" hidden>
-        <div class="mascot-figure mascot-figure--shop" id="shopMascotFigure">
-          <img class="mascot-fox" id="shopMascotImg" src="assets/mascot-fox.png" alt="Chú cáo">
-          <div class="mascot-head-badges" id="shopMascotHeadBadges"></div>
-          <span class="mascot-accessory mascot-accessory--shop-body" id="shopMascotAccessoryBody" hidden></span>
-        </div>
-        <p class="puzzle-count-label" id="outfitCountLabel"></p>
-        <div class="outfit-grid" id="outfitGrid"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ PROGRESS SCREEN ============ -->
-  <section class="screen" id="screen-progress">
-    <div class="progress-wrap">
-      <h2>Tiến độ học của bé</h2>
-      <div class="class-switch" data-class-switch></div>
-      <div class="progress-summary">
-        <div class="summary-item">
-          <div class="summary-num" id="progressStars">0</div>
-          <div class="summary-label">⭐ Tổng số sao</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-num" id="progressTopicsDone">0/12</div>
-          <div class="summary-label" id="progressTile2Label">📚 Chủ đề xong</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-num" id="progressWords">0</div>
-          <div class="summary-label" id="progressTile3Label">🔤 Từ đã học</div>
-        </div>
-        <div class="summary-item">
-          <div class="summary-num" id="progressStreakBest">0</div>
-          <div class="summary-label">🔥 Kỷ lục chuỗi ngày</div>
-        </div>
-      </div>
-      <div class="level-card">
-        <span id="levelEmoji">🌱</span>
-        <span id="levelLabel">Mầm non</span>
+        <button class="segment-btn active" id="achModeBadgesBtn">🏆 Sưu tập</button>
+        <button class="segment-btn" id="achModeProgressBtn">📊 Tiến độ</button>
       </div>
 
-      <div class="section-label">🎓 Chứng nhận thành tích</div>
-      <button class="cta-btn" id="certificateBtn">🎓 Xem & tải chứng nhận của bé</button>
+      <div class="ach-panel" id="achPanelBadges">
+        <div class="segment-toggle" id="collectionModeToggle">
+          <div class="segment-thumb"></div>
+          <button class="segment-btn active" id="collectionBadgesBtn">🏆 Huy hiệu</button>
+          <button class="segment-btn" id="collectionPuzzleBtn">🖼️ Ghép hình</button>
+          <button class="segment-btn" id="collectionOutfitsBtn">👕 Trang phục</button>
+        </div>
+        <div class="badge-grid" id="badgeGrid"></div>
+        <div class="puzzle-wrap" id="puzzleWrap" hidden>
+          <p class="puzzle-count-label" id="puzzleCountLabel"></p>
+          <div class="puzzle-board" id="puzzleBoard"></div>
+          <p class="puzzle-tray-label" id="puzzleTrayLabel" hidden>🖼️ Kéo mảnh ghép vào đúng ô trên bức tranh nhé!</p>
+          <div class="puzzle-tray" id="puzzleTray"></div>
+        </div>
+        <div class="outfit-wrap" id="outfitWrap" hidden>
+          <div class="mascot-figure mascot-figure--shop" id="shopMascotFigure">
+            <img class="mascot-fox" id="shopMascotImg" src="assets/mascot-fox.png" alt="Chú cáo">
+            <div class="mascot-head-badges" id="shopMascotHeadBadges"></div>
+            <span class="mascot-accessory mascot-accessory--shop-body" id="shopMascotAccessoryBody" hidden></span>
+          </div>
+          <p class="puzzle-count-label" id="outfitCountLabel"></p>
+          <div class="outfit-grid" id="outfitGrid"></div>
+        </div>
+      </div>
 
-      <div class="section-label" id="progressListLabel">Chi tiết chủ đề</div>
-      <div class="progress-list" id="progressList"></div>
+      <div class="ach-panel" id="achPanelProgress" hidden>
+        <div class="class-switch" data-class-switch></div>
+        <div class="progress-summary">
+          <div class="summary-item">
+            <div class="summary-num" id="progressStars">0</div>
+            <div class="summary-label">⭐ Tổng số sao</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" id="progressTopicsDone">0/12</div>
+            <div class="summary-label" id="progressTile2Label">📚 Chủ đề xong</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" id="progressWords">0</div>
+            <div class="summary-label" id="progressTile3Label">🔤 Từ đã học</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" id="progressStreakBest">0</div>
+            <div class="summary-label">🔥 Kỷ lục chuỗi ngày</div>
+          </div>
+        </div>
+        <div class="level-card">
+          <span id="levelEmoji">🌱</span>
+          <span id="levelLabel">Mầm non</span>
+        </div>
+
+        <div class="section-label">🎓 Chứng nhận thành tích</div>
+        <button class="cta-btn" id="certificateBtn">🎓 Xem & tải chứng nhận của bé</button>
+
+        <div class="section-label" id="progressListLabel">Chi tiết chủ đề</div>
+        <div class="progress-list" id="progressList"></div>
+      </div>
     </div>
   </section>
 
@@ -411,6 +411,9 @@
     </div>
     <div class="progress-wrap">
       <h2>Cài đặt</h2>
+      <button class="ghost-btn ghost-btn--muted" id="themeBtn" aria-label="Đổi giao diện sáng/tối"></button>
+      <button class="ghost-btn ghost-btn--muted" id="muteBtn" aria-label="Tắt âm thanh"></button>
+      <button class="ghost-btn ghost-btn--muted" id="donateBtn" aria-label="Ủng hộ">💚 Ủng hộ ứng dụng</button>
       <button class="ghost-btn ghost-btn--muted" id="openPlacementBtn">🧪 Kiểm tra trình độ của bé</button>
       <button class="ghost-btn ghost-btn--muted" id="openFeedbackBtn">💬 Gửi ý kiến cho chúng tôi</button>
       <button class="ghost-btn ghost-btn--muted" id="replayOnboardingBtn">📖 Xem lại hướng dẫn sử dụng</button>
@@ -1174,11 +1177,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🏆</span>
-        <span><strong>Sưu tập</strong> — xem huy hiệu đã mở khoá; học xong 1 chủ đề là có ngay 1 mảnh ghép, kéo vào đúng ô để ghép thành bức tranh; đạt đủ mốc sao thì vào "👕 Trang phục" tự bấm mua cho chú cáo bằng sao để dành — mặc được cùng lúc 1 món đội đầu + 1 món toàn thân nhé!</span>
-      </div>
-      <div class="onboarding-step">
-        <span class="onboarding-step-icon">📊</span>
-        <span><strong>Tiến độ</strong> — xem số sao, cấp độ, chi tiết từng chủ đề và nhận "🎓 chứng nhận thành tích" để lưu về hoặc in ra làm kỷ niệm cho bé.</span>
+        <span><strong>Thành tích</strong> — có 2 tab nhỏ: "🏆 Sưu tập" (xem huy hiệu đã mở khoá; học xong 1 chủ đề là có ngay 1 mảnh ghép, kéo vào đúng ô để ghép thành bức tranh; đạt đủ mốc sao thì vào "👕 Trang phục" tự bấm mua cho chú cáo bằng sao để dành — mặc được cùng lúc 1 món đội đầu + 1 món toàn thân nhé!) và "📊 Tiến độ" (xem số sao, cấp độ, chi tiết từng chủ đề và nhận "🎓 chứng nhận thành tích" để lưu về hoặc in ra làm kỷ niệm cho bé).</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📤</span>
@@ -1186,7 +1185,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🧪</span>
-        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ở đầu các tab Học, Trò chơi và Câu có 3 ô Lớp Mầm, Lớp Chồi, Lớp Lá — mỗi lớp có bài học và trò chơi riêng (Lớp Chồi có Từ vựng, Ngữ âm 2, Từ hay gặp, Tập viết chữ, Bài hát, Truyện, Xếp chữ, Lật thẻ, Simon nói và Ghép câu; Lớp Lá có Từ vựng, Ngữ pháp cơ bản, Ngữ âm 3, Truyện, Cụm từ thông dụng, Bài hát, Đọc hiểu văn bản ở tab Học, Xếp chữ từ dài/Đố nhanh/Sắp xếp câu/Lật thẻ nâng cao/Simon nói nâng cao ở tab Trò chơi, và Hỏi-đáp/Đối thoại nhập vai/Viết câu ngắn/Viết đoạn văn ở tab Câu). Mỗi lớp có tiến độ và huy hiệu riêng (xem ở tab Tiến độ và Sưu tập). Đủ điều kiện ở thẻ "Lên lớp" thì bé được làm bài kiểm tra ngắn để lên lớp trên. Ba mẹ cũng có thể chuyển lớp, đổi lớp cho bé hoặc làm lại bài kiểm tra bất cứ lúc nào (thẻ "Lớp của bé" ở trang Học).</span>
+        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ở đầu các tab Học, Trò chơi và Câu có 3 ô Lớp Mầm, Lớp Chồi, Lớp Lá — mỗi lớp có bài học và trò chơi riêng (Lớp Chồi có Từ vựng, Ngữ âm 2, Từ hay gặp, Tập viết chữ, Bài hát, Truyện, Xếp chữ, Lật thẻ, Simon nói và Ghép câu; Lớp Lá có Từ vựng, Ngữ pháp cơ bản, Ngữ âm 3, Truyện, Cụm từ thông dụng, Bài hát, Đọc hiểu văn bản ở tab Học, Xếp chữ từ dài/Đố nhanh/Sắp xếp câu/Lật thẻ nâng cao/Simon nói nâng cao ở tab Trò chơi, và Hỏi-đáp/Đối thoại nhập vai/Viết câu ngắn/Viết đoạn văn ở tab Câu). Mỗi lớp có tiến độ và huy hiệu riêng (xem ở tab Thành tích). Đủ điều kiện ở thẻ "Lên lớp" thì bé được làm bài kiểm tra ngắn để lên lớp trên. Ba mẹ cũng có thể chuyển lớp, đổi lớp cho bé hoặc làm lại bài kiểm tra bất cứ lúc nào (thẻ "Lớp của bé" ở trang Học).</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
@@ -1198,11 +1197,11 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💚</span>
-        <span><strong>Ủng hộ</strong> — bấm biểu tượng trái tim ở góc trên nếu ba mẹ muốn ủng hộ mình phát triển app tốt hơn.</span>
+        <span><strong>Ủng hộ</strong> — trong màn Cài đặt (⚙️ ở góc trên) có nút "💚 Ủng hộ ứng dụng" nếu ba mẹ muốn ủng hộ mình phát triển app tốt hơn.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🌗</span>
-        <span><strong>Giao diện sáng/tối</strong> — bấm biểu tượng mặt trăng ở góc trên để đổi giữa giao diện sáng, tối, hoặc theo máy.</span>
+        <span><strong>Giao diện sáng/tối & Âm thanh</strong> — cũng trong màn Cài đặt (⚙️ ở góc trên), có nút đổi giữa giao diện sáng/tối/theo máy và nút bật/tắt âm thanh đọc.</span>
       </div>
     </div>
     <button class="cta-btn" id="onboardingStartBtn">Bắt đầu học thôi!</button>

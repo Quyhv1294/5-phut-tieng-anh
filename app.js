@@ -425,8 +425,7 @@
     simon: document.getElementById('screen-simon'),
     songPlay: document.getElementById('screen-song'),
     write: document.getElementById('screen-write'),
-    badges: document.getElementById('screen-badges'),
-    progress: document.getElementById('screen-progress'),
+    achievements: document.getElementById('screen-achievements'),
     settings: document.getElementById('screen-settings'),
     account: document.getElementById('screen-account'),
     donate: document.getElementById('screen-donate'),
@@ -454,7 +453,7 @@
     laDialogue: document.getElementById('screen-la-dialogue'),
     laWrite: document.getElementById('screen-la-write'),
   };
-  const TOP_LEVEL_SCREENS = ['home', 'games', 'sentences', 'badges', 'progress'];
+  const TOP_LEVEL_SCREENS = ['home', 'games', 'sentences', 'achievements'];
 
   function showScreen(name) {
     // Rời màn "Ai nhanh hơn" giữa chừng thì phải dừng đồng hồ đếm giờ, không thì nó vẫn
@@ -480,8 +479,7 @@
     document.getElementById('tabHome').classList.toggle('active', name === 'home');
     document.getElementById('tabGames').classList.toggle('active', name === 'games');
     document.getElementById('tabSentences').classList.toggle('active', name === 'sentences');
-    document.getElementById('tabBadges').classList.toggle('active', name === 'badges');
-    document.getElementById('tabProgress').classList.toggle('active', name === 'progress');
+    document.getElementById('tabAchievements').classList.toggle('active', name === 'achievements');
   }
 
   // Trượt viên "thumb" của segment-toggle (kiểu iOS) tới đúng vị trí nút đang active.
@@ -533,8 +531,24 @@
   // khi chủ đề mở tuần tự theo từng bài học, thay vì hiếm khi đổi như mốc sao trước đây.
   document.getElementById('tabGames').addEventListener('click', () => { renderGamesScreen(); showScreen('games'); moveSegmentThumb(document.getElementById('gamesModeToggle')); });
   document.getElementById('tabSentences').addEventListener('click', () => { renderSentencesScreen(); showScreen('sentences'); moveSegmentThumb(document.getElementById('sentencesModeToggle')); });
-  document.getElementById('tabBadges').addEventListener('click', () => { renderBadgesScreen(); showScreen('badges'); moveSegmentThumb(document.getElementById('collectionModeToggle')); });
-  document.getElementById('tabProgress').addEventListener('click', () => { renderProgressScreen(); showScreen('progress'); });
+
+  // Tab "🏆 Thành tích" gộp 2 tab cũ (Sưu tập + Tiến độ) sau 1 toggle 2 nút — trước đây là 2 tab
+  // riêng trên thanh tab chính, làm thanh tab có tới 6 mục. achievementsMode nhớ panel đang xem để
+  // lần sau bấm lại tab vẫn ở đúng panel đó (không tự nhảy về Sưu tập).
+  let achievementsMode = 'badges'; // 'badges' (Sưu tập: huy hiệu/ghép hình/trang phục) hoặc 'progress' (Tiến độ học)
+  function setAchievementsMode(mode) {
+    achievementsMode = mode;
+    document.getElementById('achModeBadgesBtn').classList.toggle('active', mode === 'badges');
+    document.getElementById('achModeProgressBtn').classList.toggle('active', mode === 'progress');
+    document.getElementById('achPanelBadges').hidden = mode !== 'badges';
+    document.getElementById('achPanelProgress').hidden = mode !== 'progress';
+    if (mode === 'badges') { renderBadgesScreen(); moveSegmentThumb(document.getElementById('collectionModeToggle')); }
+    else { renderProgressScreen(); }
+    moveSegmentThumb(document.getElementById('achievementsModeToggle'));
+  }
+  document.getElementById('achModeBadgesBtn').addEventListener('click', () => setAchievementsMode('badges'));
+  document.getElementById('achModeProgressBtn').addEventListener('click', () => setAchievementsMode('progress'));
+  document.getElementById('tabAchievements').addEventListener('click', () => { setAchievementsMode(achievementsMode); showScreen('achievements'); });
 
   const LEVELS = [
     { min: 0, emoji: '🌱', label: 'Mầm non' },
@@ -1887,7 +1901,7 @@
     if (!CLASS_CONTENT[id]) return;
     try { localStorage.setItem('5phut_active_class_v1', id); } catch (e) {}
     applyClassScope();
-    if (screens.progress.classList.contains('active')) renderProgressScreen();
+    if (achievementsMode === 'progress' && screens.achievements.classList.contains('active')) renderProgressScreen();
     renderDailyMissions();
     renderReviewButtons();
   }
@@ -2023,11 +2037,17 @@
       } else {
         action = '<p class="promo-note">Còn ' + info.missing + ' điều kiện nữa là bé được làm bài kiểm tra lên lớp.</p>';
       }
+      const doneCount = info.items.length - info.missing;
+      // Mặc định gấp lại — chỉ tự mở sẵn khi có việc cần làm ngay (đủ điều kiện thi, hoặc vừa đậu).
+      const openAttr = (info.ready || info.passedDate) ? ' open' : '';
       el.innerHTML =
-        '<div class="promo-card">' +
-          '<div class="promo-title">🎓 Lên ' + toLv.label + ' ' + toLv.emoji + '</div>' +
+        '<details class="promo-card"' + openAttr + '>' +
+          '<summary class="promo-summary">' +
+            '<span class="promo-summary-label">🎓 Lên ' + toLv.label + ' ' + toLv.emoji + '</span>' +
+            '<span class="promo-summary-right">' + doneCount + '/' + info.items.length + ' điều kiện <span class="promo-chevron">▾</span></span>' +
+          '</summary>' +
           '<ul class="promo-list">' + rows + '</ul>' + action +
-        '</div>';
+        '</details>';
       const btn = el.querySelector('[data-promo-start]');
       if (btn) btn.addEventListener('click', () => startPromotionTest(btn.dataset.promoStart));
     });
@@ -3026,25 +3046,16 @@
   function laLessonsDone() { return laVocabDoneCount() + laGrammarDoneCount() + laPhonicsDoneCount() + laStoryDoneCount() + laPhraseDoneCount() + laReadingDoneCount(); }
   function laLessonsTotal() { return LA_TOPICS.length + GRAMMAR_LA_TOPICS.length + PHONICS3_TOPICS.length + STORY_TOPICS_LA.length + PHRASES_LA_TOPICS.length + READING_LA_TOPICS.length; }
 
-  // Thẻ tóm tắt ở đầu phần Lớp Lá trên trang Học — cùng kiểu choiSummary.
+  // Thẻ tóm tắt ở đầu phần Lớp Lá trên trang Học — cùng kiểu choiSummary. Dòng chip tóm tắt từng
+  // nằm ở đây đã bị bỏ (2026-09-30) vì trùng lặp hoàn toàn với danh sách chi tiết ở tab Tiến độ —
+  // chỉ giữ lại gợi ý huy hiệu tiếp theo.
   function renderLaSummary() {
     const el = document.getElementById('laSummary');
     if (!el) return;
-    const c = progress.la;
     const next = BADGES.find(b => b.group === 'la' && !progress.badges[b.id]);
-    el.innerHTML =
-      '<div class="cs-chips">' +
-        '<span class="cs-chip">📚 ' + laVocabDoneCount() + '/' + LA_TOPICS.length + ' chủ đề</span>' +
-        '<span class="cs-chip">🔤 ' + laGrammarDoneCount() + '/' + GRAMMAR_LA_TOPICS.length + ' bài ngữ pháp</span>' +
-        '<span class="cs-chip">🔊 ' + laPhonicsDoneCount() + '/' + PHONICS3_TOPICS.length + ' nhóm âm</span>' +
-        '<span class="cs-chip">📗 ' + laStoryDoneCount() + '/' + STORY_TOPICS_LA.length + ' truyện</span>' +
-        '<span class="cs-chip">📋 ' + laReadingDoneCount() + '/' + READING_LA_TOPICS.length + ' bài đọc hiểu</span>' +
-        '<span class="cs-chip">🗣️ ' + laPhraseDoneCount() + '/' + PHRASES_LA_TOPICS.length + ' cụm từ</span>' +
-        '<span class="cs-chip">🔤 ' + c.spellWords + ' từ đã xếp</span>' +
-        '<span class="cs-chip">🧩 ' + c.sentencesBuilt + ' câu đã sắp</span>' +
-      '</div>' +
-      (next ? '<div class="choi-next">🎯 Huy hiệu tiếp theo: <strong>' + next.icon + ' ' + next.label + '</strong> — ' + next.desc + '</div>'
-            : '<div class="choi-next">🏅 Bé đã đạt hết huy hiệu của Lớp Lá — giỏi quá!</div>');
+    el.innerHTML = next
+      ? '<div class="choi-next">🎯 Huy hiệu tiếp theo: <strong>' + next.icon + ' ' + next.label + '</strong> — ' + next.desc + '</div>'
+      : '<div class="choi-next">🏅 Bé đã đạt hết huy hiệu của Lớp Lá — giỏi quá!</div>';
   }
 
   // ---------- NGỮ PHÁP CƠ BẢN (GRAMMAR_LA_TOPICS, data/grammar_la.js, tab Học lớp Lá) ----------
@@ -3296,7 +3307,7 @@
 
   function applyMuteUI() {
     const btn = document.getElementById('muteBtn');
-    btn.textContent = isMuted ? '🔇' : '🔊';
+    btn.textContent = isMuted ? '🔇 Âm thanh: đang tắt' : '🔊 Âm thanh: đang bật';
     btn.classList.toggle('is-muted', isMuted);
     btn.setAttribute('aria-label', isMuted ? 'Bật âm thanh' : 'Tắt âm thanh');
   }
@@ -3322,15 +3333,15 @@
     const btn = document.getElementById('themeBtn');
     if (themeMode === 'light') {
       document.documentElement.setAttribute('data-theme', 'light');
-      btn.textContent = '☀️';
+      btn.textContent = '☀️ Giao diện: sáng';
       btn.setAttribute('aria-label', 'Đang dùng giao diện sáng, bấm để đổi sang tối');
     } else if (themeMode === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
-      btn.textContent = '🌙';
+      btn.textContent = '🌙 Giao diện: tối';
       btn.setAttribute('aria-label', 'Đang dùng giao diện tối, bấm để đổi theo máy');
     } else {
       document.documentElement.removeAttribute('data-theme');
-      btn.textContent = '🌗';
+      btn.textContent = '🌗 Giao diện: theo máy';
       btn.setAttribute('aria-label', 'Đang theo giao diện máy, bấm để đổi sang sáng');
     }
   }
@@ -4232,23 +4243,15 @@
   }
 
   // Thẻ tóm tắt ở đầu phần Lớp Chồi trên trang Học: bé thấy ngay mình đã làm được bao nhiêu + huy hiệu kế tiếp.
+  // Dòng chip tóm tắt (0/x chủ đề, 0/x nhóm âm...) từng nằm ở đây đã bị bỏ (2026-09-30) vì trùng
+  // lặp hoàn toàn với danh sách chi tiết ở tab Tiến độ — chỉ giữ lại gợi ý huy hiệu tiếp theo.
   function renderChoiSummary() {
     const el = document.getElementById('choiSummary');
     if (!el) return;
-    const c = progress.choi;
     const next = BADGES.find(b => b.group === 'choi' && !progress.badges[b.id]);
-    el.innerHTML =
-      '<div class="cs-chips">' +
-        '<span class="cs-chip">📚 ' + choiVocabDoneCount() + '/' + CHOI_TOPICS.length + ' chủ đề</span>' +
-        '<span class="cs-chip">🔊 ' + choiPhonicsDoneCount() + '/' + PHONICS2_TOPICS.length + ' nhóm âm</span>' +
-        '<span class="cs-chip">👀 ' + choiSightDoneCount() + '/' + SIGHT_TOPICS.length + ' từ hay gặp</span>' +
-        '<span class="cs-chip">✍️ ' + choiWriteDoneCount() + '/' + WRITE_GROUPS.length + ' nhóm chữ</span>' +
-        '<span class="cs-chip">📗 ' + choiStoryDoneCount() + '/' + STORY_TOPICS_CHOI.length + ' truyện</span>' +
-        '<span class="cs-chip">🔤 ' + c.spellWords + ' từ đã xếp</span>' +
-        '<span class="cs-chip">🧩 ' + c.sentencesBuilt + ' câu đã ghép</span>' +
-      '</div>' +
-      (next ? '<div class="choi-next">🎯 Huy hiệu tiếp theo: <strong>' + next.icon + ' ' + next.label + '</strong> — ' + next.desc + '</div>'
-            : '<div class="choi-next">🏅 Bé đã đạt hết huy hiệu của Lớp Chồi — giỏi quá!</div>');
+    el.innerHTML = next
+      ? '<div class="choi-next">🎯 Huy hiệu tiếp theo: <strong>' + next.icon + ' ' + next.label + '</strong> — ' + next.desc + '</div>'
+      : '<div class="choi-next">🏅 Bé đã đạt hết huy hiệu của Lớp Chồi — giỏi quá!</div>';
   }
 
   // Số liệu thứ 2 trên bảng chứng nhận / ảnh chia sẻ: lớp Chồi/Lá tính theo tổng số bài đã học, lớp Mầm theo chủ đề từ vựng.

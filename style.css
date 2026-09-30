@@ -192,34 +192,10 @@
   .stars-pill #levelBadge { font-size: 19.5px; }
 
   .topbar-right { display: flex; align-items: center; gap: 10px; flex: none; }
-  .mute-btn {
-    width: 42px; height: 42px; border-radius: 50%;
-    border: 2px solid var(--line);
-    background: var(--surface);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; cursor: pointer; flex: none; color: var(--ink);
-  }
-  .mute-btn:active { transform: scale(0.94); }
-  .mute-btn.is-muted { opacity: 0.55; }
-
-  .donate-btn {
-    width: 42px; height: 42px; border-radius: 50%;
-    border: 2px solid var(--line);
-    background: var(--surface);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; cursor: pointer; flex: none; color: var(--ink);
-  }
-  .donate-btn:active { transform: scale(0.94); }
-
-  .theme-btn {
-    width: 42px; height: 42px; border-radius: 50%;
-    border: 2px solid var(--line);
-    background: var(--surface);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; cursor: pointer; flex: none; color: var(--ink);
-  }
-  .theme-btn:active { transform: scale(0.94); }
-
+  /* 💚 Ủng hộ / 🌗 Giao diện / 🔊 Âm thanh chuyển vào màn Cài đặt (2026-09-30) — dải icon trên cùng
+     trước đây có 5 nút tròn không nhãn chữ san sát nhau, dễ bấm nhầm; giờ chỉ còn 👤 Tài khoản +
+     ⚙️ Cài đặt ở đây, 3 nút còn lại là hàng .ghost-btn có nhãn chữ rõ ràng trong #screen-settings.
+     #muteBtn/#themeBtn/#donateBtn giữ nguyên id nên toàn bộ code JS xử lý chúng không cần đổi gì. */
   .settings-btn {
     width: 42px; height: 42px; border-radius: 50%;
     border: 2px solid var(--line);
@@ -652,18 +628,20 @@
   }
   .level-card span:first-child { font-size: 38px; }
 
-  .progress-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  @media (max-width: 380px) {
-    .progress-list { grid-template-columns: repeat(2, 1fr); }
-  }
+  /* Danh sách dòng gọn (không phải lưới thẻ vuông) — lớp Chồi/Lá có thể lên tới 25-30 mục, thẻ
+     vuông xếp lưới 3 cột kéo dài rất nhiều màn hình và khó quét mắt; đổi sang dòng ngang 1 cột
+     giống hệt cách tab Sưu tập/Huy hiệu (.badge-item) đang làm, vừa gọn vừa scale tốt hơn. */
+  .progress-list { display: flex; flex-direction: column; gap: 8px; }
   .progress-row {
-    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+    display: flex; align-items: center; text-align: left; gap: 12px;
     background: var(--surface); border: 2px solid var(--line); border-radius: 14px;
-    padding: 14px 8px;
+    padding: 10px 14px;
   }
-  .progress-row .pr-emoji { font-size: 34px; }
-  .progress-row .pr-label { font-family: 'Baloo 2'; font-weight: 700; font-size: 16px; line-height: 1.25; }
-  .progress-row .pr-status { font-size: 14.5px; font-weight: 700; color: var(--ink-soft); }
+  .progress-row .pr-emoji { font-size: 28px; flex: none; }
+  .progress-row .pr-label { font-family: 'Baloo 2'; font-weight: 700; font-size: 16px; line-height: 1.25; flex: 1 1 auto; min-width: 0; }
+  /* flex-basis (không phải flex:none) — chủ đề khoá của Mầm hiện cả câu lý do dài ("Học xong ...
+     để mở khoá"), flex:none từng khiến nó không co lại được và tràn ra ngoài thẻ. */
+  .progress-row .pr-status { font-size: 14px; font-weight: 700; color: var(--ink-soft); flex: 0 1 42%; text-align: right; }
   .progress-row.is-done { border-color: var(--teal); }
   .progress-row.is-done .pr-status { color: var(--teal-ink); }
   .progress-row.is-locked { opacity: 0.65; }
@@ -980,16 +958,21 @@
     transition: color .25s ease;
   }
   .segment-btn.active { color: var(--accent-ink); }
-  /* Học (lớp Chồi) có tới 6 mục — xếp 3 nút/hàng (2 hàng) cho vừa màn hình điện thoại thay vì 1 hàng chật chội.
-     .segment-thumb đã đo cả top/height theo nút đang chọn (xem moveSegmentThumb) nên vẫn khớp đúng hàng. */
-  #choiHomeModeToggle.segment-toggle { flex-wrap: wrap; }
-  #choiHomeModeToggle .segment-btn { font-size: 15px; padding: 9px 3px; flex: 1 1 30%; }
-  /* Học (lớp Lá) cũng lên 6 mục (thêm Cụm từ + Bài hát) — cùng cách xếp 3 nút/hàng như trên. */
-  #laHomeModeToggle.segment-toggle { flex-wrap: wrap; }
-  #laHomeModeToggle .segment-btn { font-size: 15px; padding: 9px 3px; flex: 1 1 30%; }
-  /* Trò chơi (lớp Lá) lên 5 mục (thêm Lật thẻ + Simon nói) — xếp theo hàng thay vì tràn 1 dòng. */
-  #laGamesModeToggle.segment-toggle { flex-wrap: wrap; }
-  #laGamesModeToggle .segment-btn { font-size: 14.5px; padding: 9px 3px; flex: 1 1 30%; }
+
+  /* MODE GRID: khi 1 màn có hơn ~5 chế độ để chọn (Học Lớp Chồi/Lá, Trò chơi Lớp Lá), kiểu segment-
+     toggle 1 hàng-trượt-thumb bị ép xuống 2-3 hàng chữ nhỏ xíu, khó bấm/khó quét mắt. Dùng lưới 2 cột,
+     mỗi nút là 1 thẻ độc lập (giống kiểu thẻ chọn Lớp Mầm/Chồi/Lá) — không có thumb trượt, mỗi nút tự
+     đổi viền/nền khi active. moveSegmentThumb() gọi vào các #id này vẫn an toàn (tự bỏ qua vì không
+     có .segment-thumb bên trong) nên không cần sửa gì ở app.js. */
+  .mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0 0 16px; }
+  .mode-grid-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center;
+    border: 2px solid var(--line); background: var(--surface); color: var(--ink-soft);
+    font-family: 'Baloo 2'; font-weight: 700; font-size: 15.5px; line-height: 1.25;
+    padding: 12px 8px; border-radius: 14px; cursor: pointer;
+  }
+  .mode-grid-btn.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--accent-ink); }
+  .mode-grid-btn:active { transform: scale(0.97); }
 
   /* SPELLING GAME SCREEN (Xếp chữ) */
   .spelling-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 6px; }
@@ -1336,26 +1319,33 @@
   .class-box:active { transform: scale(0.96); }
   /* Tiến độ riêng của lớp Chồi */
   .choi-summary { margin: 0 0 14px; }
-  .cs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .cs-chip {
-    background: var(--surface); border: 2px solid var(--line); border-radius: 999px;
-    padding: 6px 12px; font-family: 'Baloo 2'; font-weight: 800; font-size: 15.5px;
-  }
-  .choi-next { margin-top: 10px; font-size: 15.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.45; }
+  .choi-next { font-size: 15.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.45; }
   .choi-next strong { color: var(--ink); }
   .progress-subhead { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; color: var(--ink-soft); margin: 14px 0 6px; }
   .badge-group-label {
     font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; color: var(--ink-soft);
     text-transform: uppercase; letter-spacing: .05em; margin: 16px 0 8px;
   }
-  /* Thẻ "Lên lớp" */
+  /* Thẻ "Lên lớp" — dùng <details>/<summary>: mặc định GẤP LẠI (chỉ hiện 1 dòng tóm tắt số điều
+     kiện đã đạt), CHỈ tự mở sẵn khi có việc cần làm ngay (đủ điều kiện thi lên lớp, hoặc vừa đậu) —
+     xem điều kiện `openAttr` ở renderPromoCards(). Trước đây luôn hiện đầy đủ danh sách 3-8 dòng mỗi
+     lần vào tab Học, phần lớn thời gian đều "0/x" không đổi suốt nhiều tuần, chiếm chỗ không cần thiết.
+     <details> không cần JS để mở/đóng — trình duyệt tự xử lý khi bấm vào <summary>. */
   .promo-slot:empty { display: none; }
   .promo-card {
     background: var(--surface); border: 3px dashed var(--gold); border-radius: 22px;
     padding: 16px 16px 14px; margin: 0 0 16px;
   }
-  .promo-title { font-family: 'Baloo 2'; font-weight: 800; font-size: 20px; margin-bottom: 6px; }
-  .promo-list { list-style: none; margin: 0 0 12px; padding: 0; }
+  .promo-summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    cursor: pointer; list-style: none;
+  }
+  .promo-summary::-webkit-details-marker { display: none; }
+  .promo-summary-label { font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; }
+  .promo-summary-right { display: flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700; color: var(--ink-soft); white-space: nowrap; flex: none; }
+  .promo-chevron { font-size: 13px; transition: transform .2s ease; }
+  .promo-card[open] .promo-chevron { transform: rotate(180deg); }
+  .promo-list { list-style: none; margin: 12px 0 12px; padding: 0; }
   .promo-list li { font-size: 16px; font-weight: 700; padding: 4px 0; color: var(--ink-soft); }
   .promo-list li.is-done { color: var(--teal-ink); }
   .promo-list strong { color: var(--ink); }
@@ -1520,7 +1510,7 @@
     .avatar-option { transition: transform .15s ease, border-color .15s ease; }
     .avatar-option:hover { transform: translateY(-2px) scale(1.06); border-color: var(--accent); }
 
-    .account-btn, .mute-btn, .donate-btn, .theme-btn, .settings-btn, .icon-btn { transition: transform .15s ease; }
+    .account-btn, .settings-btn, .icon-btn { transition: transform .15s ease; }
     .account-btn:hover, .mute-btn:hover, .donate-btn:hover, .theme-btn:hover, .settings-btn:hover, .icon-btn:hover { transform: translateY(-2px); }
     .brand { transition: transform .15s ease; }
     .brand:hover { transform: translateY(-2px); }
