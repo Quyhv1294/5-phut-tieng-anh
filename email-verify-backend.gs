@@ -1,7 +1,7 @@
 // ============================================================================
 // BACKEND APPS SCRIPT DUY NHẤT CHO "5 PHÚT TIẾNG ANH" — dán TOÀN BỘ file này
 // vào 1 project Apps Script (Extensions > Apps Script từ Google Sheet lưu dữ
-// liệu). Gồm 2 phần độc lập, dùng chung 1 sheet "Progress":
+// liệu). Gồm 3 phần độc lập, dùng chung 1 sheet "Progress":
 //
 //   PHẦN 1 — doGet(): xác thực email bằng mã OTP + đồng bộ hồ sơ/tiến độ 2
 //   chiều với app. Đây là hàm mà app.js đang gọi tới qua webAppUrl trong
@@ -13,9 +13,16 @@
 //   lịch (Time-driven Trigger, tự cấu hình riêng, KHÔNG liên quan doGet) để
 //   nhắc ba mẹ qua email khi bé nghỉ học lâu, và gửi báo cáo tuần.
 //
-// Nếu project đã có sẵn 1 hàm doGet() khác từ trước (kể cả bản lỗi/rỗng),
-// XOÁ hàm đó đi trước khi dán — Apps Script không cho 2 hàm doGet() trùng tên
-// trong cùng 1 project.
+//   PHẦN 3 — doPost()/handleTranscribe_(): proxy chấm phát âm "Bé đọc thử".
+//   App ghi âm, gửi lên đây, Script gọi OpenAI bằng key giữ trong Script
+//   Properties (KHÔNG nằm trong code) rồi trả chữ nhận diện về cho app tự so
+//   khớp/chấm điểm. CẦN thêm Script Property tên đúng "OPENAI_API_KEY" (⚙️
+//   Project Settings > Script Properties) thì phần này mới chạy — thiếu thì
+//   app vẫn hoạt động bình thường, chỉ riêng nút "🎤 Bé đọc thử" tự ẩn đi.
+//
+// Nếu project đã có sẵn 1 hàm doGet()/doPost() khác từ trước (kể cả bản
+// lỗi/rỗng), XOÁ hàm đó đi trước khi dán — Apps Script không cho 2 hàm trùng
+// tên trong cùng 1 project.
 // ============================================================================
 
 const CONFIG = {
@@ -31,6 +38,12 @@ const CONFIG = {
   FEEDBACK_SHEET_NAME: 'Feedback', // tab riêng, tự tạo lần đầu có người gửi ý kiến
   FEEDBACK_MAX_LEN: 500,           // khớp FEEDBACK_MAX_LEN trong app.js
   FEEDBACK_DAILY_LIMIT: 5,         // tối đa bao nhiêu ý kiến / thiết bị / ngày (chống spam)
+
+  // --- "Bé đọc thử" chấm phát âm (action=transcribe, gọi từ doPost) ---
+  // Mỗi lượt tốn phí thật (gpt-4o-mini-transcribe, ~$0.00015-0.0003/lượt) nên cần trần TOÀN APP
+  // (không tách theo thiết bị như feedback) để lỡ có bug/spam cũng không vượt ngân sách bất ngờ —
+  // xứng với limit này bạn cũng NÊN tự đặt thêm 1 spending cap trên dashboard OpenAI cho chắc.
+  TRANSCRIBE_DAILY_LIMIT: 300,     // tối đa bao nhiêu lượt chấm phát âm / NGÀY (chung toàn app)
 
   // --- Phần 2: nhắc học qua email ---
   INACTIVE_DAYS_THRESHOLD: 2,   // bao nhiêu ngày không học liên tiếp thì gửi email nhắc
@@ -84,8 +97,30 @@ function doGet(e) {
       case 'saveFeedback':
         result = handleSaveFeedback_(e.parameter);
         break;
+      case 'checkOpenAiKey':
+        // Chẩn đoán: kiểm tra đã điền OPENAI_API_KEY vào Script Properties chưa, KHÔNG gọi OpenAI
+        // nên không tốn phí — dùng để tự test qua curl/trình duyệt sau khi deploy xong.
+        result = handleCheckOpenAiKey_();
+        break;
       default:
         result = { ok: false, error: 'unknown_action' };
+    }
+  } catch (err) {
+    result = { ok: false, error: 'server_error', message: String(err) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ---------- ĐIỂM VÀO THỨ 2: request POST (chỉ action=transcribe — audio gửi kèm body, không
+// qua query string như các action ở doGet vì ảnh ghi âm dù ngắn cũng dễ vượt giới hạn độ dài URL) ----------
+function doPost(e) {
+  let result;
+  try {
+    const body = JSON.parse((e.postData && e.postData.contents) || '{}');
+    if (body.action === 'transcribe') {
+      result = handleTranscribe_(body.audio, body.mime);
+    } else {
+      result = { ok: false, error: 'unknown_action' };
     }
   } catch (err) {
     result = { ok: false, error: 'server_error', message: String(err) };
@@ -315,6 +350,57 @@ function handleSaveFeedback_(p) {
   }
 }
 
+// ---------- action=checkOpenAiKey (doGet) ----------
+function handleCheckOpenAiKey_() {
+  const key = PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY');
+  // Không trả key thật về, chỉ báo có/không + độ dài để tự kiểm tra đã dán đúng ô Script Properties
+  // chưa (dán nhầm thừa khoảng trắng/thiếu ký tự thường lộ ra qua độ dài sai khác thường lệ ~51).
+  return { ok: true, present: !!key, length: key ? key.length : 0 };
+}
+
+// ---------- action=transcribe (doPost) ----------
+// Nhận audio (base64) từ app, chuyển tiếp lên OpenAI gpt-4o-mini-transcribe bằng key giữ kín ở
+// Script Properties (KHÔNG BAO GIỜ gửi key về phía client), trả lại chữ nhận diện được để app tự
+// so khớp/chấm điểm (xem scoreReading trong app.js — toàn bộ phần chấm vẫn chạy ở client).
+function handleTranscribe_(base64Audio, mime) {
+  if (!base64Audio) return { ok: false, error: 'missing_audio' };
+  const props = PropertiesService.getScriptProperties();
+  const key = props.getProperty('OPENAI_API_KEY');
+  if (!key) return { ok: false, error: 'missing_api_key' };
+
+  // Trần lượt/ngày CHUNG toàn app (không theo thiết bị) — dùng chính Script Properties làm bộ đếm
+  // luôn cho đơn giản (khỏi thêm sheet/cột mới), khoá bằng LockService để 2 request cùng lúc không
+  // đọc/ghi đè số đếm của nhau.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const counterKey = 'transcribeCount_' + formatDateYmd_(new Date());
+    const countToday = Number(props.getProperty(counterKey)) || 0;
+    if (countToday >= CONFIG.TRANSCRIBE_DAILY_LIMIT) return { ok: false, error: 'daily_limit' };
+    props.setProperty(counterKey, String(countToday + 1));
+  } finally {
+    lock.releaseLock();
+  }
+
+  let bytes;
+  try { bytes = Utilities.base64Decode(base64Audio); } catch (e) { return { ok: false, error: 'bad_audio' }; }
+  const blob = Utilities.newBlob(bytes, mime || 'audio/webm', 'speech.webm');
+
+  const res = UrlFetchApp.fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'post',
+    headers: { Authorization: 'Bearer ' + key },
+    payload: { file: blob, model: 'gpt-4o-mini-transcribe', language: 'en' },
+    muteHttpExceptions: true,
+  });
+  const status = res.getResponseCode();
+  let json;
+  try { json = JSON.parse(res.getContentText()); } catch (e) { json = {}; }
+  if (status !== 200) {
+    return { ok: false, error: 'openai_error', message: (json.error && json.error.message) || ('http_' + status) };
+  }
+  return { ok: true, text: json.text || '' };
+}
+
 // Cắt độ dài + chặn "chèn công thức" (ô bắt đầu bằng = + - @ sẽ bị Google Sheet hiểu là công thức,
 // người lạ có thể lợi dụng vì Web App này công khai) bằng cách thêm dấu ' phía trước.
 function safeCell_(value, maxLen) {
@@ -529,15 +615,22 @@ function sendWeeklyDigest() {
 //    dẫn cuối cùng).
 // 3. Sửa CONFIG.APP_URL thành domain thật bạn đang host, kiểm tra
 //    CONFIG.SHEET_NAME đúng tên tab đang lưu dữ liệu.
-// 4. Deploy > Manage deployments > bấm bút chì (Edit) trên deployment đang có
+// 4. (Chỉ cần nếu muốn bật "🎤 Bé đọc thử") ⚙️ Project Settings (bên trái) >
+//    Script Properties > Add script property > tên đúng "OPENAI_API_KEY",
+//    giá trị là API key OpenAI của bạn > Save. Bỏ qua bước này thì các phần
+//    khác vẫn chạy bình thường, chỉ riêng nút "🎤 Bé đọc thử" tự ẩn đi.
+// 5. Deploy > Manage deployments > bấm bút chì (Edit) trên deployment đang có
 //    URL trùng với webAppUrl trong data/sheets-config.js > mục Version chọn
 //    "New version" > Deploy. (Nếu chưa từng deploy Web App, dùng New
 //    deployment, chọn loại "Web app", Execute as "Me", Who has access
-//    "Anyone" — rồi copy URL /exec dán vào data/sheets-config.js.)
-//    Lần đầu Google sẽ hỏi cấp quyền đọc/ghi Sheet + gửi email — bấm Allow.
-// 5. Báo lại để mình gọi thử API (curl) xác nhận đã hết lỗi ở màn xác thực
-//    email.
-// 6. (Tuỳ chọn) Bật nhắc học tự động: vào Triggers (icon ⏰ bên trái) > Add
+//    "Anyone" — rồi copy URL /exec dán vào data/sheets-config.js. Cùng 1 URL
+//    này phục vụ cả doGet lẫn doPost, không cần deploy riêng.)
+//    Lần đầu Google sẽ hỏi cấp quyền đọc/ghi Sheet + gửi email + gọi URL bên
+//    ngoài (OpenAI) — bấm Allow.
+// 6. Báo lại để mình gọi thử API (curl) xác nhận đã hết lỗi ở màn xác thực
+//    email, và đã nhận đúng OPENAI_API_KEY (qua action=checkOpenAiKey, không
+//    tốn phí).
+// 7. (Tuỳ chọn) Bật nhắc học tự động: vào Triggers (icon ⏰ bên trái) > Add
 //    Trigger > chọn hàm sendInactivityReminders, loại "Time-driven" > "Day
 //    timer" > khung giờ muốn gửi (VD 19:00-20:00); thêm 1 trigger khác cho
 //    sendWeeklyDigest, loại "Week timer", chọn 1 ngày trong tuần. Chạy thử

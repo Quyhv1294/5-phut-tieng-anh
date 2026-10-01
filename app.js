@@ -3412,39 +3412,41 @@
   });
   document.getElementById('backFromCards').addEventListener('click', () => { resetReadAloud(); goHome(); });
 
-  // ---------- ĐỌC THEO CHẤM ĐIỂM (Web Speech API) ----------
-  // LƯU Ý: đây KHÔNG phải chấm phát âm chuẩn ngữ âm học (cần AI/server riêng, tốn phí) — chỉ là
-  // nhận dạng giọng nói thành văn bản (SpeechRecognition của trình duyệt) rồi so khớp với từ mục
-  // tiêu. Đây là cách khả thi duy nhất cho 1 app miễn phí không có backend riêng, vẫn tạo được
-  // cảm giác "được chấm điểm khi đọc" cho bé. Tự ẩn nút nếu trình duyệt không hỗ trợ (VD Safari
-  // cũ) để không có nút bấm vào không chạy gì.
-  // Từng tạm ẩn (2026-09-16) vì hay nhận diện sai — bật lại (2026-09-21) sau khi đổi cách chấm
-  // sang xét NHIỀU phương án nhận dạng (maxAlternatives) thay vì chỉ phương án tốt nhất, và nới
-  // ngưỡng cho từ ngắn (xem scoreReading/readRecognition.onresult bên dưới).
+  // ---------- ĐỌC THEO CHẤM ĐIỂM (ghi âm -> Apps Script proxy -> OpenAI gpt-4o-mini-transcribe) ----------
+  // Trước đây dùng SpeechRecognition của trình duyệt — miễn phí nhưng KHÔNG chạy được trong
+  // WebView của app Android/iOS đóng gói (xem [[reference_android_apk_build]]: constructor tồn
+  // tại nhưng .start() không bắn sự kiện gì cả). Đổi sang tự ghi âm (getUserMedia/MediaRecorder,
+  // CÓ hỗ trợ trong WebView nếu khai đủ quyền RECORD_AUDIO+MODIFY_AUDIO_SETTINGS — xem
+  // AndroidManifest.xml ở project android-build) rồi gửi lên Apps Script backend đã có sẵn
+  // (action=transcribe, xem email-verify-backend.gs) để server gọi OpenAI thay — vừa chạy được
+  // trên mọi nền tảng, vừa không lộ API key ra client. Tốn phí rất nhỏ mỗi lượt (~0.00015-0.0003
+  // USD/lượt với gpt-4o-mini-transcribe) nên cần backend đã cấu hình (SHEETS_CONFIG.webAppUrl)
+  // mới hiện nút — app clone về mà chưa tự cấu hình backend sẽ không thấy nút này.
   const READ_ALOUD_ENABLED = true;
-  const SpeechRecognitionCtor = READ_ALOUD_ENABLED ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
-  // App Android/iOS đóng gói bằng Capacitor chạy trong WebView/WKWebView — 2 nền tảng này KHÔNG
-  // thật sự chạy được SpeechRecognition dù constructor vẫn tồn tại (nên không rơi vào nhánh
-  // "!SpeechRecognitionCtor" bên dưới): gọi .start() xong không bắn sự kiện nào cả (không onresult,
-  // không onerror, không onend) — bé bấm nút thấy "không phản ứng gì" chứ không phải lỗi code. Ẩn
-  // hẳn nút ở đây thay vì để bé bấm vào một nút chết.
-  const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+  const canRecordAudio = READ_ALOUD_ENABLED && backendConfigured()
+    && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
   const readAloudBtn = document.getElementById('readAloudBtn');
   const readFeedbackEl = document.getElementById('readFeedback');
-  let readRecognition = null;
+  let readMediaStream = null;
+  let readMediaRecorder = null;
+  let readChunks = [];
   let isListeningRead = false;
-  let readWatchdogTimer = null;
+  let readAutoStopTimer = null;
 
+  function stopReadStream() {
+    if (readMediaStream) { readMediaStream.getTracks().forEach(t => t.stop()); readMediaStream = null; }
+  }
   function resetReadAloud() {
-    if (readWatchdogTimer) { clearTimeout(readWatchdogTimer); readWatchdogTimer = null; }
-    if (readRecognition) { try { readRecognition.abort(); } catch (e) {} }
+    if (readAutoStopTimer) { clearTimeout(readAutoStopTimer); readAutoStopTimer = null; }
+    if (readMediaRecorder && readMediaRecorder.state !== 'inactive') { try { readMediaRecorder.stop(); } catch (e) {} }
+    stopReadStream();
     isListeningRead = false;
     readAloudBtn.classList.remove('is-listening');
     readAloudBtn.textContent = '🎤 Bé đọc thử';
     readFeedbackEl.hidden = true;
   }
 
-  if (!SpeechRecognitionCtor || isNativeApp) {
+  if (!canRecordAudio) {
     readAloudBtn.hidden = true;
   } else {
     function normalizeSpeech(s) {
@@ -3495,53 +3497,75 @@
       }
     }
 
+    // Thời lượng ghi âm tự động theo số từ của mục tiêu — 1 từ đơn ghi ngắn (~1.7s), câu dài
+    // (VD cụm từ thông dụng Lớp Lá) ghi lâu hơn, trần 6s để không tốn phí/chờ quá lâu mỗi lượt.
+    function recordDurationMs(target) {
+      const words = (target || '').trim().split(/\s+/).filter(Boolean).length || 1;
+      return Math.max(1700, Math.min(6000, 1200 + words * 500));
+    }
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result).split(',')[1] || '');
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    // KHÔNG set header Content-Type thủ công — fetch mặc định gửi text/plain cho body dạng chuỗi,
+    // giữ request thuộc diện "simple request" để trình duyệt không bắn preflight OPTIONS (Apps
+    // Script Web App không xử lý được OPTIONS, preflight sẽ làm toàn bộ request fail).
+    function sendForTranscription(blob) {
+      return blobToBase64(blob).then(base64 =>
+        fetch(SHEETS_CONFIG.webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'transcribe', audio: base64, mime: blob.type }) })
+          .then(res => res.json())
+      );
+    }
+
     readAloudBtn.addEventListener('click', () => {
       if (isListeningRead) return;
       const word = currentTopic.words[cardIndex];
-      readRecognition = new SpeechRecognitionCtor();
-      readRecognition.lang = 'en-US';
-      readRecognition.interimResults = false;
-      readRecognition.maxAlternatives = 5;
-
       isListeningRead = true;
       readAloudBtn.classList.add('is-listening');
       readAloudBtn.textContent = '🎤 Đang nghe...';
       readFeedbackEl.hidden = true;
+      readChunks = [];
 
-      readRecognition.onresult = (e) => {
-        const alternatives = [];
-        for (let i = 0; i < e.results[0].length; i++) alternatives.push(e.results[0][i].transcript);
-        scoreReading(alternatives, word.en);
-      };
-      readRecognition.onerror = (e) => {
-        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-          showReadFeedback('🎙️ App cần quyền micro để nghe bé đọc nhé!', 'is-retry');
-        } else if (e.error === 'no-speech') {
-          showReadFeedback('😶 Chưa nghe thấy gì, bé thử đọc to hơn nhé!', 'is-retry');
-        } else if (e.error !== 'aborted') {
-          showReadFeedback('⚠️ Có lỗi khi nghe, bé thử lại nhé!', 'is-retry');
-        }
-      };
-      readRecognition.onend = () => {
-        if (readWatchdogTimer) { clearTimeout(readWatchdogTimer); readWatchdogTimer = null; }
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        if (!isListeningRead) { stream.getTracks().forEach(t => t.stop()); return; } // bị huỷ (đổi màn) trong lúc chờ xin quyền
+        readMediaStream = stream;
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+          : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+        readMediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        readMediaRecorder.addEventListener('dataavailable', e => { if (e.data && e.data.size > 0) readChunks.push(e.data); });
+        readMediaRecorder.addEventListener('stop', () => {
+          stopReadStream();
+          if (!isListeningRead) return; // resetReadAloud() đã dừng (VD đổi thẻ giữa chừng) — bỏ qua, không gửi/chấm nữa
+          if (!readChunks.length) { isListeningRead = false; readAloudBtn.classList.remove('is-listening'); readAloudBtn.textContent = '🎤 Bé đọc thử'; return; }
+          readAloudBtn.textContent = '🎤 Đang chấm điểm...';
+          const blob = new Blob(readChunks, { type: readMediaRecorder.mimeType || 'audio/webm' });
+          sendForTranscription(blob).then(data => {
+            if (data && data.ok) scoreReading([data.text || ''], word.en);
+            else if (data && data.error === 'daily_limit') showReadFeedback('⏳ Hôm nay đã chấm hết lượt rồi, mai bé thử lại nhé!', 'is-retry');
+            else showReadFeedback('⚠️ Có lỗi khi chấm, bé thử lại nhé!', 'is-retry');
+          }).catch(() => {
+            showReadFeedback('⚠️ Không kết nối được mạng, bé thử lại nhé!', 'is-retry');
+          }).then(() => {
+            isListeningRead = false;
+            readAloudBtn.classList.remove('is-listening');
+            readAloudBtn.textContent = '🎤 Bé đọc thử';
+          });
+        });
+        readMediaRecorder.start();
+        readAutoStopTimer = setTimeout(() => {
+          readAutoStopTimer = null;
+          if (readMediaRecorder && readMediaRecorder.state === 'recording') readMediaRecorder.stop();
+        }, recordDurationMs(word.en));
+      }).catch(() => {
         isListeningRead = false;
         readAloudBtn.classList.remove('is-listening');
         readAloudBtn.textContent = '🎤 Bé đọc thử';
-      };
-      try {
-        readRecognition.start();
-        // Lưới an toàn: 1 số WebView báo có SpeechRecognition nhưng .start() không bắn sự kiện nào cả
-        // (không onresult/onerror/onend) — nếu sau 4s vẫn "đang nghe" thì coi như máy không hỗ trợ,
-        // tự tắt trạng thái thay vì để nút kẹt mãi ở "Đang nghe..." trông như không phản ứng gì.
-        readWatchdogTimer = setTimeout(() => {
-          if (!isListeningRead) return;
-          try { readRecognition.abort(); } catch (e) {}
-          isListeningRead = false;
-          readAloudBtn.classList.remove('is-listening');
-          readAloudBtn.textContent = '🎤 Bé đọc thử';
-          showReadFeedback('⚠️ Máy này chưa nghe được, bé nghe cô đọc mẫu rồi tự đọc theo nhé!', 'is-retry');
-        }, 4000);
-      } catch (e) {}
+        showReadFeedback('🎙️ App cần quyền micro để nghe bé đọc nhé!', 'is-retry');
+      });
     });
   }
 
