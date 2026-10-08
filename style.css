@@ -194,8 +194,35 @@
   .topbar-right { display: flex; align-items: center; gap: 10px; flex: none; }
   /* 💚 Ủng hộ / 🌗 Giao diện / 🔊 Âm thanh chuyển vào màn Cài đặt (2026-09-30) — dải icon trên cùng
      trước đây có 5 nút tròn không nhãn chữ san sát nhau, dễ bấm nhầm; giờ chỉ còn 👤 Tài khoản +
-     ⚙️ Cài đặt ở đây, 3 nút còn lại là hàng .ghost-btn có nhãn chữ rõ ràng trong #screen-settings.
-     #muteBtn/#themeBtn/#donateBtn giữ nguyên id nên toàn bộ code JS xử lý chúng không cần đổi gì. */
+     ⚙️ Cài đặt + nút 💚 Ủng hộ (có nhãn chữ, màu riêng nên không lẫn với 2 nút tròn) ở đây;
+     Giao diện/Âm thanh là dòng trong danh sách .settings-row của #screen-settings. */
+  .donate-btn {
+    height: 42px; flex: none; display: flex; align-items: center; gap: 6px;
+    padding: 0 14px 0 10px; border-radius: 999px; cursor: pointer;
+    border: 2px solid color-mix(in srgb, var(--mint) 60%, var(--line));
+    background: color-mix(in srgb, var(--mint) 22%, var(--surface));
+    color: var(--ink); font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; line-height: 1;
+  }
+  .donate-btn:active { transform: scale(0.94); }
+  /* Màn hẹp: chỉ còn icon tròn như 👤/⚙️ để thanh trên cùng không bị chật. */
+  @media (max-width: 560px) {
+    .donate-btn { width: 42px; padding: 0; justify-content: center; font-size: 22px; }
+    .donate-btn-label { display: none; }
+  }
+  /* Điện thoại: thanh trên cùng có 4 nút nên thu nhỏ nút + khoảng cách, bỏ dòng khẩu hiệu và cho
+     tên app xuống 2 dòng ("5 Phút / Tiếng Anh") thay vì bị cắt còn "5 …". */
+  @media (max-width: 440px) {
+    .topbar-right { gap: 6px; }
+    .donate-btn, .account-btn, .settings-btn { width: 38px; height: 38px; font-size: 20px; }
+    .stars-pill { padding: 6px 10px 6px 8px; font-size: 18px; }
+    .brand { gap: 8px; }
+    .brand .mascot { width: 42px; height: 42px; font-size: 26px; }
+    .brand .names .app-name { white-space: normal; font-size: 15.5px; line-height: 1.1; }
+    .brand .names .tagline { display: none; }
+  }
+  @media (max-width: 400px) {
+    .brand .names { display: none; }
+  }
   .settings-btn {
     width: 42px; height: 42px; border-radius: 50%;
     border: 2px solid var(--line);
@@ -583,6 +610,55 @@
   /* PROGRESS SCREEN */
   .progress-wrap { flex: 1; display: flex; flex-direction: column; gap: 16px; padding-top: 4px; }
   .progress-wrap h2 { margin: 0; font-size: 26.5px; text-align: center; }
+
+  /* Màn Cài đặt: danh sách chia nhóm (thẻ nền liền khối, mỗi dòng = icon + nhãn + giá trị/›),
+     thay cho cột nút rời rạc nổi trên ảnh nền trước đây. Ủng hộ chuyển sang đầu màn Tài khoản. */
+  .settings-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    width: 100%; max-width: 460px; margin: 0 auto; padding: 4px 0 24px;
+  }
+  .settings-wrap h2 { margin: 0 0 14px; font-size: 26.5px; text-align: center; }
+  .settings-group-label {
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 14px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-soft); margin: 14px 6px 6px;
+  }
+  .settings-group {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 18px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .settings-row {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    min-height: 56px; padding: 10px 14px;
+    background: none; border: none; color: var(--ink); cursor: pointer; text-align: left;
+    font-family: 'Quicksand'; font-weight: 700; font-size: 16.5px;
+  }
+  .settings-row + .settings-row { border-top: 2px solid var(--line); }
+  .settings-row:active { background: var(--surface-2); }
+  .settings-icon {
+    width: 36px; height: 36px; flex: none; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); font-size: 19px;
+  }
+  .settings-label { flex: 1; min-width: 0; }
+  .settings-value { color: var(--ink-soft); font-weight: 700; font-size: 15px; white-space: nowrap; }
+  .settings-chevron { color: var(--ink-soft); font-size: 24px; line-height: 1; margin-left: 2px; flex: none; }
+  .settings-switch {
+    position: relative; flex: none; width: 50px; height: 30px; border-radius: 999px;
+    background: var(--teal); transition: background .2s;
+  }
+  .settings-switch::after {
+    content: ''; position: absolute; top: 3px; left: 23px; width: 24px; height: 24px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: left .2s;
+  }
+  .settings-row.is-muted .settings-switch { background: var(--line); }
+  .settings-row.is-muted .settings-switch::after { left: 3px; }
+  .settings-danger-btn {
+    align-self: center; margin-top: 26px; padding: 10px 18px;
+    background: none; border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'Quicksand'; font-weight: 700; font-size: 15.5px; color: var(--danger-ink);
+  }
+  .settings-danger-btn:active { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+
   .progress-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .summary-item {
     background: var(--surface); border: 2px solid var(--line); border-radius: 18px;

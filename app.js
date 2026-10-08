@@ -3306,9 +3306,9 @@
 
   function applyMuteUI() {
     const btn = document.getElementById('muteBtn');
-    btn.textContent = isMuted ? '🔇 Âm thanh: đang tắt' : '🔊 Âm thanh: đang bật';
+    document.getElementById('muteIcon').textContent = isMuted ? '🔇' : '🔊';
     btn.classList.toggle('is-muted', isMuted);
-    btn.setAttribute('aria-label', isMuted ? 'Bật âm thanh' : 'Tắt âm thanh');
+    btn.setAttribute('aria-checked', isMuted ? 'false' : 'true');
   }
   document.getElementById('muteBtn').addEventListener('click', () => {
     isMuted = !isMuted;
@@ -3330,18 +3330,20 @@
 
   function applyThemeUI() {
     const btn = document.getElementById('themeBtn');
+    const setUI = (icon, value, label) => {
+      document.getElementById('themeIcon').textContent = icon;
+      document.getElementById('themeValue').textContent = value;
+      btn.setAttribute('aria-label', label);
+    };
     if (themeMode === 'light') {
       document.documentElement.setAttribute('data-theme', 'light');
-      btn.textContent = '☀️ Giao diện: sáng';
-      btn.setAttribute('aria-label', 'Đang dùng giao diện sáng, bấm để đổi sang tối');
+      setUI('☀️', 'Sáng', 'Giao diện: sáng. Bấm để đổi sang tối');
     } else if (themeMode === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
-      btn.textContent = '🌙 Giao diện: tối';
-      btn.setAttribute('aria-label', 'Đang dùng giao diện tối, bấm để đổi theo máy');
+      setUI('🌙', 'Tối', 'Giao diện: tối. Bấm để đổi theo máy');
     } else {
       document.documentElement.removeAttribute('data-theme');
-      btn.textContent = '🌗 Giao diện: theo máy';
-      btn.setAttribute('aria-label', 'Đang theo giao diện máy, bấm để đổi sang sáng');
+      setUI('🌗', 'Theo máy', 'Giao diện: theo máy. Bấm để đổi sang sáng');
     }
   }
   document.getElementById('themeBtn').addEventListener('click', () => {

@@ -28,11 +28,12 @@
       <button class="brand" id="brandHomeBtn" aria-label="Về trang chủ">
         <div class="mascot">🦊<span class="mascot-accessory" id="mascotAccessory" hidden></span></div>
         <div class="names">
-          <div class="app-name">5 Phút Tiếng Anh</div>
+          <div class="app-name">5 Phút Tiếng&nbsp;Anh</div>
           <div class="tagline">Học vui mỗi ngày cùng bé</div>
         </div>
       </button>
       <div class="topbar-right">
+        <button class="donate-btn" id="donateBtn" aria-label="Ủng hộ ứng dụng">💚<span class="donate-btn-label">Ủng hộ</span></button>
         <button class="account-btn" id="accountBtn" aria-label="Tài khoản">👤</button>
         <button class="settings-btn" id="settingsBtn" aria-label="Cài đặt">⚙️</button>
         <div class="stars-pill">⭐ <span id="totalStars">0</span> <span id="levelBadge"></span></div>
@@ -409,15 +410,48 @@
     <div class="card-topbar">
       <button class="icon-btn" id="backFromSettings" aria-label="Quay lại">←</button>
     </div>
-    <div class="progress-wrap">
+    <div class="settings-wrap">
       <h2>Cài đặt</h2>
-      <button class="ghost-btn ghost-btn--muted" id="themeBtn" aria-label="Đổi giao diện sáng/tối"></button>
-      <button class="ghost-btn ghost-btn--muted" id="muteBtn" aria-label="Tắt âm thanh"></button>
-      <button class="ghost-btn ghost-btn--muted" id="donateBtn" aria-label="Ủng hộ">💚 Ủng hộ ứng dụng</button>
-      <button class="ghost-btn ghost-btn--muted" id="openPlacementBtn">🧪 Kiểm tra trình độ của bé</button>
-      <button class="ghost-btn ghost-btn--muted" id="openFeedbackBtn">💬 Gửi ý kiến cho chúng tôi</button>
-      <button class="ghost-btn ghost-btn--muted" id="replayOnboardingBtn">📖 Xem lại hướng dẫn sử dụng</button>
-      <button class="ghost-btn ghost-btn--danger" id="resetProgressBtn">Đặt lại toàn bộ tiến độ học</button>
+
+      <div class="settings-group-label">Hiển thị &amp; âm thanh</div>
+      <div class="settings-group">
+        <button class="settings-row" id="themeBtn">
+          <span class="settings-icon" id="themeIcon">🌗</span>
+          <span class="settings-label">Giao diện</span>
+          <span class="settings-value" id="themeValue">Theo máy</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
+        <button class="settings-row" id="muteBtn" role="switch" aria-checked="true">
+          <span class="settings-icon" id="muteIcon">🔊</span>
+          <span class="settings-label">Âm thanh đọc</span>
+          <span class="settings-switch" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <div class="settings-group-label">Học tập</div>
+      <div class="settings-group">
+        <button class="settings-row" id="openPlacementBtn">
+          <span class="settings-icon">🧪</span>
+          <span class="settings-label">Kiểm tra trình độ của bé</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
+      </div>
+
+      <div class="settings-group-label">Hỗ trợ</div>
+      <div class="settings-group">
+        <button class="settings-row" id="openFeedbackBtn">
+          <span class="settings-icon">💬</span>
+          <span class="settings-label">Gửi ý kiến cho chúng tôi</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
+        <button class="settings-row" id="replayOnboardingBtn">
+          <span class="settings-icon">📖</span>
+          <span class="settings-label">Hướng dẫn sử dụng</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
+      </div>
+
+      <button class="settings-danger-btn" id="resetProgressBtn">🗑️ Đặt lại toàn bộ tiến độ học</button>
     </div>
   </section>
 
@@ -1195,7 +1229,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💚</span>
-        <span><strong>Ủng hộ</strong> — trong màn Cài đặt (⚙️ ở góc trên) có nút "💚 Ủng hộ ứng dụng" nếu ba mẹ muốn ủng hộ mình phát triển app tốt hơn.</span>
+        <span><strong>Ủng hộ</strong> — bấm nút "💚 Ủng hộ" ở góc trên nếu ba mẹ muốn ủng hộ mình phát triển app tốt hơn.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🌗</span>
