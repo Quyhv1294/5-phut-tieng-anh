@@ -11,7 +11,8 @@
 //
 //   PHẦN 2 — sendInactivityReminders()/sendWeeklyDigest(): 2 hàm chạy theo
 //   lịch (Time-driven Trigger, tự cấu hình riêng, KHÔNG liên quan doGet) để
-//   nhắc ba mẹ qua email khi bé nghỉ học lâu, và gửi báo cáo tuần.
+//   nhắc học qua email khi nghỉ học lâu, và gửi báo cáo tuần — riêng cho
+//   tiếng Anh (cột Progress) và Tiếng Trung (cột ProgressZh).
 //
 // Nếu project đã có sẵn 1 hàm doGet() khác từ trước (kể cả bản
 // lỗi/rỗng), XOÁ hàm đó đi trước khi dán — Apps Script không cho 2 hàm trùng
@@ -21,6 +22,7 @@
 const CONFIG = {
   SHEET_NAME: 'Progress',
   FROM_NAME: '5 Phút Tiếng Anh',
+  FROM_NAME_ZH: '5 Phút Tiếng Trung', // tên người gửi cho email của người học Tiếng Trung
 
   // --- Phần 1: xác thực OTP ---
   OTP_TTL_MINUTES: 10,          // mã hết hạn sau bao nhiêu phút
@@ -33,8 +35,11 @@ const CONFIG = {
   FEEDBACK_DAILY_LIMIT: 5,         // tối đa bao nhiêu ý kiến / thiết bị / ngày (chống spam)
 
   // --- Phần 2: nhắc học qua email ---
+  // Đang TẠM TẮT email nhắc học (cả tiếng Anh lẫn Tiếng Trung). Muốn bật lại: đổi thành true,
+  // Lưu + Deploy (New version). Trigger có chạy cũng không gửi gì khi đang tắt.
+  REMINDERS_ENABLED: false,
   INACTIVE_DAYS_THRESHOLD: 2,   // bao nhiêu ngày không học liên tiếp thì gửi email nhắc
-  APP_URL: 'https://ten-mien-cua-ban.com', // đổi thành domain thật bạn đang host
+  APP_URL: 'https://quyhv1294.github.io/5-phut-tieng-anh/', // địa chỉ app (GitHub Pages) — dùng trong email nhắc học / báo cáo tuần
 };
 
 // Cột theo đúng thứ tự sẽ tự tạo trên sheet "Progress" nếu sheet chưa có/chưa
@@ -43,6 +48,8 @@ const AUTH_HEADERS = [
   'Email', 'DeviceId', 'Name', 'Age', 'Avatar', 'Phone', 'Progress',
   'OtpCode', 'OtpExpiresAt', 'OtpLastSentAt', 'OtpSentCountToday', 'OtpSentCountDate',
   'UpdatedAt',
+  // Thêm SAU CÙNG để không xê dịch cột của sheet đang có (getSheet_ tự điền tiêu đề còn thiếu).
+  'ProgressZh', // tiến độ khoá Tiếng Trung (JSON) — tách riêng khỏi cột Progress của tiếng Anh
 ];
 
 // Cột của tab "Feedback" (mỗi ý kiến 1 dòng, thứ tự cột = thứ tự trong appendRow ở handleSaveFeedback_).
@@ -57,6 +64,24 @@ const PROGRESS_HEADER_HINTS = ['progress', 'tiến độ', 'tiendo'];
 // PHẦN 1 — XÁC THỰC EMAIL (OTP) + ĐỒNG BỘ HỒ SƠ/TIẾN ĐỘ
 // ============================================================================
 
+// ---------- POST: tiến độ Tiếng Trung (JSON lớn, không nhét vừa URL của GET) ----------
+// App gửi text/plain {action:'saveProgress', email, deviceId, lang:'zh', progress:'<json>'}.
+function doPost(e) {
+  let result;
+  try {
+    const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (body.action === 'saveProgress') {
+      const json = typeof body.progress === 'string' ? body.progress : JSON.stringify(body.progress || '');
+      result = handleSaveProgress_(body.email, body.deviceId, json, body.lang);
+    } else {
+      result = { ok: false, error: 'unknown_action' };
+    }
+  } catch (err) {
+    result = { ok: false, error: 'server_error', message: String(err) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
 // ---------- ĐIỂM VÀO DUY NHẤT: mọi request GET từ app đều qua đây ----------
 function doGet(e) {
   const action = e && e.parameter && e.parameter.action;
@@ -64,7 +89,7 @@ function doGet(e) {
   try {
     switch (action) {
       case 'sendCode':
-        result = handleSendCode_(e.parameter.email);
+        result = handleSendCode_(e.parameter.email, e.parameter.lang);
         break;
       case 'verifyCode':
         result = handleVerifyCode_(e.parameter.email, e.parameter.code);
@@ -73,7 +98,7 @@ function doGet(e) {
         result = handleGetUserData_(e.parameter.email, e.parameter.deviceId);
         break;
       case 'saveProgress':
-        result = handleSaveProgress_(e.parameter.email, e.parameter.deviceId, e.parameter.progress);
+        result = handleSaveProgress_(e.parameter.email, e.parameter.deviceId, e.parameter.progress, e.parameter.lang);
         break;
       case 'checkSession':
         result = handleCheckSession_(e.parameter.email, e.parameter.deviceId);
@@ -97,7 +122,8 @@ function doGet(e) {
 // Sinh mã 6 số, lưu vào sheet kèm hạn dùng, gửi qua email. Có chặn gửi dồn dập
 // (too_soon) và chặn spam trong ngày (daily_limit) — đúng 2 mã lỗi app.js đã
 // biết map sẵn sang tiếng Việt (xem mapBackendError trong app.js).
-function handleSendCode_(email) {
+// lang = 'zh' (app đang ở chế độ học Tiếng Trung) → email viết cho người học, tên app Tiếng Trung.
+function handleSendCode_(email, lang) {
   if (!isValidEmail_(email)) return { ok: false, error: 'invalid_email' };
 
   const sheet = getSheet_();
@@ -129,14 +155,16 @@ function handleSendCode_(email) {
     setCell_(sheet, row, 'OtpSentCountDate', todayStr);
 
     try {
+      const zh = lang === 'zh';
+      const appName = zh ? CONFIG.FROM_NAME_ZH : CONFIG.FROM_NAME;
       MailApp.sendEmail({
         to: email,
-        subject: 'Mã xác thực "5 Phút Tiếng Anh": ' + code,
-        body: 'Chào ba mẹ,\n\n' +
-          'Mã xác thực đăng nhập "5 Phút Tiếng Anh" là: ' + code + '\n\n' +
-          'Mã có hiệu lực trong ' + CONFIG.OTP_TTL_MINUTES + ' phút. Nếu không phải ba mẹ yêu cầu, hãy bỏ qua email này.\n\n' +
-          '— ' + CONFIG.FROM_NAME,
-        name: CONFIG.FROM_NAME,
+        subject: 'Mã xác thực "' + appName + '": ' + code,
+        body: (zh ? 'Chào bạn,\n\n' : 'Chào ba mẹ,\n\n') +
+          'Mã xác thực đăng nhập "' + appName + '" là: ' + code + '\n\n' +
+          'Mã có hiệu lực trong ' + CONFIG.OTP_TTL_MINUTES + ' phút. Nếu không phải ' + (zh ? 'bạn' : 'ba mẹ') + ' yêu cầu, hãy bỏ qua email này.\n\n' +
+          '— ' + appName,
+        name: appName,
       });
     } catch (mailErr) {
       return { ok: false, error: 'send_failed' };
@@ -187,12 +215,18 @@ function handleGetUserData_(email, deviceId) {
 
     const name = getCell_(sheet, row, 'Name');
     const progressRaw = getCell_(sheet, row, 'Progress');
-    const found = !!(name || progressRaw);
-    if (!found) return { ok: true, found: false };
+    const progressZhRaw = getCell_(sheet, row, 'ProgressZh');
+    const found = !!(name || progressRaw || progressZhRaw);
+    // zhSync: báo app biết backend này đã có cột ProgressZh (bản cũ không trả trường này → app
+    // không gửi tiến độ Tiếng Trung, tránh ghi nhầm vào cột Progress của tiếng Anh).
+    if (!found) return { ok: true, found: false, zhSync: true };
 
-    let progress = null;
+    let progress = null, progressZh = null;
     if (progressRaw) {
       try { progress = JSON.parse(progressRaw); } catch (e) { progress = null; }
+    }
+    if (progressZhRaw) {
+      try { progressZh = JSON.parse(progressZhRaw); } catch (e) { progressZh = null; }
     }
     let profile = null;
     if (name) {
@@ -203,7 +237,7 @@ function handleGetUserData_(email, deviceId) {
         parentPhone: String(getCell_(sheet, row, 'Phone') || ''),
       };
     }
-    return { ok: true, found: true, profile: profile, progress: progress };
+    return { ok: true, found: true, profile: profile, progress: progress, progressZh: progressZh, zhSync: true };
   } finally {
     lock.releaseLock();
   }
@@ -214,7 +248,8 @@ function handleGetUserData_(email, deviceId) {
 // nếu request đến từ 1 thiết bị KHÔNG phải thiết bị đang active của email đó,
 // để tránh thiết bị đã bị đăng xuất/đè lại ghi đè tiến độ mới hơn của thiết bị
 // đang dùng thật.
-function handleSaveProgress_(email, deviceId, progressJson) {
+// lang = 'zh' → ghi vào cột ProgressZh; còn lại (không truyền) → cột Progress của tiếng Anh.
+function handleSaveProgress_(email, deviceId, progressJson, lang) {
   if (!email || !progressJson) return { ok: false, error: 'missing_params' };
   const sheet = getSheet_();
   const lock = LockService.getScriptLock();
@@ -224,7 +259,7 @@ function handleSaveProgress_(email, deviceId, progressJson) {
     const activeDevice = getCell_(sheet, row, 'DeviceId');
     if (activeDevice && deviceId && activeDevice !== deviceId) return { ok: false, error: 'device_mismatch' };
 
-    setCell_(sheet, row, 'Progress', progressJson);
+    setCell_(sheet, row, lang === 'zh' ? 'ProgressZh' : 'Progress', progressJson);
     setCell_(sheet, row, 'UpdatedAt', new Date().toISOString());
     return { ok: true };
   } finally {
@@ -238,9 +273,9 @@ function handleSaveProgress_(email, deviceId, progressJson) {
 function handleCheckSession_(email, deviceId) {
   const sheet = getSheet_();
   const row = findRowByEmail_(sheet, email);
-  if (row === -1) return { ok: true, active: true };
+  if (row === -1) return { ok: true, active: true, zhSync: true };
   const activeDevice = getCell_(sheet, row, 'DeviceId');
-  return { ok: true, active: !activeDevice || activeDevice === deviceId };
+  return { ok: true, active: !activeDevice || activeDevice === deviceId, zhSync: true };
 }
 
 // ---------- action=saveProfile ----------
@@ -346,6 +381,11 @@ function getSheet_() {
   } else if (sheet.getLastRow() === 0) {
     sheet.appendRow(AUTH_HEADERS);
   }
+  // Sheet tạo từ bản cũ thiếu cột mới thêm ở cuối AUTH_HEADERS (VD ProgressZh) → điền tiêu đề còn thiếu.
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < AUTH_HEADERS.length) {
+    sheet.getRange(1, lastCol + 1, 1, AUTH_HEADERS.length - lastCol).setValues([AUTH_HEADERS.slice(lastCol)]);
+  }
   return sheet;
 }
 
@@ -406,116 +446,183 @@ function findColumnIndex_(headerRow, hints) {
   return -1;
 }
 
-// ---------- 2a) NHẮC HỌC KHI BÉ NGHỈ >= N NGÀY LIÊN TIẾP ----------
-// Gắn hàm này vào 1 Time-driven Trigger chạy 1 lần/ngày (VD 19h tối) trong menu
-// Triggers (⏰) của Apps Script — Edit > Current project's triggers > Add Trigger.
-function sendInactivityReminders() {
+// Đọc sheet cho Phần 2: trả về { data, emailCol, cols: { en, zh } } (zh = -1 nếu chưa có cột ProgressZh).
+// Cột tiếng Anh dò theo PROGRESS_HEADER_HINTS (khớp cột đầu tiên — tức 'Progress', đứng trước 'ProgressZh').
+function readProgressSheet_() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME);
-  if (!sheet) { Logger.log('Không tìm thấy sheet "' + CONFIG.SHEET_NAME + '" — sửa SHEET_NAME trong CONFIG.'); return; }
-
+  if (!sheet) { Logger.log('Không tìm thấy sheet "' + CONFIG.SHEET_NAME + '" — sửa SHEET_NAME trong CONFIG.'); return null; }
   const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return; // chỉ có header, chưa có dữ liệu
-
+  if (data.length < 2) return null; // chỉ có header, chưa có dữ liệu
   const header = data[0];
   const emailCol = findColumnIndex_(header, EMAIL_HEADER_HINTS);
-  const progressCol = findColumnIndex_(header, PROGRESS_HEADER_HINTS);
-  if (emailCol === -1 || progressCol === -1) {
+  const enCol = findColumnIndex_(header, PROGRESS_HEADER_HINTS);
+  const zhCol = header.findIndex(h => String(h || '').toLowerCase().trim() === 'progresszh');
+  if (emailCol === -1 || enCol === -1) {
     Logger.log('Không tìm thấy cột email/progress theo từ khoá cấu hình — mở sheet xem tên cột thật rồi sửa EMAIL_HEADER_HINTS/PROGRESS_HEADER_HINTS.');
-    return;
+    return null;
   }
+  return { data: data, emailCol: emailCol, cols: { en: enCol, zh: zhCol } };
+}
 
+function parseProgress_(raw) {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; } // ô không phải JSON hợp lệ thì bỏ qua
+}
+
+function daysSince_(dateStr, today) {
+  return Math.floor((today - new Date(dateStr)) / (1000 * 60 * 60 * 24));
+}
+
+// ---------- 2a) NHẮC HỌC KHI NGHỈ >= N NGÀY LIÊN TIẾP ----------
+// Gắn hàm này vào 1 Time-driven Trigger chạy 1 lần/ngày (VD 19h tối) trong menu
+// Triggers (⏰) của Apps Script — Edit > Current project's triggers > Add Trigger.
+// Tiếng Anh (cột Progress, viết cho ba mẹ) và Tiếng Trung (cột ProgressZh, viết cho người học)
+// xét RIÊNG: ai học cả 2 mà nghỉ 1 bên thì chỉ nhắc bên đó.
+function sendInactivityReminders() {
+  if (!CONFIG.REMINDERS_ENABLED) { Logger.log('Email nhắc học đang tắt (CONFIG.REMINDERS_ENABLED = false) — không gửi gì.'); return; }
+  const sh = readProgressSheet_();
+  if (!sh) return;
   const today = new Date();
   let sentCount = 0;
 
-  for (let r = 1; r < data.length; r++) {
-    const email = data[r][emailCol];
-    const progressRaw = data[r][progressCol];
-    if (!email || !progressRaw) continue;
+  for (let r = 1; r < sh.data.length; r++) {
+    const email = sh.data[r][sh.emailCol];
+    if (!email) continue;
+    ['en', 'zh'].forEach(function (lang) {
+      if (sh.cols[lang] === -1) return;
+      const progress = parseProgress_(sh.data[r][sh.cols[lang]]);
+      const lastDate = progress && progress.streak && progress.streak.lastDate;
+      if (!lastDate) return; // chưa học buổi nào, không có gì để nhắc "lỡ mất"
 
-    let progress;
-    try { progress = JSON.parse(progressRaw); } catch (e) { continue; } // ô này không phải JSON hợp lệ, bỏ qua
+      // Chỉ gửi đúng vào ngày số ngày nghỉ CHẠM ngưỡng lần đầu (VD ngưỡng 2: gửi khi lỡ đúng 2 ngày,
+      // không gửi lại mỗi ngày sau đó cho tới khi quay lại học rồi lại nghỉ tiếp). Muốn nhắc lại định
+      // kỳ (VD mỗi 3 ngày sau đó) thì đổi thành: if (days !== threshold && days % 3 !== 0) return;
+      const days = daysSince_(lastDate, today);
+      if (days !== CONFIG.INACTIVE_DAYS_THRESHOLD) return;
 
-    const lastDate = progress && progress.streak && progress.streak.lastDate;
-    if (!lastDate) continue; // chưa học buổi nào, không có gì để nhắc "lỡ mất"
-
-    const daysSince = Math.floor((today - new Date(lastDate)) / (1000 * 60 * 60 * 24));
-    if (daysSince < CONFIG.INACTIVE_DAYS_THRESHOLD) continue;
-
-    // Tránh gửi lại nhiều lần cùng 1 hôm nghỉ — chỉ gửi đúng vào ngày daysSince CHẠM ngưỡng lần
-    // đầu (VD ngưỡng 2: gửi khi lỡ đúng 2 ngày, không gửi lại mỗi ngày sau đó nữa cho tới khi họ
-    // quay lại học rồi lại nghỉ tiếp). Nếu muốn nhắc lại định kỳ (VD mỗi 3 ngày sau đó), đổi dòng
-    // dưới thành: if (daysSince !== threshold && daysSince % 3 !== 0) continue;
-    if (daysSince !== CONFIG.INACTIVE_DAYS_THRESHOLD) continue;
-
-    const streakBest = (progress.streak && progress.streak.best) || 0;
-    const subject = 'Bé đang nhớ "5 Phút Tiếng Anh" đó! 💚';
-    const body =
-      'Chào ba mẹ,\n\n' +
-      'Đã ' + daysSince + ' ngày bé chưa vào học tiếp rồi. ' +
-      (streakBest > 1 ? 'Bé từng đạt chuỗi ' + streakBest + ' ngày liên tiếp — quay lại học ngay hôm nay để giữ phong độ nhé!' : 'Chỉ cần 5 phút mỗi ngày là đủ, ba mẹ cùng bé vào học lại nhé!') +
-      '\n\n👉 ' + CONFIG.APP_URL +
-      '\n\n— ' + CONFIG.FROM_NAME;
-
-    try {
-      MailApp.sendEmail({ to: email, subject: subject, body: body, name: CONFIG.FROM_NAME });
-      sentCount++;
-    } catch (e) {
-      Logger.log('Gửi email nhắc thất bại cho ' + email + ': ' + e);
-    }
+      const mail = lang === 'zh' ? zhReminderMail_(progress, days) : enReminderMail_(progress, days);
+      try {
+        MailApp.sendEmail({ to: email, subject: mail.subject, body: mail.body, name: mail.from });
+        sentCount++;
+      } catch (e) {
+        Logger.log('Gửi email nhắc thất bại cho ' + email + ' (' + lang + '): ' + e);
+      }
+    });
   }
 
   Logger.log('Đã gửi ' + sentCount + ' email nhắc học.');
 }
 
-// ---------- 2b) BÁO CÁO TUẦN CHO BA MẸ ----------
-// Gắn vào 1 Time-driven Trigger chạy 1 lần/tuần (VD Chủ nhật 20h) — trigger riêng, tách khỏi
-// sendInactivityReminders() để 2 việc không phụ thuộc lịch của nhau.
-function sendWeeklyDigest() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEET_NAME);
-  if (!sheet) { Logger.log('Không tìm thấy sheet "' + CONFIG.SHEET_NAME + '".'); return; }
-
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return;
-
-  const header = data[0];
-  const emailCol = findColumnIndex_(header, EMAIL_HEADER_HINTS);
-  const progressCol = findColumnIndex_(header, PROGRESS_HEADER_HINTS);
-  if (emailCol === -1 || progressCol === -1) { Logger.log('Không tìm thấy cột email/progress.'); return; }
-
-  let sentCount = 0;
-  for (let r = 1; r < data.length; r++) {
-    const email = data[r][emailCol];
-    const progressRaw = data[r][progressCol];
-    if (!email || !progressRaw) continue;
-
-    let progress;
-    try { progress = JSON.parse(progressRaw); } catch (e) { continue; }
-    if (!progress || !progress.streak || !progress.streak.lastDate) continue; // chưa học lần nào, chưa có gì để báo cáo
-
-    const doneTopicsCount = progress.doneTopics ? Object.keys(progress.doneTopics).length : 0;
-    const stars = progress.stars || 0;
-    const streakCount = progress.streak.count || 0;
-
-    const subject = '📊 Báo cáo tuần học tiếng Anh của bé';
-    const body =
+function enReminderMail_(progress, days) {
+  const streakBest = (progress.streak && progress.streak.best) || 0;
+  return {
+    from: CONFIG.FROM_NAME,
+    subject: 'Bé đang nhớ "5 Phút Tiếng Anh" đó! 💚',
+    body:
       'Chào ba mẹ,\n\n' +
-      'Tổng kết tiến độ học của bé tính tới hôm nay:\n' +
-      '⭐ Tổng số sao: ' + stars + '\n' +
-      '📚 Số chủ đề đã học xong: ' + doneTopicsCount + '\n' +
-      '🔥 Chuỗi ngày học liên tiếp hiện tại: ' + streakCount + ' ngày\n\n' +
-      'Ba mẹ cùng bé vào học tiếp để giữ đà nhé!\n' +
-      '👉 ' + CONFIG.APP_URL +
-      '\n\n— ' + CONFIG.FROM_NAME;
+      'Đã ' + days + ' ngày bé chưa vào học tiếp rồi. ' +
+      (streakBest > 1 ? 'Bé từng đạt chuỗi ' + streakBest + ' ngày liên tiếp — quay lại học ngay hôm nay để giữ phong độ nhé!' : 'Chỉ cần 5 phút mỗi ngày là đủ, ba mẹ cùng bé vào học lại nhé!') +
+      '\n\n👉 ' + CONFIG.APP_URL +
+      '\n\n— ' + CONFIG.FROM_NAME,
+  };
+}
 
-    try {
-      MailApp.sendEmail({ to: email, subject: subject, body: body, name: CONFIG.FROM_NAME });
-      sentCount++;
-    } catch (e) {
-      Logger.log('Gửi báo cáo tuần thất bại cho ' + email + ': ' + e);
-    }
+function zhReminderMail_(progress, days) {
+  const z = zhStats_(progress);
+  return {
+    from: CONFIG.FROM_NAME_ZH,
+    subject: 'Đã ' + days + ' ngày bạn chưa học tiếng Trung 📚',
+    body:
+      'Chào bạn,\n\n' +
+      'Đã ' + days + ' ngày bạn chưa vào học tiếp khoá Tiếng Trung. ' +
+      (z.due > 0 ? 'Hiện có ' + z.due + ' từ đã đến hạn ôn — ôn ngay để không quên nhé! ' : '') +
+      (z.streakBest > 1 ? 'Bạn từng học ' + z.streakBest + ' ngày liên tiếp, quay lại hôm nay để giữ nhịp nhé!' : 'Chỉ cần 5 phút mỗi ngày là đủ, vào học tiếp nhé!') +
+      '\n\n📈 Tiến độ: ' + z.units + ' chặng đã xong · ' + z.words + ' từ đã học' +
+      '\n\n👉 ' + CONFIG.APP_URL +
+      '\n\n— ' + CONFIG.FROM_NAME_ZH,
+  };
+}
+
+// Số liệu khoá Tiếng Trung từ progress.zh (xem zh-course.js): units = chặng đã xong,
+// srs = từ đã học (mỗi từ có hạn ôn "due" dạng yyyy-MM-dd).
+function zhStats_(progress) {
+  const z = (progress && progress.zh) || {};
+  const srs = z.srs || {};
+  const todayStr = formatDateYmd_(new Date());
+  return {
+    units: Object.keys(z.units || {}).length,
+    words: Object.keys(srs).length,
+    due: Object.keys(srs).filter(k => srs[k] && srs[k].due && srs[k].due <= todayStr).length,
+    stars: progress.stars || 0,
+    streak: (progress.streak && progress.streak.count) || 0,
+    streakBest: (progress.streak && progress.streak.best) || 0,
+  };
+}
+
+// ---------- 2b) BÁO CÁO TUẦN ----------
+// Gắn vào 1 Time-driven Trigger chạy 1 lần/tuần (VD Chủ nhật 20h) — trigger riêng, tách khỏi
+// sendInactivityReminders() để 2 việc không phụ thuộc lịch của nhau. Mỗi ngôn ngữ đang học
+// (đã có ít nhất 1 buổi học) nhận 1 báo cáo riêng.
+function sendWeeklyDigest() {
+  const sh = readProgressSheet_();
+  if (!sh) return;
+  let sentCount = 0;
+
+  for (let r = 1; r < sh.data.length; r++) {
+    const email = sh.data[r][sh.emailCol];
+    if (!email) continue;
+    ['en', 'zh'].forEach(function (lang) {
+      if (sh.cols[lang] === -1) return;
+      const progress = parseProgress_(sh.data[r][sh.cols[lang]]);
+      if (!progress || !progress.streak || !progress.streak.lastDate) return; // chưa học lần nào, chưa có gì để báo cáo
+
+      const mail = lang === 'zh' ? zhDigestMail_(progress) : enDigestMail_(progress);
+      try {
+        MailApp.sendEmail({ to: email, subject: mail.subject, body: mail.body, name: mail.from });
+        sentCount++;
+      } catch (e) {
+        Logger.log('Gửi báo cáo tuần thất bại cho ' + email + ' (' + lang + '): ' + e);
+      }
+    });
   }
 
   Logger.log('Đã gửi ' + sentCount + ' báo cáo tuần.');
+}
+
+function enDigestMail_(progress) {
+  const doneTopicsCount = progress.doneTopics ? Object.keys(progress.doneTopics).length : 0;
+  return {
+    from: CONFIG.FROM_NAME,
+    subject: '📊 Báo cáo tuần học tiếng Anh của bé',
+    body:
+      'Chào ba mẹ,\n\n' +
+      'Tổng kết tiến độ học của bé tính tới hôm nay:\n' +
+      '⭐ Tổng số sao: ' + (progress.stars || 0) + '\n' +
+      '📚 Số chủ đề đã học xong: ' + doneTopicsCount + '\n' +
+      '🔥 Chuỗi ngày học liên tiếp hiện tại: ' + (progress.streak.count || 0) + ' ngày\n\n' +
+      'Ba mẹ cùng bé vào học tiếp để giữ đà nhé!\n' +
+      '👉 ' + CONFIG.APP_URL +
+      '\n\n— ' + CONFIG.FROM_NAME,
+  };
+}
+
+function zhDigestMail_(progress) {
+  const z = zhStats_(progress);
+  return {
+    from: CONFIG.FROM_NAME_ZH,
+    subject: '📊 Báo cáo tuần học tiếng Trung của bạn',
+    body:
+      'Chào bạn,\n\n' +
+      'Tổng kết tiến độ khoá Tiếng Trung tính tới hôm nay:\n' +
+      '🗺️ Số chặng đã xong: ' + z.units + '\n' +
+      '🔤 Số từ đã học: ' + z.words + '\n' +
+      '🔁 Số từ đến hạn ôn: ' + z.due + '\n' +
+      '⭐ Tổng số sao: ' + z.stars + '\n' +
+      '🔥 Chuỗi ngày học liên tiếp hiện tại: ' + z.streak + ' ngày\n\n' +
+      (z.due > 0 ? 'Vào tab "Ôn tập" để ôn các từ đến hạn trước khi học bài mới nhé!\n' : 'Vào học tiếp để giữ đà nhé!\n') +
+      '👉 ' + CONFIG.APP_URL +
+      '\n\n— ' + CONFIG.FROM_NAME_ZH,
+  };
 }
 
 // ============================================================================

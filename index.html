@@ -29,7 +29,7 @@
         <div class="mascot">🦊<span class="mascot-accessory" id="mascotAccessory" hidden></span></div>
         <div class="names">
           <div class="app-name">5 Phút Tiếng&nbsp;Anh</div>
-          <div class="tagline">Học vui mỗi ngày cùng bé</div>
+          <div class="tagline" data-zh="Mỗi ngày 5 phút, học bài bản">Học vui mỗi ngày cùng bé</div>
         </div>
       </button>
       <div class="topbar-right">
@@ -339,10 +339,10 @@
        cần đổi gì, chỉ đổi phần điều hướng cấp cao (xem setAchievementsMode trong app.js). -->
   <section class="screen" id="screen-achievements">
     <div class="progress-wrap">
-      <h2>Thành tích của bé</h2>
+      <h2 data-zh="Thành tích">Thành tích của bé</h2>
       <div class="segment-toggle" id="achievementsModeToggle">
         <div class="segment-thumb"></div>
-        <button class="segment-btn active" id="achModeBadgesBtn">🏆 Sưu tập</button>
+        <button class="segment-btn active" id="achModeBadgesBtn" data-zh="🏆 Huy hiệu">🏆 Sưu tập</button>
         <button class="segment-btn" id="achModeProgressBtn">📊 Tiến độ</button>
       </div>
 
@@ -397,7 +397,7 @@
         </div>
 
         <div class="section-label">🎓 Chứng nhận thành tích</div>
-        <button class="cta-btn" id="certificateBtn">🎓 Xem & tải chứng nhận của bé</button>
+        <button class="cta-btn" id="certificateBtn" data-zh="🎓 Xem & tải chứng nhận">🎓 Xem & tải chứng nhận của bé</button>
 
         <div class="section-label" id="progressListLabel">Chi tiết chủ đề</div>
         <div class="progress-list" id="progressList"></div>
@@ -412,6 +412,22 @@
     </div>
     <div class="settings-wrap">
       <h2>Cài đặt</h2>
+
+      <div class="settings-group-label">Ngôn ngữ</div>
+      <div class="settings-group">
+        <button class="settings-row" id="learnLangBtn">
+          <span class="settings-icon" id="learnLangIcon">🌏</span>
+          <span class="settings-label">Ngôn ngữ học</span>
+          <span class="settings-value" id="learnLangValue">Tiếng Anh</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
+        <button class="settings-row zh-only" id="zhVoiceBtn">
+          <span class="settings-icon">🗣️</span>
+          <span class="settings-label">Giọng đọc tiếng Trung</span>
+          <span class="settings-value" id="zhVoiceValue">Đang kiểm tra…</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
+      </div>
 
       <div class="settings-group-label">Hiển thị &amp; âm thanh</div>
       <div class="settings-group">
@@ -428,8 +444,8 @@
         </button>
       </div>
 
-      <div class="settings-group-label">Học tập</div>
-      <div class="settings-group">
+      <div class="settings-group-label" id="learningGroupLabel">Học tập</div>
+      <div class="settings-group" id="learningGroup">
         <button class="settings-row" id="openPlacementBtn">
           <span class="settings-icon">🧪</span>
           <span class="settings-label">Kiểm tra trình độ của bé</span>
@@ -464,11 +480,11 @@
       <div class="account-hero">
         <div class="account-hero-emoji">💬</div>
         <h2>Gửi ý kiến cho chúng tôi</h2>
-        <p>Ba mẹ thấy app thế nào? Mọi góp ý đều giúp mình làm bài học hay hơn cho bé ạ.</p>
+        <p data-zh="Bạn thấy app thế nào? Mọi góp ý đều giúp mình làm bài học hay hơn.">Ba mẹ thấy app thế nào? Mọi góp ý đều giúp mình làm bài học hay hơn cho bé ạ.</p>
       </div>
 
       <form class="otp-form" id="feedbackForm" novalidate>
-        <label>Ba mẹ chấm app mấy sao?</label>
+        <label data-zh="Bạn chấm app mấy sao?">Ba mẹ chấm app mấy sao?</label>
         <div class="feedback-rating" id="feedbackRating" role="radiogroup" aria-label="Đánh giá">
           <button type="button" class="feedback-star" data-value="1" role="radio" aria-checked="false" aria-label="1 sao">⭐</button>
           <button type="button" class="feedback-star" data-value="2" role="radio" aria-checked="false" aria-label="2 sao">⭐</button>
@@ -485,13 +501,13 @@
           <button type="button" class="feedback-chip" data-value="Khác" role="radio" aria-checked="false">✨ Khác</button>
         </div>
 
-        <label for="feedbackMessage">Ba mẹ muốn nhắn gì ạ?</label>
-        <textarea id="feedbackMessage" class="feedback-textarea" maxlength="500" rows="5" placeholder="VD: Con mình thích trò nối hình, mong có thêm chủ đề động vật biển..."></textarea>
+        <label for="feedbackMessage" data-zh="Bạn muốn nhắn gì?">Ba mẹ muốn nhắn gì ạ?</label>
+        <textarea id="feedbackMessage" class="feedback-textarea" maxlength="500" rows="5" placeholder="VD: Con mình thích trò nối hình, mong có thêm chủ đề động vật biển..." data-zh-ph="VD: Mong có thêm bài HSK 2, phần luyện nghe hội thoại..."></textarea>
         <div class="feedback-counter" id="feedbackCounter" aria-live="polite">0/500</div>
 
         <button type="submit" class="account-primary-btn" id="feedbackSubmitBtn">Gửi ý kiến</button>
         <p class="account-error" id="feedbackError" role="alert" hidden></p>
-        <p class="account-note">Ý kiến được gửi kèm email đã xác thực để mình có thể phản hồi lại ba mẹ khi cần.</p>
+        <p class="account-note" data-zh="Ý kiến được gửi kèm email đã xác thực để mình có thể phản hồi lại bạn khi cần.">Ý kiến được gửi kèm email đã xác thực để mình có thể phản hồi lại ba mẹ khi cần.</p>
       </form>
     </div>
   </section>
@@ -555,11 +571,11 @@
         <div class="account-hero">
           <div class="account-hero-emoji">📧</div>
           <h2>Xác thực email</h2>
-          <p>Xác thực email để bắt đầu học — bé sẽ được tạo hồ sơ ngay sau khi xác thực xong. Việc này giúp chúng tôi liên hệ hỗ trợ khi cần.</p>
+          <p data-zh="Xác thực email để bắt đầu học — bạn sẽ tạo hồ sơ ngay sau khi xác thực xong. Việc này giúp chúng tôi liên hệ hỗ trợ khi cần.">Xác thực email để bắt đầu học — bé sẽ được tạo hồ sơ ngay sau khi xác thực xong. Việc này giúp chúng tôi liên hệ hỗ trợ khi cần.</p>
         </div>
 
         <form class="otp-form" id="emailEntryForm">
-          <label for="emailInput">Email của ba mẹ</label>
+          <label for="emailInput" data-zh="Email của bạn">Email của ba mẹ</label>
           <input type="email" id="emailInput" autocomplete="email" placeholder="ten@gmail.com" required>
           <button type="submit" class="account-primary-btn" id="emailSendCodeBtn">Gửi mã xác thực</button>
           <p class="account-error" id="emailEntryError" role="alert" hidden></p>
@@ -585,11 +601,11 @@
         <div class="account-detail-list">
           <div class="account-detail-row"><span class="account-detail-label">📧 Email</span><span class="account-detail-value" id="accountEmailDisplay">—</span></div>
           <div class="account-detail-row"><span class="account-detail-label">✅ Trạng thái</span><span class="account-detail-value">Đã xác thực</span></div>
-          <div class="account-detail-row"><span class="account-detail-label">📱 SĐT ba mẹ</span><span class="account-detail-value" id="accountPhoneDisplay">—</span></div>
-          <div class="account-detail-row"><span class="account-detail-label">🎓 Lớp học</span><span class="account-detail-value" id="accountLevelDisplay">Chưa kiểm tra</span></div>
+          <div class="account-detail-row"><span class="account-detail-label" data-zh="📱 Số điện thoại">📱 SĐT ba mẹ</span><span class="account-detail-value" id="accountPhoneDisplay">—</span></div>
+          <div class="account-detail-row en-only"><span class="account-detail-label">🎓 Lớp học</span><span class="account-detail-value" id="accountLevelDisplay">Chưa kiểm tra</span></div>
         </div>
-        <p class="account-note">Hồ sơ và tiến trình học của bé được lưu theo email này — đăng nhập cùng email ở thiết bị khác cũng thấy lại đúng tiến trình.</p>
-        <button class="ghost-btn" id="editProfileBtn">✏️ Sửa hồ sơ của bé</button>
+        <p class="account-note" data-zh="Hồ sơ và tiến độ học được lưu theo email này — đăng nhập cùng email ở thiết bị khác cũng thấy lại đúng tiến độ (tiếng Anh và tiếng Trung lưu riêng).">Hồ sơ và tiến trình học của bé được lưu theo email này — đăng nhập cùng email ở thiết bị khác cũng thấy lại đúng tiến trình.</p>
+        <button class="ghost-btn" id="editProfileBtn" data-zh="✏️ Sửa hồ sơ">✏️ Sửa hồ sơ của bé</button>
         <button class="ghost-btn" id="emailSignOutBtn">Xác thực email khác</button>
       </div>
     </div>
@@ -604,7 +620,7 @@
       <div class="account-hero">
         <div class="account-hero-emoji">❤️</div>
         <h2>Ủng hộ phát triển app</h2>
-        <p class="donate-hero-text">Mỗi tấm lòng của ba mẹ là động lực để mình làm thêm thật nhiều bài học hay, giúp bé học tiếng Anh vui hơn mỗi ngày. Cảm ơn ba mẹ rất nhiều! ❤️</p>
+        <p class="donate-hero-text" data-zh="Mỗi tấm lòng của bạn là động lực để mình làm thêm thật nhiều bài học hay, giúp việc học tiếng Trung vui hơn mỗi ngày. Cảm ơn bạn rất nhiều! ❤️">Mỗi tấm lòng của ba mẹ là động lực để mình làm thêm thật nhiều bài học hay, giúp bé học tiếng Anh vui hơn mỗi ngày. Cảm ơn ba mẹ rất nhiều! ❤️</p>
       </div>
 
       <div class="donate-qr-card">
@@ -628,7 +644,7 @@
       </div>
 
       <p class="donate-note">Nội dung chuyển khoản gợi ý: "Ung ho 5 Phut Tieng Anh"</p>
-      <p class="donate-note donate-note--thanks">💚 Cảm ơn ba mẹ đã đồng hành cùng bé mỗi ngày!</p>
+      <p class="donate-note donate-note--thanks" data-zh="💚 Cảm ơn bạn đã đồng hành cùng app mỗi ngày!">💚 Cảm ơn ba mẹ đã đồng hành cùng bé mỗi ngày!</p>
     </div>
   </section>
 
@@ -639,21 +655,21 @@
     </div>
     <div class="account-wrap">
       <div class="account-hero">
-        <div class="account-hero-emoji">🧒</div>
+        <div class="account-hero-emoji" data-zh="🙂">🧒</div>
         <h2 id="profileCreateTitle">Tạo hồ sơ cho bé</h2>
-        <p>Thông tin này giúp app cá nhân hoá trải nghiệm học và giúp ba mẹ liên hệ khi cần. Được lưu theo email để dùng lại được trên thiết bị khác.</p>
+        <p data-zh="Thông tin này giúp app cá nhân hoá trải nghiệm học và liên hệ hỗ trợ khi cần. Được lưu theo email để dùng lại được trên thiết bị khác.">Thông tin này giúp app cá nhân hoá trải nghiệm học và giúp ba mẹ liên hệ khi cần. Được lưu theo email để dùng lại được trên thiết bị khác.</p>
       </div>
       <form class="otp-form" id="profileForm">
-        <label for="profileNameInput">Tên bé</label>
+        <label for="profileNameInput" data-zh="Tên của bạn">Tên bé</label>
         <input type="text" id="profileNameInput" autocomplete="off" maxlength="40" required>
 
-        <label for="profileAgeInput">Tuổi của bé</label>
+        <label for="profileAgeInput" data-zh="Tuổi">Tuổi của bé</label>
         <input type="number" id="profileAgeInput" inputmode="numeric" min="3" max="12" required>
 
         <label>Chọn hình đại diện</label>
         <div class="avatar-grid" id="avatarGrid"></div>
 
-        <label for="profilePhoneInput">Số điện thoại ba/mẹ</label>
+        <label for="profilePhoneInput" data-zh="Số điện thoại">Số điện thoại ba/mẹ</label>
         <input type="tel" id="profilePhoneInput" inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxx" required>
 
         <button type="submit" class="account-primary-btn" id="profileSaveBtn">Lưu hồ sơ</button>
@@ -1192,9 +1208,47 @@
 <div class="onboarding-overlay" id="onboardingOverlay" hidden>
   <div class="onboarding-card">
     <div class="onboarding-mascot">🦊</div>
-    <h2>Chào mừng ba mẹ và bé!</h2>
+    <h2 data-zh="Chào mừng bạn đến với khoá Tiếng Trung!">Chào mừng ba mẹ và bé!</h2>
     <p class="onboarding-intro">App có các khu vực chính ở thanh tab dưới cùng, cùng vài biểu tượng tiện ích ở góc trên màn hình:</p>
-    <div class="onboarding-steps">
+    <div class="onboarding-steps zh-only">
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">📚</span>
+        <span><strong>Học</strong> — khoá học bài bản cho người mới bắt đầu, gồm 3 phần và 18 chặng: Nhập môn (pinyin, thanh điệu, nét chữ, bộ thủ, chào hỏi), HSK 1 (số đếm, ngày giờ, tiền, ngữ pháp, gõ chữ) và Từ vựng mở rộng. Các chặng mở LẦN LƯỢT; mỗi chặng xen kẽ học từ mới, đố, tô chữ, sắp xếp câu và kết thúc bằng bài "Ôn tập chặng". Chỉ cần bấm "▶ Tiếp tục học" là app dẫn tới đúng bài tiếp theo. Đã biết trước? Bấm "🏁 Kiểm tra nhảy cóc" ở đầu mỗi phần, đạt từ 80% là mở luôn cả phần đó.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🎯</span>
+        <span><strong>Mục tiêu hôm nay</strong> — chọn 5, 10 hoặc 15 phút mỗi ngày (1–3 bài) ngay trên trang Học. Học đều mỗi ngày để giữ chuỗi ngày 🔥.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🔁</span>
+        <span><strong>Ôn tập</strong> — app tự nhắc ôn đúng lúc bạn sắp quên: từ trả lời đúng được hẹn ôn lại sau 1 → 3 → 7 → 14 → 30 ngày, từ hay sai được gom riêng để luyện thêm.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🎯</span>
+        <span><strong>Luyện tập</strong> — luyện tự do từng kỹ năng, bao nhiêu lần cũng được: thanh điệu, âm đầu dễ nhầm, nhận mặt chữ, nghe chọn chữ, tô chữ, gõ pinyin, sắp xếp câu, nghe số/giờ/giá tiền, bộ thủ.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">📖</span>
+        <span><strong>Thư viện</strong> — tra cứu nhanh bảng pinyin, 4 thanh điệu, bộ thủ, ngữ pháp và toàn bộ từ vựng của khoá. Chạm vào mục bất kỳ để nghe.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🏆</span>
+        <span><strong>Thành tích</strong> — xem huy hiệu, tiến độ từng chặng, nhận chứng nhận thành tích và chia sẻ tiến độ học.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🎨</span>
+        <span><strong>Màu thanh điệu</strong> — pinyin trong app được tô màu theo thanh: <span class="tone-1">thanh 1</span>, <span class="tone-2">thanh 2</span>, <span class="tone-3">thanh 3</span>, <span class="tone-4">thanh 4</span>. Từ Phần 2 trở đi, pinyin trong câu hỏi được ẩn — chạm vào để xem.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">🗣️</span>
+        <span><strong>Giọng đọc</strong> — app dùng giọng đọc tiếng Trung có sẵn trên máy. Nếu bấm 🔊 mà không nghe thấy gì, vào ⚙️ Cài đặt › "Giọng đọc tiếng Trung" để xem cách cài thêm giọng.</span>
+      </div>
+      <div class="onboarding-step">
+        <span class="onboarding-step-icon">⚙️</span>
+        <span><strong>Cài đặt</strong> — đổi ngôn ngữ học (Tiếng Anh / Tiếng Trung, tiến độ mỗi ngôn ngữ lưu riêng), giao diện sáng/tối, bật/tắt âm thanh, gửi góp ý hoặc xem lại hướng dẫn này. Tiến độ được lưu theo email đã xác thực, đổi máy vẫn học tiếp được.</span>
+      </div>
+    </div>
+    <div class="onboarding-steps en-only">
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📚</span>
         <span><strong>Học</strong> — có 4 tab nhỏ: "🗺️ Từ vựng" (các chủ đề mở LẦN LƯỢT theo thứ tự trên bản đồ kho báu: học 1 chủ đề bằng flashcard rồi làm mini quiz, đạt từ 80% câu đúng trở lên thì chủ đề tiếp theo mới mở khoá, sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết), "🔤 Bảng chữ cái" (học 26 chữ cái A-Z, luôn mở sẵn không cần chờ), "🔊 Ngữ âm" (ghép âm các nhóm vần đơn giản như -at/-og/-ug/-an, cũng luôn mở sẵn) và "📗 Truyện tranh" (đọc truyện tranh song ngữ ngắn từng trang kèm nghĩa tiếng Việt, đọc xong trả lời vài câu hỏi hiểu truyện, cũng luôn mở sẵn). Học/ôn xong 1 bài còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "✅ Nhiệm vụ hôm nay" (hoàn thành cả 3 việc nhỏ được thưởng thêm sao) và "Ôn tập thông minh", "Luyện từ khó", "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
@@ -1240,6 +1294,62 @@
   </div>
 </div>
 
+<div class="confirm-overlay" id="langOverlay" hidden>
+  <div class="confirm-card">
+    <p class="confirm-message">Bạn muốn học tiếng nào?</p>
+    <div class="lang-options" id="langOptions"></div>
+    <button class="ghost-btn lang-close-btn" id="langCloseBtn">Đóng</button>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="zhVoiceOverlay" hidden>
+  <div class="confirm-card zh-voice-card">
+    <div class="zh-voice-emoji">🗣️</div>
+    <p class="confirm-message" id="zhVoiceTitle">Máy chưa có giọng đọc tiếng Trung</p>
+    <p class="zh-voice-intro" id="zhVoiceIntro">App dùng giọng đọc có sẵn của máy. Cài thêm giọng <strong>Tiếng Trung (Trung Quốc đại lục)</strong> theo hướng dẫn dưới đây (miễn phí, chỉ làm 1 lần), rồi mở lại app:</p>
+    <div class="zh-voice-guides" id="zhVoiceGuides">
+      <details data-os="ios">
+        <summary>📱 iPhone / iPad</summary>
+        <ol>
+          <li>Mở <strong>Cài đặt</strong> › <strong>Trợ năng</strong> › <strong>Nội dung được đọc</strong>.</li>
+          <li>Chọn <strong>Giọng nói</strong> › <strong>Tiếng Trung (Trung Quốc đại lục)</strong>.</li>
+          <li>Chọn 1 giọng (vd. <strong>Tingting</strong> hoặc <strong>Lilian</strong>) và bấm biểu tượng tải về ⬇️.</li>
+          <li>Tải xong, tắt hẳn app rồi mở lại.</li>
+        </ol>
+      </details>
+      <details data-os="android">
+        <summary>🤖 Android</summary>
+        <ol>
+          <li>Mở <strong>CH Play</strong>, cài hoặc cập nhật <strong>Dịch vụ lời nói của Google</strong> (Speech Services by Google).</li>
+          <li>Vào <strong>Cài đặt</strong>, tìm mục <strong>Chuyển văn bản thành giọng nói</strong> (thường ở Quản lý chung / Hệ thống › Ngôn ngữ).</li>
+          <li>Chọn công cụ <strong>Google</strong> › bấm ⚙️ › <strong>Cài đặt dữ liệu giọng nói</strong>.</li>
+          <li>Chọn <strong>Tiếng Trung (Trung Quốc)</strong> hoặc <strong>Tiếng Quan Thoại</strong> và tải về, rồi mở lại app.</li>
+        </ol>
+      </details>
+      <details data-os="windows">
+        <summary>💻 Máy tính Windows</summary>
+        <ol>
+          <li>Mở <strong>Settings</strong> › <strong>Time &amp; Language</strong> › <strong>Speech</strong>.</li>
+          <li>Bấm <strong>Add voices</strong>, chọn <strong>Chinese (Simplified, China)</strong>.</li>
+          <li>Cài xong, tắt hẳn trình duyệt rồi mở lại. (Trình duyệt Microsoft Edge thường có sẵn giọng tiếng Trung.)</li>
+        </ol>
+      </details>
+      <details data-os="mac">
+        <summary>🍎 Máy Mac</summary>
+        <ol>
+          <li>Mở <strong>Cài đặt hệ thống</strong> › <strong>Trợ năng</strong> › <strong>Nội dung được đọc</strong>.</li>
+          <li>Ở <strong>Giọng hệ thống</strong>, chọn <strong>Quản lý giọng nói…</strong> › <strong>Tiếng Trung (Trung Quốc đại lục)</strong> và tải 1 giọng.</li>
+          <li>Tắt hẳn trình duyệt rồi mở lại.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="confirm-actions">
+      <button class="ghost-btn" id="zhVoiceTestBtn">🔊 Nghe thử</button>
+      <button class="confirm-ok-btn" id="zhVoiceCloseBtn">Đã hiểu</button>
+    </div>
+  </div>
+</div>
+
 <div class="confirm-overlay" id="confirmOverlay" hidden>
   <div class="confirm-card">
     <p class="confirm-message" id="confirmMessage"></p>
@@ -1281,6 +1391,10 @@
 <div class="print-area" id="printArea"></div>
 
 <script src="data/topics.js"></script>
+<script src="data/topics_zh.js"></script>
+<script src="data/zh_roadmap.js"></script>
+<script src="data/zh_course.js"></script>
+<script src="data/zh_hsk1_exam.js"></script>
 <script src="data/alphabet.js"></script>
 <script src="data/phonics.js"></script>
 <script src="data/stories.js"></script>
@@ -1308,5 +1422,6 @@
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>
 <script src="app.js"></script>
+<script src="zh-course.js"></script>
 </body>
 </html>

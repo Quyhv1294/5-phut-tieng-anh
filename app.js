@@ -65,7 +65,57 @@
     else document.addEventListener('DOMContentLoaded', startObserving);
   }
 
-  const STORAGE_KEY = '5phut_progress_v1';
+  // ---------- NGÔN NGỮ BÉ HỌC (Tiếng Anh / Tiếng Trung) ----------
+  // Chọn ở Cài đặt, lưu theo máy; đổi ngôn ngữ thì tải lại trang. Tiếng Trung (giai đoạn 1) chỉ có
+  // từ vựng lớp Mầm: TOPICS được thay nội dung bằng TOPICS_ZH_WORDS (data/topics_zh.js) ngay tại đây,
+  // TRƯỚC mọi chỗ dùng TOPICS, nên toàn bộ màn thẻ học / đố / trò chơi / câu của lớp Mầm chạy y nguyên.
+  // Quy ước: trường `en` của mỗi từ = "chữ của ngôn ngữ đang học" (chữ Hán khi học tiếng Trung),
+  // `py` = pinyin (chỉ tiếng Trung có). Phần chỉ dành cho tiếng Anh (chữ cái, ngữ âm, lớp Chồi/Lá...)
+  // được ẩn bằng class .lang-zh trên <html> (xem style.css).
+  const LEARN_LANG_KEY = '5phut_learn_lang_v1';
+  let LEARN_LANG = 'en';
+  try { if (localStorage.getItem(LEARN_LANG_KEY) === 'zh' && typeof TOPICS_ZH_WORDS !== 'undefined') LEARN_LANG = 'zh'; } catch (e) {}
+  const IS_ZH = LEARN_LANG === 'zh';
+  const LANG_INFOS = {
+    en: { name: 'Tiếng Anh', lower: 'tiếng Anh', flag: '🇬🇧' },
+    zh: { name: 'Tiếng Trung', lower: 'tiếng Trung', flag: '🇨🇳' },
+  };
+  const LANG = LANG_INFOS[LEARN_LANG];
+  if (IS_ZH) {
+    TOPICS.forEach(t => {
+      const zw = TOPICS_ZH_WORDS[t.id];
+      if (zw) t.words = zw.map(w => ({ en: w.zh, py: w.py, vi: w.vi, emoji: w.emoji, example: w.ex, examplePy: w.exPy, exampleVi: w.exVi }));
+    });
+    document.documentElement.classList.add('lang-zh');
+  }
+  // Đổi chữ "tiếng Anh" cố định trong giao diện (index.html) sang ngôn ngữ đang học.
+  function localizeLangText(root) {
+    if (!IS_ZH || !root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (/iếng[\s ]Anh/.test(node.nodeValue)) node.nodeValue = node.nodeValue.replace(/([Tt])iếng([\s ])Anh/g, '$1iếng$2Trung');
+    }
+    document.title = document.title.replace('Tiếng Anh', 'Tiếng Trung');
+    // Khoá tiếng Trung dành cho cả người lớn: chữ viết cho "ba mẹ / bé" được thay bằng bản trung tính
+    // ghi sẵn ở data-zh (chữ) / data-zh-ph (placeholder) trong index.html.
+    root.querySelectorAll('[data-zh]').forEach(n => { n.textContent = n.dataset.zh; });
+    root.querySelectorAll('[data-zh-ph]').forEach(n => { n.placeholder = n.dataset.zhPh; });
+  }
+  localizeLangText(document.body);
+  // Chữ của từ + pinyin (nếu có) ngay bên dưới, dùng cho mọi chỗ hiện 1 từ đang học.
+  function setWordText(el, w) {
+    el.textContent = w.en;
+    if (w.py) {
+      const py = document.createElement('span');
+      py.className = 'word-py';
+      py.textContent = w.py;
+      el.appendChild(py);
+    }
+  }
+
+  // Tiến độ lưu RIÊNG cho từng ngôn ngữ (sao, chủ đề đã học... của tiếng Trung không lẫn với tiếng Anh).
+  const STORAGE_KEY = '5phut_progress_v1' + (IS_ZH ? '_zh' : '');
   const SPELLING_WORD_COUNT = 4; // Xếp chữ chỉ lấy ngẫu nhiên 4 từ/lượt cho vừa sức bé
   // Luật Xếp chữ theo lớp: độ dài từ và số từ mỗi lượt. Mầm: từ 3-4 chữ cái cho vừa sức bé;
   // Chồi: từ 3-6 chữ cái, 5 từ/lượt.
@@ -277,6 +327,7 @@
         songsPlayed: (p.la && p.la.songsPlayed) || {},
       },
       topicsSeen: topicsSeen,
+      zh: p.zh || {}, // khoá học Tiếng Trung — zh-course.js tự chuẩn hoá các trường bên trong
       // Di trú equippedOutfits qua 3 đời schema, cũ nhất trước:
       //  (a) chưa từng có slot: progress.equippedOutfit là 1 string (hoặc null) — coi là 1 món đầu.
       //  (b) có slot đầu/thân nhưng đầu vẫn chỉ mặc được 1 món: equippedOutfits.head là 1 string.
@@ -305,6 +356,7 @@
       outfitsSeen: {}, topicsSeen: {}, equippedOutfits: { head: [], body: null }, placement: null, promotions: {},
       choi: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, memoryTopics: {}, writeGroups: {}, lettersWritten: 0, simonPlayed: {}, songsPlayed: {} },
       la: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, qaGroups: {}, dialogueGroups: {}, writeSentGroups: {}, paragraphGroups: {}, memoryTopics: {}, simonPlayed: {}, songsPlayed: {} },
+      zh: {},
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -454,6 +506,8 @@
     laWrite: document.getElementById('screen-la-write'),
   };
   const TOP_LEVEL_SCREENS = ['home', 'games', 'sentences', 'achievements'];
+  // Màn nào ứng với nút nào trên thanh tab (module tiếng Trung đăng ký thêm màn của mình qua APP.registerScreen).
+  const TAB_FOR_SCREEN = { home: 'tabHome', games: 'tabGames', sentences: 'tabSentences', achievements: 'tabAchievements' };
 
   function showScreen(name) {
     // Rời màn "Ai nhanh hơn" giữa chừng thì phải dừng đồng hồ đếm giờ, không thì nó vẫn
@@ -476,10 +530,7 @@
   }
 
   function setActiveTab(name) {
-    document.getElementById('tabHome').classList.toggle('active', name === 'home');
-    document.getElementById('tabGames').classList.toggle('active', name === 'games');
-    document.getElementById('tabSentences').classList.toggle('active', name === 'sentences');
-    document.getElementById('tabAchievements').classList.toggle('active', name === 'achievements');
+    document.querySelectorAll('#tabbar .tab-btn').forEach(b => b.classList.toggle('active', b.id === TAB_FOR_SCREEN[name]));
   }
 
   // Trượt viên "thumb" của segment-toggle (kiểu iOS) tới đúng vị trí nút đang active.
@@ -550,14 +601,23 @@
   document.getElementById('achModeProgressBtn').addEventListener('click', () => setAchievementsMode('progress'));
   document.getElementById('tabAchievements').addEventListener('click', () => { setAchievementsMode(achievementsMode); showScreen('achievements'); });
 
-  const LEVELS = [
+  // Tiếng Trung dành cho cả người lớn → tên cấp độ trung tính (cùng mốc sao với tiếng Anh).
+  const LEVELS = IS_ZH ? [
+    { min: 0, emoji: '🌱', label: 'Người mới bắt đầu' },
+    { min: 20, emoji: '⭐', label: 'Làm quen' },
+    { min: 40, emoji: '🥉', label: 'Tiến bộ' },
+    { min: 60, emoji: '🥈', label: 'Vững vàng' },
+    { min: 80, emoji: '🥇', label: 'Thành thạo' },
+    { min: 100, emoji: '🏅', label: 'Học viên xuất sắc' },
+    { min: 200, emoji: '🏆', label: 'Cao thủ tiếng Trung' },
+  ] : [
     { min: 0, emoji: '🌱', label: 'Mầm non' },
     { min: 20, emoji: '⭐', label: 'Học trò chăm' },
     { min: 40, emoji: '🥉', label: 'Ngôi sao đồng' },
     { min: 60, emoji: '🥈', label: 'Ngôi sao bạc' },
     { min: 80, emoji: '🥇', label: 'Ngôi sao vàng' },
     { min: 100, emoji: '🏅', label: 'Nhà vô địch nhí' },
-    { min: 200, emoji: '🏆', label: 'Bậc thầy tiếng Anh' },
+    { min: 200, emoji: '🏆', label: 'Bậc thầy ' + LANG.lower },
   ];
   function getLevel(stars) {
     let level = LEVELS[0];
@@ -696,6 +756,31 @@
     { id: 'la_master', group: 'la', icon: '🏅', label: 'Học trò xuất sắc lớp Lá', desc: 'Đạt đủ 12 huy hiệu Lớp Lá: Học giả nhí, Bậc thầy ngữ pháp, Cao thủ ghép âm, Độc giả nhí, Thợ xếp chữ dài, Cao thủ sắp câu, Nhà hùng biện nhí, Diễn viên nhí, Cây bút nhí, Giao tiếp giỏi, Chuyên gia tra cứu, Nhà văn nhí lớp Lá (+40 sao)', bonus: 40,
       check: p => !!(p.badges.la_vocab && p.badges.la_grammar && p.badges.la_phonics && p.badges.la_reader && p.badges.la_speller && p.badges.la_sentence_builder && p.badges.la_qa && p.badges.la_dialogue && p.badges.la_writer && p.badges.la_phrases && p.badges.la_reading && p.badges.la_paragraph) },
   ];
+  // Học tiếng Trung: bộ huy hiệu riêng theo khoá học (progress.zh — xem zh-course.js), tên trung tính
+  // cho cả người lớn. Giữ lại huy hiệu chuỗi ngày + điểm tuyệt đối; bỏ hết huy hiệu chủ đề/lớp của bé.
+  if (IS_ZH) {
+    const keep = BADGES.filter(b => /^streak_|^perfect_/.test(b.id));
+    const zh = p => p.zh || {};
+    const count = o => Object.keys(o || {}).length;
+    const partBadge = (part, icon, bonus) => ({ id: 'zh_part_' + part.id, icon, label: 'Hoàn thành ' + part.title.replace(/^Phần \d+ · /, ''),
+      desc: 'Học xong cả ' + part.units.length + ' chặng của ' + part.title + ' (+' + bonus + ' sao)', bonus,
+      check: p => part.units.every(u => !!(zh(p).units || {})[u.id]) });
+    const parts = typeof ZH_COURSE !== 'undefined' ? ZH_COURSE : [];
+    const allUnits = parts.reduce((a, pt) => a.concat(pt.units), []);
+    BADGES.length = 0;
+    BADGES.push(
+      { id: 'zh_first', icon: '🌟', label: 'Bài học đầu tiên', desc: 'Hoàn thành bài học đầu tiên của khoá', check: p => count(zh(p).done) >= 1 },
+      { id: 'zh_unit_1', icon: '🗺️', label: 'Chặng đầu tiên', desc: 'Học xong trọn 1 chặng', check: p => count(zh(p).units) >= 1 },
+      ...keep,
+      { id: 'zh_words_50', icon: '📚', label: '50 từ đầu tiên', desc: 'Học được 50 từ (+10 sao)', bonus: 10, check: p => count(zh(p).srs) >= 50 },
+      { id: 'zh_words_150', icon: '📖', label: 'Vốn từ 150', desc: 'Học được 150 từ (+20 sao)', bonus: 20, check: p => count(zh(p).srs) >= 150 },
+      ...parts.map((pt, i) => partBadge(pt, ['🎓', '🀄', '🎨'][i] || '🎓', [20, 50, 30][i] || 20)),
+      { id: 'zh_hsk1_mock', icon: '📝', label: 'Đạt thi thử HSK 1', desc: 'Đạt từ 120/200 điểm ở bài thi thử HSK 1 (+20 sao)', bonus: 20,
+        check: p => (zh(p).examBest || 0) >= 120 },
+      { id: 'zh_course', icon: '🏆', label: 'Hoàn thành khoá học', desc: 'Học xong cả ' + allUnits.length + ' chặng (+100 sao)', bonus: 100,
+        check: p => allUnits.length > 0 && allUnits.every(u => !!(zh(p).units || {})[u.id]) },
+    );
+  }
 
   // Kiểm tra sau mỗi lần hoàn thành bài học xem có mở khoá huy hiệu mới không.
   // Trả về danh sách huy hiệu vừa mở khoá (để hiện hiệu ứng ăn mừng). Huy hiệu chuỗi ngày
@@ -777,7 +862,7 @@
       items.push({ icon: b.icon, label: b.label + (b.bonus ? ' +' + b.bonus + '⭐' : '') });
     });
     if (levelUp) items.push({ icon: levelUp.level.emoji, label: 'Lên cấp: ' + levelUp.level.label });
-    if (newPieceTopic) items.push({ icon: '🖼️', label: 'Mảnh ghép mới!' });
+    if (newPieceTopic && !IS_ZH) items.push({ icon: '🖼️', label: 'Mảnh ghép mới!' });
     if (!items.length) return;
 
     const toast = document.createElement('div');
@@ -892,7 +977,7 @@
     }
     progress.streak.best = Math.max(progress.streak.best || 0, progress.streak.count);
     saveProgress(progress);
-    if (usedFreeze) showToast('🛡️ Bé lỡ mất 1 ngày nhưng đã dùng khiên để giữ chuỗi ' + progress.streak.count + ' ngày!', '🛡️');
+    if (usedFreeze) showToast('🛡️ ' + (IS_ZH ? 'Bạn' : 'Bé') + ' lỡ mất 1 ngày nhưng đã dùng khiên để giữ chuỗi ' + progress.streak.count + ' ngày!', '🛡️');
     bumpDailyMission('sessions');
   }
 
@@ -939,6 +1024,7 @@
   // handleMatchClick). Nếu thêm 1 nơi gọi bumpDailyMission() mới, nhớ đảm bảo có saveProgress()
   // theo sau, không thì mốc nhiệm vụ vừa tăng sẽ mất khi tải lại.
   function bumpDailyMission(key, amount) {
+    if (IS_ZH) return; // tiếng Trung dùng "Mục tiêu hôm nay" riêng (zh-course.js), không có nhiệm vụ hằng ngày
     const dm = ensureDailyMissions();
     dm.stats[key] = (dm.stats[key] || 0) + (amount || 1);
     checkDailyMissionsComplete();
@@ -1013,6 +1099,12 @@
     const listLabel = document.getElementById('progressListLabel');
     const list = document.getElementById('progressList');
     list.innerHTML = '';
+
+    if (window.ZH_COURSE_UI) {
+      // Tiếng Trung: tiến độ theo phần / chặng của khoá học (zh-course.js), không phải 12 chủ đề của bé.
+      window.ZH_COURSE_UI.renderProgress({ tile2, tile2Label, tile3, tile3Label, listLabel, list, rowHtml: progressRowHtml });
+      return;
+    }
 
     if (cls === 'choi') {
       // Tiến độ của Lớp Chồi: Ngữ âm 2 + Xếp chữ + Ghép câu (không lẫn với 12 chủ đề từ vựng của lớp Mầm).
@@ -1524,7 +1616,8 @@
       return;
     }
     showLoading('Đang gửi mã xác thực...');
-    const url = SHEETS_CONFIG.webAppUrl + '?action=sendCode&email=' + encodeURIComponent(email);
+    // lang: backend viết email mã xác thực đúng tên app / cách xưng hô (bé–ba mẹ hay người học Tiếng Trung).
+    const url = SHEETS_CONFIG.webAppUrl + '?action=sendCode&email=' + encodeURIComponent(email) + '&lang=' + LEARN_LANG;
     fetch(url).then(r => r.json()).then(data => {
       hideLoading();
       if (!data.ok) { showEmailEntryError(mapBackendError(data.error)); return; }
@@ -1563,6 +1656,8 @@
     try { localStorage.removeItem('5phut_active_class_v1'); } catch (e) {}
     progress = blankProgress();
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) {}
+    // Bé/email khác: xoá luôn tiến độ của ngôn ngữ còn lại trên máy này.
+    try { localStorage.removeItem(IS_ZH ? '5phut_progress_v1' : '5phut_progress_v1_zh'); } catch (e) {}
     renderTotalStars();
     renderMascotAccessory();
   }
@@ -1575,9 +1670,15 @@
     if (!backendConfigured()) { hideLoading(); if (enforceGate()) bootAfterGate(); return; }
     const url = SHEETS_CONFIG.webAppUrl + '?action=getUserData&email=' + encodeURIComponent(verifiedEmail) + '&deviceId=' + encodeURIComponent(deviceId);
     fetch(url).then(r => r.json()).then(data => {
+      noteZhSync(data);
       if (data.ok && data.found) {
         if (data.profile) { profile = data.profile; saveProfileLocal(profile); }
-        if (data.progress) { progress = normalizeProgress(data.progress); saveProgress(progress); renderTotalStars(); }
+        // Khôi phục tiến độ của CẢ 2 ngôn ngữ: ngôn ngữ đang học thì nạp ngay, ngôn ngữ còn lại thì
+        // cất vào khoá localStorage riêng của nó (loadProgress chuẩn hoá khi đổi sang ngôn ngữ đó).
+        const cur = IS_ZH ? data.progressZh : data.progress;
+        const other = IS_ZH ? data.progress : data.progressZh;
+        if (cur) { progress = normalizeProgress(cur); saveProgress(progress); renderTotalStars(); }
+        if (other) { try { localStorage.setItem(IS_ZH ? '5phut_progress_v1' : '5phut_progress_v1_zh', JSON.stringify(other)); } catch (e) {} }
         showToast('Đã khôi phục hồ sơ & tiến độ học trước đó!', '☁️');
       } else if (data.ok && !data.found) {
         // Email mới, cloud xác nhận chưa từng có dữ liệu: đảm bảo máy này đang sạch (phòng khi
@@ -1591,13 +1692,31 @@
 
   // Đẩy tiến độ mới nhất lên Google Sheet (chỉ khi đã xác thực email — chưa xác thực thì tiến độ
   // vẫn hoạt động bình thường, chỉ là không đồng bộ được sang thiết bị khác).
+  // Tiếng Trung: lưu ở cột ProgressZh riêng, gửi bằng POST (JSON ôn tập ngắt quãng khá lớn). Chỉ gửi khi
+  // backend đã xác nhận có cột đó (zhSync — trả về từ getUserData/checkSession), để bản Apps Script cũ
+  // không bao giờ ghi nhầm tiến độ tiếng Trung đè lên cột Progress của tiếng Anh.
+  const ZH_SYNC_KEY = '5phut_zh_sync_v1';
+  function zhSyncReady() { try { return localStorage.getItem(ZH_SYNC_KEY) === '1'; } catch (e) { return false; } }
+  function noteZhSync(data) {
+    if (!data || !data.zhSync || zhSyncReady()) return false;
+    try { localStorage.setItem(ZH_SYNC_KEY, '1'); } catch (e) {}
+    return true;
+  }
   function syncProgressToCloud(p) {
     if (!backendConfigured() || !verifiedEmail) return;
-    const url = SHEETS_CONFIG.webAppUrl + '?action=saveProgress'
-      + '&email=' + encodeURIComponent(verifiedEmail)
-      + '&deviceId=' + encodeURIComponent(deviceId)
-      + '&progress=' + encodeURIComponent(JSON.stringify(p));
-    fetch(url).catch(() => {});
+    if (!IS_ZH) {
+      const url = SHEETS_CONFIG.webAppUrl + '?action=saveProgress'
+        + '&email=' + encodeURIComponent(verifiedEmail)
+        + '&deviceId=' + encodeURIComponent(deviceId)
+        + '&progress=' + encodeURIComponent(JSON.stringify(p));
+      fetch(url).catch(() => {});
+    } else if (zhSyncReady()) {
+      // Body là chuỗi (Content-Type text/plain) → request "đơn giản", không cần preflight CORS.
+      fetch(SHEETS_CONFIG.webAppUrl, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'saveProgress', lang: 'zh', email: verifiedEmail, deviceId: deviceId, progress: JSON.stringify(p) }),
+      }).catch(() => {});
+    }
 
     // "Chữa lành" hồ sơ trên cloud: logProfileToSheet vốn gửi ngầm (fire-and-forget, không có báo
     // lỗi/thử lại) đúng 1 lần lúc tạo hồ sơ — nếu lần đó mạng chập chờn thì hồ sơ bị thiếu trên
@@ -1616,6 +1735,8 @@
     if (!backendConfigured() || !verifiedEmail) return;
     const url = SHEETS_CONFIG.webAppUrl + '?action=checkSession&email=' + encodeURIComponent(verifiedEmail) + '&deviceId=' + encodeURIComponent(deviceId);
     fetch(url).then(r => r.json()).then(data => {
+      // Backend vừa được nâng cấp (có cột ProgressZh) → đẩy ngay tiến độ tiếng Trung đang có trên máy lên.
+      if (noteZhSync(data) && IS_ZH && data.active !== false) syncProgressToCloud(progress);
       if (data.ok && data.active === false) {
         verifiedEmail = null;
         try { localStorage.removeItem(VERIFIED_EMAIL_KEY); } catch (e) {}
@@ -1891,6 +2012,7 @@
   ];
 
   function getActiveClassId() {
+    if (IS_ZH) return 'mam'; // tiếng Trung giai đoạn 1 mới có lớp Mầm
     let saved = null;
     try { saved = localStorage.getItem('5phut_active_class_v1'); } catch (e) {}
     if (saved && CLASS_CONTENT[saved]) return saved;
@@ -2184,7 +2306,7 @@
     const timer = setTimeout(() => ctrl.abort(), 15000);
     fetch(url, { signal: ctrl.signal }).then(r => r.json()).then(data => {
       if (!data.ok) { showFeedbackError(mapBackendError(data.error)); return; }
-      showToast('Đã gửi ý kiến, cảm ơn ba mẹ nhiều!', '💚');
+      showToast(IS_ZH ? 'Đã gửi ý kiến, cảm ơn bạn nhiều!' : 'Đã gửi ý kiến, cảm ơn ba mẹ nhiều!', '💚');
       resetFeedbackForm();
       showScreen('settings');
     }).catch(() => {
@@ -2277,8 +2399,13 @@
     el.hidden = !msg;
   }
 
+  // Tiếng Anh dành cho bé (3–12 tuổi); khoá tiếng Trung không phân biệt người lớn / trẻ nhỏ.
+  const PROFILE_AGE_MAX = IS_ZH ? 99 : 12;
   function renderProfileCreateScreen() {
-    document.getElementById('profileCreateTitle').textContent = profile ? 'Sửa hồ sơ của bé' : 'Tạo hồ sơ cho bé';
+    document.getElementById('profileCreateTitle').textContent = IS_ZH
+      ? (profile ? 'Sửa hồ sơ' : 'Tạo hồ sơ học')
+      : (profile ? 'Sửa hồ sơ của bé' : 'Tạo hồ sơ cho bé');
+    document.getElementById('profileAgeInput').max = PROFILE_AGE_MAX;
     document.getElementById('profileNameInput').value = profile ? profile.name : '';
     document.getElementById('profileAgeInput').value = profile ? profile.age : '';
     document.getElementById('profilePhoneInput').value = profile ? profile.parentPhone : '';
@@ -2305,8 +2432,8 @@
     const age = parseInt(document.getElementById('profileAgeInput').value, 10);
     const phone = document.getElementById('profilePhoneInput').value.trim();
 
-    if (!name) { showProfileFormError('Vui lòng nhập tên bé.'); return; }
-    if (!age || age < 3 || age > 12) { showProfileFormError('Tuổi của bé phải từ 3 đến 12.'); return; }
+    if (!name) { showProfileFormError(IS_ZH ? 'Vui lòng nhập tên.' : 'Vui lòng nhập tên bé.'); return; }
+    if (!age || age < 3 || age > PROFILE_AGE_MAX) { showProfileFormError((IS_ZH ? 'Tuổi phải từ 3 đến ' : 'Tuổi của bé phải từ 3 đến ') + PROFILE_AGE_MAX + '.'); return; }
     if (!isValidVnPhone(phone)) { showProfileFormError('Số điện thoại chưa đúng định dạng (VD: 0912345678).'); return; }
 
     const wasEditing = !!profile;
@@ -2317,7 +2444,7 @@
     if (!enforceGate()) return;
     // Hồ sơ vừa tạo mới và bé chưa được xếp lớp → dẫn thẳng vào bài kiểm tra trình độ; bootAfterGate
     // (trang chủ + hướng dẫn lần đầu) chạy sau khi bé xem xong kết quả xếp lớp — xem leavePlacement.
-    if (!wasEditing && !progress.placement) openPlacementIntro(true);
+    if (!wasEditing && !progress.placement && !IS_ZH) openPlacementIntro(true);
     else bootAfterGate();
   });
 
@@ -2615,7 +2742,8 @@
       card.innerHTML =
         '<span class="sentence-emoji">' + w.emoji + '</span>' +
         '<span class="sentence-text">' +
-          '<span class="sentence-en"><span class="lang-flag">🇬🇧</span>' + highlighted + '</span>' +
+          '<span class="sentence-en"><span class="lang-flag">' + LANG.flag + '</span>' + highlighted + '</span>' +
+          (w.examplePy ? '<span class="sentence-py">' + w.examplePy + '</span>' : '') +
           '<span class="sentence-vi"><span class="lang-flag">🇻🇳</span>' + (w.exampleVi || '') + '</span>' +
         '</span>' +
         '<button class="sentence-listen-btn" aria-label="Nghe câu">🔊</button>';
@@ -2666,7 +2794,7 @@
     options.forEach(opt => {
       const b = document.createElement('button');
       b.className = 'quiz-opt text-opt';
-      b.textContent = opt.en;
+      setWordText(b, opt);
       b.addEventListener('click', () => handleReverseAnswer(b, opt.en === word.en));
       wrap.appendChild(b);
     });
@@ -2744,7 +2872,7 @@
     options.forEach(opt => {
       const b = document.createElement('button');
       b.className = 'quiz-opt text-opt';
-      b.textContent = opt.en;
+      setWordText(b, opt);
       b.addEventListener('click', () => handleFillBlankAnswer(b, opt.en === word.en));
       wrap.appendChild(b);
     });
@@ -3288,7 +3416,7 @@
   function renderCard() {
     const w = currentTopic.words[cardIndex];
     document.getElementById('cardEmoji').textContent = w.emoji;
-    document.getElementById('cardWordEn').textContent = w.en;
+    setWordText(document.getElementById('cardWordEn'), w);
     document.getElementById('cardWordVi').textContent = w.vi;
     setViHidden(document.getElementById('cardWordVi'), document.getElementById('cardRevealViBtn'), CHOI_TOPICS.includes(currentTopic) || LA_TOPICS.includes(currentTopic));
     const pct = ((cardIndex) / currentTopic.words.length) * 100;
@@ -3361,6 +3489,69 @@
   });
   applyThemeUI();
 
+  // ---------- NGÔN NGỮ BÉ HỌC (Cài đặt) ---------- (xem LEARN_LANG ở đầu file)
+  // Bảng chọn: mỗi tiếng 1 dòng có lá cờ — bấm tiếng nào thì chuyển ngay sang tiếng đó (tải lại trang).
+  // Lá cờ vẽ bằng SVG vì emoji cờ (🇬🇧 🇨🇳) không hiện được trên Windows (chỉ ra chữ "GB", "CN").
+  let flagSvgSeq = 0;
+  function flagSvg(lang) {
+    if (lang === 'zh') {
+      const star = (cx, cy, r) => {
+        const pts = [];
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.38 : r;
+          pts.push((cx + rr * Math.cos(a)).toFixed(2) + ',' + (cy + rr * Math.sin(a)).toFixed(2));
+        }
+        return '<polygon points="' + pts.join(' ') + '" fill="#FFDE00"/>';
+      };
+      return '<svg viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'
+        + '<rect width="30" height="20" fill="#EE1C25"/>' + star(5, 5, 3)
+        + star(10, 2, 1) + star(12, 4, 1) + star(12, 7, 1) + star(10, 9, 1) + '</svg>';
+    }
+    const id = 'ukf' + (++flagSvgSeq); // id clipPath riêng cho mỗi lá cờ trên trang
+    return '<svg viewBox="0 0 60 30" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'
+      + '<clipPath id="' + id + '"><path d="M30,15h30v15zv15h-30zh-30v-15zv-15h30z"/></clipPath>'
+      + '<rect width="60" height="30" fill="#012169"/>'
+      + '<path d="M0,0L60,30M60,0L0,30" stroke="#fff" stroke-width="6"/>'
+      + '<path d="M0,0L60,30M60,0L0,30" clip-path="url(#' + id + ')" stroke="#C8102E" stroke-width="4"/>'
+      + '<path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/>'
+      + '<path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></svg>';
+  }
+  const LANG_CHOICES = [
+    { id: 'en', desc: 'Đầy đủ lớp Mầm, Chồi, Lá' },
+    { id: 'zh', desc: 'Khoá học bài bản cho người mới bắt đầu' },
+  ];
+  document.getElementById('learnLangValue').textContent = LANG.name;
+  // Cờ ngôn ngữ đang học gắn ở góc logo trên thanh đầu trang (nền thanh đầu trang cũng tô theo màu cờ — style.css).
+  const mascotFlag = document.createElement('span');
+  mascotFlag.className = 'mascot-flag';
+  mascotFlag.title = 'Đang học ' + LANG.lower;
+  mascotFlag.innerHTML = flagSvg(LEARN_LANG);
+  document.querySelector('.brand .mascot').appendChild(mascotFlag);
+  document.documentElement.classList.add('lang-' + LEARN_LANG + '-ui');
+  document.getElementById('learnLangIcon').innerHTML = '<span class="lang-flag-img">' + flagSvg(LEARN_LANG) + '</span>';
+  const langOverlay = document.getElementById('langOverlay');
+  document.getElementById('learnLangBtn').addEventListener('click', () => {
+    const list = document.getElementById('langOptions');
+    list.innerHTML = '';
+    LANG_CHOICES.forEach(c => {
+      const isCurrent = c.id === LEARN_LANG;
+      const b = document.createElement('button');
+      b.className = 'lang-option' + (isCurrent ? ' is-current' : '');
+      b.innerHTML = '<span class="lang-flag-img lang-flag-img--big">' + flagSvg(c.id) + '</span>'
+        + '<span class="lang-option-text"><strong>' + LANG_INFOS[c.id].name + '</strong><small>' + c.desc + '</small></span>'
+        + (isCurrent ? '<span class="lang-option-badge">Đang học</span>' : '');
+      b.addEventListener('click', () => {
+        if (isCurrent) { langOverlay.hidden = true; return; }
+        try { localStorage.setItem(LEARN_LANG_KEY, c.id); } catch (e) {}
+        location.reload();
+      });
+      list.appendChild(b);
+    });
+    langOverlay.hidden = false;
+  });
+  document.getElementById('langCloseBtn').addEventListener('click', () => { langOverlay.hidden = true; });
+  langOverlay.addEventListener('click', e => { if (e.target === langOverlay) langOverlay.hidden = true; });
+
   // Toàn bộ từ vựng + câu đều dùng chung MỘT giọng đọc máy (TTS) chuẩn tiếng Anh (Mỹ),
   // thay vì trộn lẫn file mp3 thu sẵn (nhiều nguồn, nhiều giọng khác nhau) với giọng máy
   // như trước — để bé nghe đồng nhất 1 giọng duy nhất ở mọi nơi trong app.
@@ -3371,6 +3562,17 @@
     if (!('speechSynthesis' in window)) return null;
     const voices = window.speechSynthesis.getVoices();
     if (!voices.length) return null;
+    if (IS_ZH) {
+      // Giọng phổ thông (Trung Quốc đại lục) trước, rồi tới giọng tiếng Trung bất kỳ. Máy không có giọng
+      // tiếng Trung thì để trống — speak() vẫn đặt lang zh-CN cho trình duyệt tự chọn.
+      const lang = v => (v.lang || '').replace('_', '-');
+      preferredVoice =
+        voices.find(v => lang(v) === 'zh-CN' && /Google|Natural|Online|Xiaoxiao|Tingting|Yaoyao|Huihui/i.test(v.name)) ||
+        voices.find(v => lang(v) === 'zh-CN') ||
+        voices.find(v => /^(zh|cmn)/i.test(lang(v))) ||
+        null;
+      return preferredVoice;
+    }
     preferredVoice =
       voices.find(v => v.lang === 'en-US' && /Google|Natural|Online|Samantha|Aria|Jenny/i.test(v.name)) ||
       voices.find(v => v.lang === 'en-US') ||
@@ -3389,13 +3591,73 @@
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'en-US';
-      u.rate = SPEECH_RATE;
+      u.lang = IS_ZH ? 'zh-CN' : 'en-US';
+      u.rate = IS_ZH ? 0.7 : SPEECH_RATE;
       u.pitch = 1;
       const voice = preferredVoice || pickPreferredVoice();
       if (voice) u.voice = voice;
+      if (IS_ZH) {
+        if (zhVoiceStatus() === 'no') warnZhVoice();
+        u.onerror = e => { if (/unavailable|synthesis-failed/.test(e.error || '')) warnZhVoice(); };
+      }
       window.speechSynthesis.speak(u);
     } catch (e) {}
+  }
+
+  // ---------- GIỌNG ĐỌC TIẾNG TRUNG ----------
+  // Máy không có giọng tiếng Trung thì speechSynthesis thường im lặng mà không báo lỗi → phát hiện rồi
+  // hướng dẫn cài thêm (hiện tự động tối đa 1 lần/ngày; xem lại được ở Cài đặt › Giọng đọc tiếng Trung).
+  // 'yes' | 'no' | 'unknown' (danh sách giọng chưa nạp xong, hoặc trình duyệt không liệt kê giọng).
+  function zhVoiceStatus() {
+    if (!('speechSynthesis' in window)) return 'no';
+    if (!window.speechSynthesis.getVoices().length) return 'unknown';
+    return pickPreferredVoice() ? 'yes' : 'no';
+  }
+  const ZH_VOICE_WARN_KEY = '5phut_zh_voice_warned_v1';
+  function warnZhVoice() {
+    const today = new Date().toISOString().slice(0, 10);
+    try { if (localStorage.getItem(ZH_VOICE_WARN_KEY) === today) return; localStorage.setItem(ZH_VOICE_WARN_KEY, today); } catch (e) {}
+    openZhVoiceHelp();
+  }
+  function detectOs() {
+    const ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
+    if (/Android/.test(ua)) return 'android';
+    if (/Windows/.test(ua)) return 'windows';
+    if (/Macintosh/.test(ua)) return 'mac';
+    return '';
+  }
+  function openZhVoiceHelp() {
+    const status = zhVoiceStatus();
+    const intro = document.getElementById('zhVoiceIntro');
+    if (status === 'yes') {
+      document.getElementById('zhVoiceTitle').textContent = 'Máy đã có giọng đọc tiếng Trung ✅';
+      intro.textContent = 'Đang dùng giọng: ' + preferredVoice.name + '. Nếu vẫn không nghe thấy, hãy kiểm tra âm lượng, nút gạt im lặng (iPhone) và mục "Âm thanh đọc" trong Cài đặt. Muốn đổi giọng khác thì xem hướng dẫn bên dưới.';
+    } else {
+      document.getElementById('zhVoiceTitle').textContent = status === 'no' ? 'Máy chưa có giọng đọc tiếng Trung' : 'Không nghe thấy tiếng đọc?';
+      intro.innerHTML = 'App dùng giọng đọc có sẵn của máy. Cài thêm giọng <strong>Tiếng Trung (Trung Quốc đại lục)</strong> theo hướng dẫn dưới đây (miễn phí, chỉ làm 1 lần), rồi mở lại app:';
+    }
+    const os = detectOs();
+    document.querySelectorAll('#zhVoiceGuides details').forEach(d => {
+      d.open = d.dataset.os === os;
+      if (d.dataset.os === os) d.parentNode.prepend(d); // hướng dẫn cho đúng loại máy đang dùng lên đầu
+    });
+    document.getElementById('zhVoiceOverlay').hidden = false;
+  }
+  function renderZhVoiceValue() {
+    if (!IS_ZH) return;
+    const s = zhVoiceStatus();
+    document.getElementById('zhVoiceValue').textContent = s === 'yes' ? '✅ Đã có' : s === 'no' ? '⚠️ Chưa cài' : 'Hướng dẫn';
+  }
+  if (IS_ZH) {
+    document.getElementById('zhVoiceBtn').addEventListener('click', openZhVoiceHelp);
+    document.getElementById('zhVoiceCloseBtn').addEventListener('click', () => { document.getElementById('zhVoiceOverlay').hidden = true; });
+    document.getElementById('zhVoiceTestBtn').addEventListener('click', () => {
+      if (isMuted) { showToast('Âm thanh đọc đang tắt — bật lại trong Cài đặt nhé.', '🔇'); return; }
+      speak('你好，我们一起学中文吧！');
+    });
+    document.getElementById('settingsBtn').addEventListener('click', renderZhVoiceValue);
+    try { window.speechSynthesis.addEventListener('voiceschanged', renderZhVoiceValue); } catch (e) {}
   }
 
   document.getElementById('speakBtn').addEventListener('click', () => {
@@ -3812,7 +4074,7 @@
     const wIdx = quizOrder[quizIndex];
     quizCurrentWordIdx = wIdx;
     const correctWord = currentTopic.words[wIdx];
-    document.getElementById('quizWord').textContent = correctWord.en;
+    setWordText(document.getElementById('quizWord'), correctWord);
     speak(correctWord.en);
 
     // Độ khó nâng cao lớp Chồi/Lá: đố 5 lựa chọn thay vì 4 (khó đoán mò hơn) — xem isAdvancedVocabWord.
@@ -3884,7 +4146,7 @@
       row.innerHTML =
         '<span class="recap-icon">' + (ok ? '✅' : '❌') + '</span>' +
         '<span class="recap-emoji">' + w.emoji + '</span>' +
-        '<span class="recap-word">' + w.en + ' <span class="recap-vi">(' + w.vi + ')</span></span>';
+        '<span class="recap-word">' + w.en + (w.py ? ' <span class="recap-py">' + w.py + '</span>' : '') + ' <span class="recap-vi">(' + w.vi + ')</span></span>';
       list.appendChild(row);
     });
 
@@ -3938,7 +4200,7 @@
     matchWords = shuffle(currentTopic.words); // lấy hết toàn bộ từ vựng của chủ đề, không bỏ từ nào
     // Xáo 2 cột độc lập với nhau, để hàng trái/phải không tình cờ thẳng hàng theo đúng cặp.
     matchLeftCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.emoji, matched: false })));
-    matchRightCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.en, matched: false })));
+    matchRightCards = shuffle(matchWords.map((w, i) => ({ pairId: i, content: w.en, word: w, matched: false })));
     renderMatchGame();
     showScreen('match');
     // Lần vẽ đầu màn hình còn ẩn (bề rộng thẻ = 0) nên chưa tính được cỡ chữ — tính lại khi đã hiện.
@@ -3970,7 +4232,10 @@
       btn.className = 'match-card match-card--word'
         + (card.matched ? ' is-matched' : '')
         + (idx === matchSelectedRight ? (matchWrong ? ' is-wrong' : ' is-selected') : '');
-      btn.textContent = card.content;
+      if (card.word && card.word.py) {
+        setWordText(btn, card.word);
+        btn.dataset.fitLen = Math.max(card.content.length * 1.5, card.word.py.length * 0.7); // chữ Hán ~1.5 chữ Latinh
+      } else btn.textContent = card.content;
       btn.disabled = card.matched;
       btn.addEventListener('click', () => handleMatchClick('right', idx));
       rightGrid.appendChild(btn);
@@ -3986,7 +4251,7 @@
     if (!first || !first.clientWidth) return;
     const usable = first.clientWidth - 14; // trừ viền 3px x2 + đệm 2px x2 + chút dư
     Array.from(grid.children).forEach(btn => {
-      const len = Math.max(btn.textContent.length, 1);
+      const len = Math.max(Number(btn.dataset.fitLen) || btn.textContent.length, 1);
       btn.style.fontSize = Math.max(10, Math.min(20, usable / (len * 0.66))) + 'px';
     });
   }
@@ -4124,6 +4389,7 @@
 
   // Số liệu thứ 2 trên bảng chứng nhận / ảnh chia sẻ: lớp Chồi/Lá tính theo tổng số bài đã học, lớp Mầm theo chủ đề từ vựng.
   function getClassStat() {
+    if (window.ZH_COURSE_UI) return window.ZH_COURSE_UI.stat();
     const cls = getActiveClassId();
     if (cls === 'choi') return { icon: '📖', value: choiLessonsDone() + '/' + choiLessonsTotal(), label: 'Bài đã học' };
     if (cls === 'la') return { icon: '📖', value: laLessonsDone() + '/' + laLessonsTotal(), label: 'Bài đã học' };
@@ -5481,7 +5747,7 @@
 
   function renderSpeedQuestion() {
     const word = speedWords[speedIndex];
-    document.getElementById('speedWord').textContent = word.en;
+    setWordText(document.getElementById('speedWord'), word);
     speak(word.en);
 
     const distractors = shuffle(currentTopic.words.filter(w => w !== word)).slice(0, speedClassId === 'mam' ? 3 : 4);
@@ -5751,7 +6017,7 @@
 
     const tipWord = currentTopic.words[Math.floor(Math.random() * currentTopic.words.length)];
     document.getElementById('parentTip').innerHTML =
-      '💬 Ba mẹ thử hỏi bé: "<strong>' + tipWord.vi + '</strong> tiếng Anh là gì nhỉ?" (đáp án: <strong>' + tipWord.en + '</strong>)';
+      '💬 Ba mẹ thử hỏi bé: "<strong>' + tipWord.vi + '</strong> ' + LANG.lower + ' là gì nhỉ?" (đáp án: <strong>' + tipWord.en + '</strong>)';
 
     document.getElementById('printBtn').hidden = false;
     document.getElementById('printBtn').onclick = () => printTopicFlashcards(currentTopic);
@@ -5843,11 +6109,11 @@
 
     ctx.fillStyle = '#4A3F35';
     ctx.font = '700 32px "Baloo 2", sans-serif';
-    ctx.fillText('Bảng thành tích học tiếng Anh', W / 2, 195);
+    ctx.fillText('Bảng thành tích học ' + LANG.lower, W / 2, 195);
     const shareLv = PLACEMENT_LEVELS[getActiveClassId()];
     ctx.fillStyle = '#8A7B68';
     ctx.font = '700 20px Quicksand, sans-serif';
-    ctx.fillText(shareLv.emoji + ' ' + shareLv.label, W / 2, 232);
+    ctx.fillText(IS_ZH ? '🇨🇳 Khoá cho người mới bắt đầu' : shareLv.emoji + ' ' + shareLv.label, W / 2, 232);
     ctx.fillStyle = '#4A3F35';
 
     const level = getLevel(progress.lifetimeStars);
@@ -5897,7 +6163,7 @@
 
     ctx.font = '700 18px "Baloo 2", sans-serif';
     ctx.fillStyle = '#8A7B68';
-    ctx.fillText('5 Phút Tiếng Anh Mỗi Ngày', W / 2, H - 42);
+    ctx.fillText('5 Phút ' + LANG.name + ' Mỗi Ngày', W / 2, H - 42);
     ctx.font = '700 15px Quicksand, sans-serif';
     ctx.fillText('Bản dùng thử miễn phí từ Fanpage', W / 2, H - 18);
   }
@@ -5932,7 +6198,7 @@
       canvas.toBlob(async blob => {
         const file = new File([blob], 'tien-do-hoc-tieng-anh.png', { type: 'image/png' });
         if (navigator.canShare({ files: [file] })) {
-          try { await navigator.share({ files: [file], title: '5 Phút Tiếng Anh Mỗi Ngày' }); } catch (e) {}
+          try { await navigator.share({ files: [file], title: '5 Phút ' + LANG.name + ' Mỗi Ngày' }); } catch (e) {}
         }
       }, 'image/png');
     });
@@ -5968,7 +6234,7 @@
 
     ctx.fillStyle = '#8A7B68';
     ctx.font = '700 16px Quicksand, sans-serif';
-    ctx.fillText('Trao tặng bé', W / 2, 195);
+    ctx.fillText(IS_ZH ? 'Trao tặng' : 'Trao tặng bé', W / 2, 195);
 
     const childName = (profile && profile.name) ? profile.name : 'yêu quý';
     ctx.fillStyle = '#4A3F35';
@@ -5977,7 +6243,7 @@
     const certLv = PLACEMENT_LEVELS[getActiveClassId()];
     ctx.fillStyle = '#8A7B68';
     ctx.font = '700 17px Quicksand, sans-serif';
-    ctx.fillText(certLv.emoji + ' ' + certLv.label, W / 2, 272);
+    ctx.fillText(IS_ZH ? 'Khoá Tiếng Trung cho người mới bắt đầu' : certLv.emoji + ' ' + certLv.label, W / 2, 272);
 
     const level = getLevel(progress.lifetimeStars);
     const doneCount = TOPICS.filter(t => progress.doneTopics[t.id]).length;
@@ -6013,7 +6279,7 @@
     ctx.fillStyle = '#8A7B68';
     ctx.fillText('Ngày ' + dateStr, W / 2, H - 68);
     ctx.font = '700 17px "Baloo 2", sans-serif';
-    ctx.fillText('5 Phút Tiếng Anh Mỗi Ngày', W / 2, H - 46);
+    ctx.fillText('5 Phút ' + LANG.name + ' Mỗi Ngày', W / 2, H - 46);
   }
 
   document.getElementById('certificateBtn').addEventListener('click', () => {
@@ -6069,6 +6335,7 @@
   document.getElementById('backFromWeekly').addEventListener('click', () => goHome());
 
   function goHome() {
+    if (window.ZH_COURSE_UI) { window.ZH_COURSE_UI.goHome(); return; } // học Tiếng Trung: trang Học là hành trình khoá học (zh-course.js)
     renderHome();
     showScreen('home');
     moveSegmentThumb(document.getElementById('homeModeToggle'));
@@ -6124,4 +6391,19 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
+
+  // Các hàm dùng chung cho module chạy riêng (zh-course.js — khoá học Tiếng Trung).
+  // registerScreen(name, el, tabId): tabId = nút tab của màn (màn đó thành màn chính, thanh tab vẫn hiện).
+  window.APP = {
+    isZh: IS_ZH,
+    registerScreen: (name, el, tabId) => {
+      screens[name] = el;
+      if (tabId) { TOP_LEVEL_SCREENS.push(name); TAB_FOR_SCREEN[name] = tabId; }
+    },
+    showScreen, goHome, speak, shuffle, showToast, launchConfetti,
+    getProgress: () => progress,
+    saveProgress: () => saveProgress(progress),
+    addStars, celebrate, updateStreakOnComplete, bumpDailyMission, renderTotalStars,
+    confirm: showConfirmDialog,
+  };
 })();

@@ -1,0 +1,387 @@
+  // LỘ TRÌNH TIẾNG TRUNG 8 BƯỚC (cho người mới bắt đầu — cả người lớn lẫn bé lớn), hiện ở tab Học khi
+  // chọn Cài đặt › Ngôn ngữ bé học › Tiếng Trung. Phần chạy bài học: zh-roadmap.js.
+  // Người duyệt nội dung chỉ cần sửa file này. Quy ước chung:
+  //   big = chữ hiện to · py = pinyin · vi = nghĩa tiếng Việt · note = giải thích thêm
+  //   say = chữ Hán đưa vào giọng đọc của máy (máy đọc chữ Hán chuẩn hơn đọc pinyin rời)
+  //   hw  = { char, stroke } — vẽ chữ bằng Hanzi Writer (stroke: số thứ tự nét cần tô sáng, đếm từ 0)
+  // Dạng bài (type): learn = thẻ học · quiz = đố trắc nghiệm · write = tô chữ · order = sắp xếp câu
+  //                  type = gõ pinyin chọn chữ. Bài quiz có `gen` = đề tự sinh trong zh-roadmap.js.
+
+  // ---------- BƯỚC 1: PINYIN & THANH ĐIỆU ----------
+  const ZH_TONE_FAMILIES = [ // mỗi họ: cùng âm tiết, 4 thanh — dùng cho bài "Nghe và chọn thanh"
+    [['妈', 'mā'], ['麻', 'má'], ['马', 'mǎ'], ['骂', 'mà']],
+    [['八', 'bā'], ['拔', 'bá'], ['把', 'bǎ'], ['爸', 'bà']],
+    [['衣', 'yī'], ['姨', 'yí'], ['椅', 'yǐ'], ['意', 'yì']],
+    [['诗', 'shī'], ['十', 'shí'], ['使', 'shǐ'], ['是', 'shì']],
+    [['汤', 'tāng'], ['糖', 'táng'], ['躺', 'tǎng'], ['烫', 'tàng']],
+    [['屋', 'wū'], ['无', 'wú'], ['五', 'wǔ'], ['雾', 'wù']],
+    [['搭', 'dā'], ['达', 'dá'], ['打', 'dǎ'], ['大', 'dà']],
+    [['飞', 'fēi'], ['肥', 'féi'], ['匪', 'fěi'], ['费', 'fèi']],
+  ];
+  // Thanh mẫu (âm đầu): máy KHÔNG đọc chuẩn âm đứng riêng, nên mỗi âm đi kèm 1 chữ ví dụ để nghe.
+  // group: các âm dễ nhầm với nhau (dùng làm đáp án nhiễu khi đố).
+  const ZH_INITIALS = [
+    { i: 'b', ex: '八', py: 'bā', vi: 'số tám', group: 'bp' },
+    { i: 'p', ex: '跑', py: 'pǎo', vi: 'chạy', group: 'bp' },
+    { i: 'm', ex: '妈', py: 'mā', vi: 'mẹ', group: 'mf' },
+    { i: 'f', ex: '飞', py: 'fēi', vi: 'bay', group: 'mf' },
+    { i: 'd', ex: '大', py: 'dà', vi: 'to', group: 'dt' },
+    { i: 't', ex: '他', py: 'tā', vi: 'anh ấy', group: 'dt' },
+    { i: 'n', ex: '你', py: 'nǐ', vi: 'bạn', group: 'nl' },
+    { i: 'l', ex: '来', py: 'lái', vi: 'đến', group: 'nl' },
+    { i: 'g', ex: '狗', py: 'gǒu', vi: 'con chó', group: 'gkh' },
+    { i: 'k', ex: '看', py: 'kàn', vi: 'xem', group: 'gkh' },
+    { i: 'h', ex: '好', py: 'hǎo', vi: 'tốt', group: 'gkh' },
+    { i: 'j', ex: '家', py: 'jiā', vi: 'nhà', group: 'jqx' },
+    { i: 'q', ex: '七', py: 'qī', vi: 'số bảy', group: 'jqx' },
+    { i: 'x', ex: '小', py: 'xiǎo', vi: 'nhỏ', group: 'jqx' },
+    { i: 'zh', ex: '中', py: 'zhōng', vi: 'giữa', group: 'zhchshr' },
+    { i: 'ch', ex: '吃', py: 'chī', vi: 'ăn', group: 'zhchshr' },
+    { i: 'sh', ex: '书', py: 'shū', vi: 'sách', group: 'zhchshr' },
+    { i: 'r', ex: '热', py: 'rè', vi: 'nóng', group: 'zhchshr' },
+    { i: 'z', ex: '在', py: 'zài', vi: 'ở', group: 'zcs' },
+    { i: 'c', ex: '菜', py: 'cài', vi: 'món ăn', group: 'zcs' },
+    { i: 's', ex: '三', py: 'sān', vi: 'số ba', group: 'zcs' },
+  ];
+  const ZH_INITIAL_NOTES = {
+    b: 'Như "b" tiếng Việt nhưng không rung, gần "p" nhẹ.', p: 'Như "p" có bật hơi mạnh ra.',
+    m: 'Như "m" tiếng Việt.', f: 'Như "ph" tiếng Việt.',
+    d: 'Như "t" tiếng Việt (không bật hơi).', t: 'Như "th" tiếng Việt (bật hơi).',
+    n: 'Như "n" tiếng Việt.', l: 'Như "l" tiếng Việt.',
+    g: 'Như "c/k" tiếng Việt (không bật hơi).', k: 'Như "kh" nhưng bật hơi mạnh.', h: 'Như "h" tiếng Việt, hơi khàn.',
+    j: 'Gần "ch" tiếng Việt, mặt lưỡi áp vào ngạc.', q: 'Như "j" nhưng bật hơi.', x: 'Gần "x" tiếng Việt, mặt lưỡi gần ngạc.',
+    zh: 'Âm uốn lưỡi: cong đầu lưỡi lên, gần "tr" tiếng Việt.', ch: 'Như "zh" nhưng bật hơi.',
+    sh: 'Âm uốn lưỡi, gần "s" tiếng Việt (miền Bắc đọc "s" nặng).', r: 'Uốn lưỡi như "sh" nhưng có rung, gần "r" nhẹ.',
+    z: 'Gần "ch" nhưng đầu lưỡi thẳng, chạm răng.', c: 'Như "z" nhưng bật hơi mạnh.', s: 'Như "x" tiếng Việt.',
+  };
+  // Vận mẫu (âm vần): mỗi vần 1 chữ ví dụ.
+  const ZH_FINALS_1 = [
+    ['a', '八', 'bā', 'số tám'], ['o', '哦', 'ó', 'ồ (cảm thán)'], ['e', '饿', 'è', 'đói'],
+    ['i', '一', 'yī', 'một'], ['u', '五', 'wǔ', 'năm'], ['ü', '鱼', 'yú', 'con cá'],
+    ['ai', '爱', 'ài', 'yêu'], ['ei', '黑', 'hēi', 'màu đen'], ['ao', '好', 'hǎo', 'tốt'],
+    ['ou', '狗', 'gǒu', 'con chó'], ['er', '二', 'èr', 'số hai'],
+  ];
+  const ZH_FINALS_2 = [
+    ['an', '饭', 'fàn', 'cơm'], ['en', '门', 'mén', 'cửa'], ['ang', '糖', 'táng', 'kẹo'],
+    ['eng', '冷', 'lěng', 'lạnh'], ['ong', '红', 'hóng', 'màu đỏ'],
+    ['ia', '家', 'jiā', 'nhà'], ['ie', '谢', 'xiè', 'cảm ơn'], ['iao', '小', 'xiǎo', 'nhỏ'],
+    ['iu', '六', 'liù', 'số sáu'], ['ian', '天', 'tiān', 'trời, ngày'], ['in', '新', 'xīn', 'mới'],
+    ['iang', '想', 'xiǎng', 'muốn'], ['ing', '听', 'tīng', 'nghe'], ['iong', '熊', 'xióng', 'con gấu'],
+    ['ua', '花', 'huā', 'hoa'], ['uo', '我', 'wǒ', 'tôi'], ['uai', '快', 'kuài', 'nhanh'],
+    ['ui', '水', 'shuǐ', 'nước'], ['uan', '玩', 'wán', 'chơi'], ['un', '春', 'chūn', 'mùa xuân'],
+    ['uang', '黄', 'huáng', 'màu vàng'], ['üe', '学', 'xué', 'học'], ['üan', '远', 'yuǎn', 'xa'], ['ün', '云', 'yún', 'mây'],
+  ];
+
+  // ---------- BƯỚC 3: BỘ THỦ ----------
+  // r = bộ thủ, alt = dạng viết khác, py, name = tên Hán Việt, vi = ý nghĩa, ex = chữ ví dụ [chữ, pinyin, nghĩa]
+  const ZH_RADICALS = [
+    { r: '亻', alt: '人', py: 'rén', name: 'Nhân', vi: 'người', ex: [['你', 'nǐ', 'bạn'], ['他', 'tā', 'anh ấy'], ['们', 'men', '(số nhiều)']] },
+    { r: '口', py: 'kǒu', name: 'Khẩu', vi: 'miệng', ex: [['吃', 'chī', 'ăn'], ['喝', 'hē', 'uống'], ['叫', 'jiào', 'gọi']] },
+    { r: '女', py: 'nǚ', name: 'Nữ', vi: 'phụ nữ', ex: [['妈', 'mā', 'mẹ'], ['姐', 'jiě', 'chị'], ['好', 'hǎo', 'tốt']] },
+    { r: '子', py: 'zǐ', name: 'Tử', vi: 'con', ex: [['孩', 'hái', 'trẻ con'], ['字', 'zì', 'chữ'], ['学', 'xué', 'học']] },
+    { r: '氵', alt: '水', py: 'shuǐ', name: 'Thủy', vi: 'nước', ex: [['河', 'hé', 'sông'], ['海', 'hǎi', 'biển'], ['洗', 'xǐ', 'rửa']] },
+    { r: '木', py: 'mù', name: 'Mộc', vi: 'cây, gỗ', ex: [['树', 'shù', 'cây'], ['林', 'lín', 'rừng'], ['桌', 'zhuō', 'bàn']] },
+    { r: '日', py: 'rì', name: 'Nhật', vi: 'mặt trời, ngày', ex: [['明', 'míng', 'sáng'], ['早', 'zǎo', 'sớm'], ['时', 'shí', 'thời gian']] },
+    { r: '月', py: 'yuè', name: 'Nguyệt', vi: 'mặt trăng, tháng', ex: [['朋', 'péng', 'bạn'], ['期', 'qī', 'kỳ'], ['有', 'yǒu', 'có']] },
+    { r: '忄', alt: '心', py: 'xīn', name: 'Tâm', vi: 'tim, tình cảm', ex: [['想', 'xiǎng', 'nghĩ, muốn'], ['忙', 'máng', 'bận'], ['快', 'kuài', 'nhanh, vui']] },
+    { r: '扌', alt: '手', py: 'shǒu', name: 'Thủ', vi: 'tay', ex: [['打', 'dǎ', 'đánh'], ['找', 'zhǎo', 'tìm'], ['拿', 'ná', 'cầm']] },
+    { r: '讠', alt: '言', py: 'yán', name: 'Ngôn', vi: 'lời nói', ex: [['说', 'shuō', 'nói'], ['话', 'huà', 'lời'], ['语', 'yǔ', 'ngôn ngữ']] },
+    { r: '钅', alt: '金', py: 'jīn', name: 'Kim', vi: 'kim loại', ex: [['钱', 'qián', 'tiền'], ['钟', 'zhōng', 'đồng hồ'], ['铁', 'tiě', 'sắt']] },
+    { r: '土', py: 'tǔ', name: 'Thổ', vi: 'đất', ex: [['地', 'dì', 'đất'], ['在', 'zài', 'ở'], ['坐', 'zuò', 'ngồi']] },
+    { r: '艹', alt: '草', py: 'cǎo', name: 'Thảo', vi: 'cỏ, cây', ex: [['花', 'huā', 'hoa'], ['草', 'cǎo', 'cỏ'], ['茶', 'chá', 'trà']] },
+    { r: '火', alt: '灬', py: 'huǒ', name: 'Hỏa', vi: 'lửa', ex: [['灯', 'dēng', 'đèn'], ['热', 'rè', 'nóng'], ['点', 'diǎn', 'điểm, giờ']] },
+    { r: '目', py: 'mù', name: 'Mục', vi: 'mắt', ex: [['看', 'kàn', 'xem'], ['眼', 'yǎn', 'mắt'], ['睡', 'shuì', 'ngủ']] },
+    { r: '门', py: 'mén', name: 'Môn', vi: 'cửa', ex: [['间', 'jiān', 'gian, phòng'], ['闭', 'bì', 'đóng'], ['闪', 'shǎn', 'loé']] },
+    { r: '宀', py: 'mián', name: 'Miên', vi: 'mái nhà', ex: [['家', 'jiā', 'nhà'], ['安', 'ān', 'yên'], ['室', 'shì', 'phòng']] },
+    { r: '饣', alt: '食', py: 'shí', name: 'Thực', vi: 'ăn', ex: [['饭', 'fàn', 'cơm'], ['饿', 'è', 'đói'], ['饺', 'jiǎo', 'sủi cảo']] },
+    { r: '纟', alt: '糸', py: 'sī', name: 'Mịch', vi: 'sợi tơ', ex: [['红', 'hóng', 'đỏ'], ['给', 'gěi', 'cho'], ['绿', 'lǜ', 'xanh lá']] },
+    { r: '⻊', alt: '足', py: 'zú', name: 'Túc', vi: 'chân', ex: [['跑', 'pǎo', 'chạy'], ['跳', 'tiào', 'nhảy'], ['路', 'lù', 'đường']] },
+    { r: '车', py: 'chē', name: 'Xa', vi: 'xe', ex: [['辆', 'liàng', 'chiếc (xe)'], ['轮', 'lún', 'bánh xe'], ['转', 'zhuǎn', 'quay']] },
+    { r: '雨', py: 'yǔ', name: 'Vũ', vi: 'mưa', ex: [['雪', 'xuě', 'tuyết'], ['雷', 'léi', 'sấm'], ['零', 'líng', 'số không']] },
+    { r: '衤', alt: '衣', py: 'yī', name: 'Y', vi: 'áo, quần áo', ex: [['衬', 'chèn', 'lót (áo sơ mi)'], ['裤', 'kù', 'quần'], ['袜', 'wà', 'tất']] },
+    { r: '贝', py: 'bèi', name: 'Bối', vi: 'vỏ sò, tiền của', ex: [['贵', 'guì', 'đắt'], ['财', 'cái', 'của cải'], ['货', 'huò', 'hàng hoá']] },
+    { r: '王', alt: '玉', py: 'wáng', name: 'Ngọc', vi: 'ngọc, vua', ex: [['玩', 'wán', 'chơi'], ['球', 'qiú', 'quả bóng'], ['现', 'xiàn', 'hiện']] },
+    { r: '马', py: 'mǎ', name: 'Mã', vi: 'ngựa', ex: [['骑', 'qí', 'cưỡi'], ['驶', 'shǐ', 'lái'], ['验', 'yàn', 'kiểm tra']] },
+    { r: '犭', alt: '犬', py: 'quǎn', name: 'Khuyển', vi: 'chó, thú', ex: [['狗', 'gǒu', 'chó'], ['猫', 'māo', 'mèo'], ['猪', 'zhū', 'lợn']] },
+    { r: '鸟', py: 'niǎo', name: 'Điểu', vi: 'chim', ex: [['鸡', 'jī', 'gà'], ['鸭', 'yā', 'vịt'], ['鹅', 'é', 'ngỗng']] },
+    { r: '刂', alt: '刀', py: 'dāo', name: 'Đao', vi: 'con dao', ex: [['到', 'dào', 'đến'], ['别', 'bié', 'đừng, khác'], ['刚', 'gāng', 'vừa mới']] },
+  ];
+
+  // ---------- BƯỚC 6: TỪ VỰNG HSK 1 (giáo trình HSK cũ, ~150 từ) ----------
+  // Mỗi từ: [chữ Hán, pinyin, nghĩa]. Lưu ý: chuẩn HSK 3.0 (2021) cấp 1 có ~500 từ — đây là bộ 150 từ cốt lõi.
+  const ZH_HSK1 = [
+    { id: 'hsk_people', title: 'Đại từ & con người', words: [
+      ['我', 'wǒ', 'tôi'], ['你', 'nǐ', 'bạn'], ['他', 'tā', 'anh ấy'], ['她', 'tā', 'cô ấy'], ['我们', 'wǒmen', 'chúng tôi'],
+      ['这', 'zhè', 'này, đây'], ['那', 'nà', 'kia, đó'], ['哪', 'nǎ', 'nào'], ['谁', 'shéi', 'ai'], ['什么', 'shénme', 'cái gì'],
+      ['哪儿', 'nǎr', 'ở đâu'], ['人', 'rén', 'người'], ['先生', 'xiānsheng', 'ông, ngài'], ['小姐', 'xiǎojiě', 'cô (gái trẻ)'], ['朋友', 'péngyou', 'bạn bè'],
+    ] },
+    { id: 'hsk_family', title: 'Gia đình, nghề, nơi chốn', words: [
+      ['爸爸', 'bàba', 'bố'], ['妈妈', 'māma', 'mẹ'], ['儿子', 'érzi', 'con trai'], ['女儿', 'nǚ’ér', 'con gái'], ['老师', 'lǎoshī', 'giáo viên'],
+      ['学生', 'xuésheng', 'học sinh'], ['同学', 'tóngxué', 'bạn học'], ['医生', 'yīshēng', 'bác sĩ'], ['家', 'jiā', 'nhà'], ['名字', 'míngzi', 'tên'],
+      ['中国', 'Zhōngguó', 'Trung Quốc'], ['北京', 'Běijīng', 'Bắc Kinh'], ['汉语', 'Hànyǔ', 'tiếng Hán'], ['字', 'zì', 'chữ'], ['狗', 'gǒu', 'con chó'], ['猫', 'māo', 'con mèo'],
+    ] },
+    { id: 'hsk_numbers', title: 'Số & số lượng', words: [
+      ['一', 'yī', 'một'], ['二', 'èr', 'hai'], ['三', 'sān', 'ba'], ['四', 'sì', 'bốn'], ['五', 'wǔ', 'năm'],
+      ['六', 'liù', 'sáu'], ['七', 'qī', 'bảy'], ['八', 'bā', 'tám'], ['九', 'jiǔ', 'chín'], ['十', 'shí', 'mười'],
+      ['几', 'jǐ', 'mấy'], ['多少', 'duōshao', 'bao nhiêu'], ['个', 'gè', 'cái, chiếc (lượng từ)'], ['本', 'běn', 'quyển (lượng từ)'],
+      ['块', 'kuài', 'đồng (tiền)'], ['些', 'xiē', 'một vài'], ['一点儿', 'yìdiǎnr', 'một chút'],
+    ] },
+    { id: 'hsk_time', title: 'Thời gian', words: [
+      ['今天', 'jīntiān', 'hôm nay'], ['明天', 'míngtiān', 'ngày mai'], ['昨天', 'zuótiān', 'hôm qua'], ['年', 'nián', 'năm'], ['月', 'yuè', 'tháng'],
+      ['号', 'hào', 'ngày (trong tháng)'], ['星期', 'xīngqī', 'tuần, thứ'], ['点', 'diǎn', 'giờ'], ['分钟', 'fēnzhōng', 'phút'], ['现在', 'xiànzài', 'bây giờ'],
+      ['时候', 'shíhou', 'lúc, khi'], ['上午', 'shàngwǔ', 'buổi sáng'], ['中午', 'zhōngwǔ', 'buổi trưa'], ['下午', 'xiàwǔ', 'buổi chiều'],
+    ] },
+    { id: 'hsk_places', title: 'Nơi chốn & vị trí', words: [
+      ['学校', 'xuéxiào', 'trường học'], ['商店', 'shāngdiàn', 'cửa hàng'], ['医院', 'yīyuàn', 'bệnh viện'], ['饭店', 'fàndiàn', 'nhà hàng, khách sạn'],
+      ['上', 'shàng', 'trên'], ['下', 'xià', 'dưới'], ['前面', 'qiánmiàn', 'phía trước'], ['后面', 'hòumiàn', 'phía sau'], ['里', 'lǐ', 'trong'],
+      ['在', 'zài', 'ở, tại'], ['住', 'zhù', 'sống, ở'],
+    ] },
+    { id: 'hsk_things', title: 'Đồ vật & ăn uống', words: [
+      ['杯子', 'bēizi', 'cái cốc'], ['桌子', 'zhuōzi', 'cái bàn'], ['椅子', 'yǐzi', 'cái ghế'], ['电脑', 'diànnǎo', 'máy tính'], ['电视', 'diànshì', 'ti vi'],
+      ['电影', 'diànyǐng', 'phim'], ['书', 'shū', 'sách'], ['衣服', 'yīfu', 'quần áo'], ['东西', 'dōngxi', 'đồ vật'], ['钱', 'qián', 'tiền'],
+      ['飞机', 'fēijī', 'máy bay'], ['出租车', 'chūzūchē', 'taxi'], ['米饭', 'mǐfàn', 'cơm'], ['菜', 'cài', 'món ăn, rau'], ['茶', 'chá', 'trà'],
+      ['水', 'shuǐ', 'nước'], ['水果', 'shuǐguǒ', 'hoa quả'], ['苹果', 'píngguǒ', 'quả táo'],
+    ] },
+    { id: 'hsk_verbs1', title: 'Động từ (1)', words: [
+      ['是', 'shì', 'là'], ['有', 'yǒu', 'có'], ['去', 'qù', 'đi'], ['来', 'lái', 'đến'], ['回', 'huí', 'về'],
+      ['吃', 'chī', 'ăn'], ['喝', 'hē', 'uống'], ['看', 'kàn', 'xem, nhìn'], ['看见', 'kànjiàn', 'nhìn thấy'], ['听', 'tīng', 'nghe'],
+      ['说', 'shuō', 'nói'], ['读', 'dú', 'đọc'], ['写', 'xiě', 'viết'], ['叫', 'jiào', 'gọi, tên là'], ['做', 'zuò', 'làm'],
+    ] },
+    { id: 'hsk_verbs2', title: 'Động từ (2)', words: [
+      ['买', 'mǎi', 'mua'], ['开', 'kāi', 'mở, lái'], ['坐', 'zuò', 'ngồi, đi (xe)'], ['睡觉', 'shuìjiào', 'ngủ'], ['打电话', 'dǎ diànhuà', 'gọi điện'],
+      ['工作', 'gōngzuò', 'làm việc'], ['学习', 'xuéxí', 'học tập'], ['认识', 'rènshi', 'quen biết'], ['喜欢', 'xǐhuan', 'thích'], ['爱', 'ài', 'yêu'],
+      ['想', 'xiǎng', 'muốn, nhớ'], ['会', 'huì', 'biết (làm), sẽ'], ['能', 'néng', 'có thể'], ['请', 'qǐng', 'mời, xin'], ['下雨', 'xiàyǔ', 'mưa'],
+    ] },
+    { id: 'hsk_adj', title: 'Tính từ & phó từ', words: [
+      ['大', 'dà', 'to'], ['小', 'xiǎo', 'nhỏ'], ['多', 'duō', 'nhiều'], ['少', 'shǎo', 'ít'], ['好', 'hǎo', 'tốt'],
+      ['冷', 'lěng', 'lạnh'], ['热', 'rè', 'nóng'], ['高兴', 'gāoxìng', 'vui'], ['漂亮', 'piàoliang', 'đẹp'], ['很', 'hěn', 'rất'],
+      ['太', 'tài', 'quá'], ['都', 'dōu', 'đều'], ['不', 'bù', 'không'], ['没有', 'méiyǒu', 'không có, chưa'], ['天气', 'tiānqì', 'thời tiết'],
+    ] },
+    { id: 'hsk_function', title: 'Giao tiếp & hư từ', words: [
+      ['谢谢', 'xièxie', 'cảm ơn'], ['不客气', 'bú kèqi', 'không có gì'], ['对不起', 'duìbuqǐ', 'xin lỗi'], ['没关系', 'méi guānxi', 'không sao'], ['再见', 'zàijiàn', 'tạm biệt'],
+      ['喂', 'wéi', 'alô'], ['吗', 'ma', '(trợ từ hỏi) …không?'], ['呢', 'ne', '(trợ từ) …thì sao?'], ['的', 'de', 'của'], ['了', 'le', '(trợ từ) rồi'],
+      ['和', 'hé', 'và'], ['怎么', 'zěnme', 'thế nào, sao'], ['怎么样', 'zěnmeyàng', 'thế nào (hỏi ý kiến)'], ['岁', 'suì', 'tuổi'],
+    ] },
+  ];
+
+  // ---------- 8 BƯỚC ----------
+  const ZH_STEPS = [
+    { id: 'pinyin', icon: '🔤', title: 'Pinyin & thanh điệu',
+      desc: 'Nền tảng phát âm: 4 thanh + thanh nhẹ, âm đầu, âm vần, biến điệu. Nên dành 2–3 tuần đầu cho bước này.',
+      lessons: [
+        { id: 'tones', type: 'learn', title: '4 thanh điệu và thanh nhẹ', items: [
+          { big: 'mā', py: '妈 · mẹ', say: '妈', vi: 'Thanh 1 — cao, đều, kéo dài', note: 'Giống thanh ngang (không dấu) tiếng Việt nhưng giữ cao hơn.' },
+          { big: 'má', py: '麻 · cây gai', say: '麻', vi: 'Thanh 2 — đi lên', note: 'Giống dấu sắc tiếng Việt: từ giữa vút lên cao.' },
+          { big: 'mǎ', py: '马 · con ngựa', say: '马', vi: 'Thanh 3 — xuống thấp rồi lên', note: 'Giống dấu hỏi: hạ giọng thật thấp rồi mới lên. Khi nói nhanh thường chỉ còn phần thấp.' },
+          { big: 'mà', py: '骂 · mắng', say: '骂', vi: 'Thanh 4 — rơi xuống mạnh', note: 'Từ cao rơi thẳng xuống, dứt khoát như khi ra lệnh. Đừng đọc kéo dài như dấu huyền.' },
+          { big: 'ma', py: '吗 · …không? (trợ từ hỏi)', say: '妈妈', vi: 'Thanh nhẹ — ngắn, nhẹ, không dấu', note: 'Đọc lướt, nhẹ. Nghe ví dụ "māma": chữ sau là thanh nhẹ.' },
+        ] },
+        { id: 'tones_quiz', type: 'quiz', gen: 'tones', count: 10, title: 'Nghe và chọn thanh điệu' },
+        { id: 'initials', type: 'learn', title: 'Thanh mẫu (âm đầu)', from: 'initials' },
+        { id: 'initials_quiz', type: 'quiz', gen: 'initials', count: 10, title: 'Nghe và chọn âm đầu' },
+        { id: 'finals1', type: 'learn', title: 'Vận mẫu đơn & kép', from: 'finals1' },
+        { id: 'finals2', type: 'learn', title: 'Vận mẫu mũi & vần ghép', from: 'finals2' },
+        { id: 'sandhi', type: 'learn', title: 'Quy tắc biến điệu', items: [
+          { big: '你好', py: 'viết nǐ hǎo → đọc ní hǎo', say: '你好', vi: 'Hai thanh 3 liền nhau', note: 'Chữ đầu đổi thành thanh 2. Ví dụ khác: 很好 hěn hǎo → hén hǎo.' },
+          { big: '不是', py: 'bù → bú shì', say: '不是', vi: '不 đứng trước thanh 4', note: '不 đọc thành thanh 2: 不是 bú shì, 不去 bú qù. Trước thanh khác giữ nguyên: 不吃 bù chī.' },
+          { big: '一个', py: 'yī → yí gè', say: '一个', vi: '一 đứng trước thanh 4', note: '一 đọc thành thanh 2: 一个 yí gè, 一样 yíyàng.' },
+          { big: '一天', py: 'yī → yì tiān', say: '一天', vi: '一 đứng trước thanh 1, 2, 3', note: '一 đọc thành thanh 4: 一天 yì tiān, 一年 yì nián, 一起 yìqǐ. Khi đếm số hoặc đứng cuối vẫn đọc yī.' },
+        ] },
+        { id: 'sandhi_quiz', type: 'quiz', title: 'Đố biến điệu', questions: [
+          { q: 'Khi nói, 你好 được đọc là…', big: '你好', say: '你好', options: ['ní hǎo', 'nǐ hǎo', 'nì hǎo', 'nī hǎo'] },
+          { q: 'Khi nói, 不是 được đọc là…', big: '不是', say: '不是', options: ['bú shì', 'bù shì', 'bǔ shì', 'bū shì'] },
+          { q: 'Khi nói, 不吃 được đọc là…', big: '不吃', say: '不吃', options: ['bù chī', 'bú chī', 'bǔ chī', 'bū chī'] },
+          { q: 'Khi nói, 一个 được đọc là…', big: '一个', say: '一个', options: ['yí gè', 'yī gè', 'yì gè', 'yǐ gè'] },
+          { q: 'Khi nói, 一天 được đọc là…', big: '一天', say: '一天', options: ['yì tiān', 'yī tiān', 'yí tiān', 'yǐ tiān'] },
+          { q: 'Khi nói, 很好 được đọc là…', big: '很好', say: '很好', options: ['hén hǎo', 'hěn hǎo', 'hèn hǎo', 'hēn hǎo'] },
+          { q: 'Khi nói, 不对 được đọc là…', big: '不对', say: '不对', options: ['bú duì', 'bù duì', 'bǔ duì', 'bū duì'] },
+          { q: 'Khi nói, 一起 được đọc là…', big: '一起', say: '一起', options: ['yìqǐ', 'yīqǐ', 'yíqǐ', 'yǐqǐ'] },
+        ] },
+      ] },
+    { id: 'strokes', icon: '✍️', title: 'Nét cơ bản & bút thuận',
+      desc: '8 nét cơ bản, 7 quy tắc thứ tự viết, rồi tô chữ theo nét mẫu.',
+      lessons: [
+        { id: 'basic_strokes', type: 'learn', title: '8 nét cơ bản', items: [
+          { big: '横', py: 'héng — Ngang', hw: { char: '一', stroke: 0 }, say: '横', vi: 'Kéo từ trái sang phải', note: 'Ví dụ: chữ 一 (một).' },
+          { big: '竖', py: 'shù — Sổ', hw: { char: '十', stroke: 1 }, say: '竖', vi: 'Kéo thẳng từ trên xuống', note: 'Nét thứ 2 của chữ 十 (mười).' },
+          { big: '撇', py: 'piě — Phẩy', hw: { char: '人', stroke: 0 }, say: '撇', vi: 'Xiên từ phải trên xuống trái dưới', note: 'Nét đầu của chữ 人 (người).' },
+          { big: '捺', py: 'nà — Mác', hw: { char: '人', stroke: 1 }, say: '捺', vi: 'Xiên từ trái trên xuống phải dưới, cuối nét đè mạnh', note: 'Nét sau của chữ 人.' },
+          { big: '点', py: 'diǎn — Chấm', hw: { char: '六', stroke: 0 }, say: '点', vi: 'Một chấm ngắn', note: 'Nét đầu của chữ 六 (sáu).' },
+          { big: '提', py: 'tí — Hất', hw: { char: '我', stroke: 3 }, say: '提', vi: 'Hất từ trái dưới lên phải trên', note: 'Nét thứ 4 của chữ 我 (tôi).' },
+          { big: '折', py: 'zhé — Gập', hw: { char: '口', stroke: 1 }, say: '折', vi: 'Đi ngang rồi gập xuống (một nét liền)', note: 'Nét thứ 2 của chữ 口 (miệng).' },
+          { big: '钩', py: 'gōu — Móc', hw: { char: '小', stroke: 0 }, say: '钩', vi: 'Đi xuống rồi móc lên', note: 'Nét đầu của chữ 小 (nhỏ).' },
+        ] },
+        { id: 'stroke_rules', type: 'learn', title: '7 quy tắc bút thuận', items: [
+          { big: '十', py: 'shí', hw: { char: '十' }, say: '十', vi: '① Ngang trước, sổ sau' },
+          { big: '人', py: 'rén', hw: { char: '人' }, say: '人', vi: '② Phẩy trước, mác sau' },
+          { big: '三', py: 'sān', hw: { char: '三' }, say: '三', vi: '③ Trên trước, dưới sau' },
+          { big: '川', py: 'chuān', hw: { char: '川' }, say: '川', vi: '④ Trái trước, phải sau' },
+          { big: '月', py: 'yuè', hw: { char: '月' }, say: '月', vi: '⑤ Ngoài trước, trong sau' },
+          { big: '日', py: 'rì', hw: { char: '日' }, say: '日', vi: '⑥ Vào nhà trước, đóng cửa sau', note: 'Viết khung ngoài và nét bên trong, nét ngang đáy (đóng cửa) viết cuối cùng.' },
+          { big: '小', py: 'xiǎo', hw: { char: '小' }, say: '小', vi: '⑦ Giữa trước, hai bên sau' },
+        ] },
+        { id: 'write_1', type: 'write', title: 'Tô chữ: số đếm', chars: ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'] },
+        { id: 'write_2', type: 'write', title: 'Tô chữ: thiên nhiên', chars: ['人', '口', '日', '月', '山', '水', '火', '木', '大', '小'] },
+        { id: 'write_3', type: 'write', title: 'Tô chữ: gia đình & chào hỏi', chars: ['你', '好', '我', '爸', '妈', '中', '国', '学', '生', '谢'] },
+      ] },
+    { id: 'radicals', icon: '🧩', title: 'Bộ thủ thông dụng',
+      desc: '30 bộ thủ hay gặp nhất — nhìn bộ là đoán được nghĩa, nhớ chữ theo logic thay vì học vẹt.',
+      lessons: [
+        { id: 'radicals_1', type: 'learn', title: 'Bộ thủ 1–15', from: 'radicals', range: [0, 15] },
+        { id: 'radicals_2', type: 'learn', title: 'Bộ thủ 16–30', from: 'radicals', range: [15, 30] },
+        { id: 'radicals_quiz', type: 'quiz', gen: 'radicals', count: 10, title: 'Chữ này có bộ gì?' },
+      ] },
+    { id: 'greetings', icon: '👋', title: 'Chào hỏi & giao tiếp',
+      desc: 'Câu chào, cảm ơn, xin lỗi; giới thiệu tên, tuổi, quốc tịch, nghề nghiệp.',
+      lessons: [
+        { id: 'greet_basic', type: 'learn', title: 'Câu chào hỏi cơ bản', items: [
+          { big: '你好！', py: 'Nǐ hǎo!', vi: 'Xin chào!' },
+          { big: '您好！', py: 'Nín hǎo!', vi: 'Chào ông/bà! (lịch sự)', note: '您 là cách gọi kính trọng của 你.' },
+          { big: '早上好！', py: 'Zǎoshang hǎo!', vi: 'Chào buổi sáng!' },
+          { big: '谢谢！', py: 'Xièxie!', vi: 'Cảm ơn!' },
+          { big: '不客气。', py: 'Bú kèqi.', vi: 'Không có gì.' },
+          { big: '对不起！', py: 'Duìbuqǐ!', vi: 'Xin lỗi!' },
+          { big: '没关系。', py: 'Méi guānxi.', vi: 'Không sao đâu.' },
+          { big: '再见！', py: 'Zàijiàn!', vi: 'Tạm biệt!' },
+          { big: '明天见！', py: 'Míngtiān jiàn!', vi: 'Mai gặp lại!' },
+        ] },
+        { id: 'greet_intro', type: 'learn', title: 'Giới thiệu bản thân', items: [
+          { big: '你叫什么名字？', py: 'Nǐ jiào shénme míngzi?', vi: 'Bạn tên là gì?' },
+          { big: '我叫小明。', py: 'Wǒ jiào Xiǎomíng.', vi: 'Tôi tên là Tiểu Minh.' },
+          { big: '你是哪国人？', py: 'Nǐ shì nǎ guó rén?', vi: 'Bạn là người nước nào?' },
+          { big: '我是越南人。', py: 'Wǒ shì Yuènán rén.', vi: 'Tôi là người Việt Nam.' },
+          { big: '你几岁？', py: 'Nǐ jǐ suì?', vi: 'Cháu mấy tuổi? (hỏi trẻ em)' },
+          { big: '你多大？', py: 'Nǐ duō dà?', vi: 'Bạn bao nhiêu tuổi? (hỏi người lớn)' },
+          { big: '我三十岁。', py: 'Wǒ sānshí suì.', vi: 'Tôi 30 tuổi.' },
+          { big: '你做什么工作？', py: 'Nǐ zuò shénme gōngzuò?', vi: 'Bạn làm nghề gì?' },
+          { big: '我是老师。', py: 'Wǒ shì lǎoshī.', vi: 'Tôi là giáo viên.' },
+          { big: '很高兴认识你。', py: 'Hěn gāoxìng rènshi nǐ.', vi: 'Rất vui được làm quen với bạn.' },
+        ] },
+        { id: 'greet_words', type: 'learn', title: 'Quốc tịch & nghề nghiệp', items: [
+          { big: '越南', py: 'Yuènán', vi: 'Việt Nam' }, { big: '中国', py: 'Zhōngguó', vi: 'Trung Quốc' },
+          { big: '美国', py: 'Měiguó', vi: 'Mỹ' }, { big: '韩国', py: 'Hánguó', vi: 'Hàn Quốc' }, { big: '日本', py: 'Rìběn', vi: 'Nhật Bản' },
+          { big: '老师', py: 'lǎoshī', vi: 'giáo viên' }, { big: '学生', py: 'xuésheng', vi: 'học sinh, sinh viên' },
+          { big: '医生', py: 'yīshēng', vi: 'bác sĩ' }, { big: '司机', py: 'sījī', vi: 'tài xế' }, { big: '工程师', py: 'gōngchéngshī', vi: 'kỹ sư' },
+        ] },
+        { id: 'greet_quiz', type: 'quiz', title: 'Chọn câu trả lời đúng', questions: [
+          { q: 'Người ta hỏi:', big: '你叫什么名字？', py: 'Nǐ jiào shénme míngzi?', options: [['我叫小明。', 'Wǒ jiào Xiǎomíng.'], ['我是越南人。', 'Wǒ shì Yuènán rén.'], ['我三十岁。', 'Wǒ sānshí suì.'], ['不客气。', 'Bú kèqi.']] },
+          { q: 'Người ta hỏi:', big: '你是哪国人？', py: 'Nǐ shì nǎ guó rén?', options: [['我是越南人。', 'Wǒ shì Yuènán rén.'], ['我是老师。', 'Wǒ shì lǎoshī.'], ['我叫小明。', 'Wǒ jiào Xiǎomíng.'], ['再见！', 'Zàijiàn!']] },
+          { q: 'Người ta hỏi:', big: '你多大？', py: 'Nǐ duō dà?', options: [['我三十岁。', 'Wǒ sānshí suì.'], ['我是学生。', 'Wǒ shì xuésheng.'], ['没关系。', 'Méi guānxi.'], ['谢谢！', 'Xièxie!']] },
+          { q: 'Người ta hỏi:', big: '你做什么工作？', py: 'Nǐ zuò shénme gōngzuò?', options: [['我是医生。', 'Wǒ shì yīshēng.'], ['我五岁。', 'Wǒ wǔ suì.'], ['你好！', 'Nǐ hǎo!'], ['明天见！', 'Míngtiān jiàn!']] },
+          { q: 'Người ta nói:', big: '谢谢！', py: 'Xièxie!', options: [['不客气。', 'Bú kèqi.'], ['对不起！', 'Duìbuqǐ!'], ['我叫小明。', 'Wǒ jiào Xiǎomíng.'], ['我是越南人。', 'Wǒ shì Yuènán rén.']] },
+          { q: 'Người ta nói:', big: '对不起！', py: 'Duìbuqǐ!', options: [['没关系。', 'Méi guānxi.'], ['谢谢！', 'Xièxie!'], ['我是老师。', 'Wǒ shì lǎoshī.'], ['你好！', 'Nǐ hǎo!']] },
+          { q: 'Người ta nói:', big: '很高兴认识你。', py: 'Hěn gāoxìng rènshi nǐ.', options: [['我也很高兴认识你。', 'Wǒ yě hěn gāoxìng rènshi nǐ.'], ['不客气。', 'Bú kèqi.'], ['我三十岁。', 'Wǒ sānshí suì.'], ['对不起！', 'Duìbuqǐ!']] },
+          { q: 'Người ta nói:', big: '再见！', py: 'Zàijiàn!', options: [['明天见！', 'Míngtiān jiàn!'], ['你好！', 'Nǐ hǎo!'], ['没关系。', 'Méi guānxi.'], ['我是学生。', 'Wǒ shì xuésheng.']] },
+        ] },
+      ] },
+    { id: 'numbers', icon: '🔢', title: 'Số đếm, ngày tháng, giờ, tiền',
+      desc: 'Dùng ngay trong đời sống: đếm số, thứ ngày tháng, xem giờ, hỏi giá.',
+      lessons: [
+        { id: 'num_learn', type: 'learn', title: 'Số 0–10 và cách ghép số', items: [
+          { big: '零', py: 'líng', vi: '0' }, { big: '一', py: 'yī', vi: '1' }, { big: '二', py: 'èr', vi: '2' }, { big: '三', py: 'sān', vi: '3' },
+          { big: '四', py: 'sì', vi: '4' }, { big: '五', py: 'wǔ', vi: '5' }, { big: '六', py: 'liù', vi: '6' }, { big: '七', py: 'qī', vi: '7' },
+          { big: '八', py: 'bā', vi: '8' }, { big: '九', py: 'jiǔ', vi: '9' }, { big: '十', py: 'shí', vi: '10' },
+          { big: '十一', py: 'shíyī', vi: '11', note: '十 + 一 = 11. Tương tự 十五 = 15.' },
+          { big: '二十', py: 'èrshí', vi: '20', note: '二 + 十 = 20. 二十五 = 25, 九十九 = 99.' },
+          { big: '一百', py: 'yìbǎi', vi: '100', note: '百 = trăm, 千 qiān = nghìn, 万 wàn = vạn (10.000).' },
+          { big: '两', py: 'liǎng', vi: '2 (khi đếm đồ vật)', note: 'Nói số lượng dùng 两: 两个人 (2 người), 两点 (2 giờ). Đọc số đếm dùng 二.' },
+        ] },
+        { id: 'num_quiz', type: 'quiz', gen: 'numbers', count: 10, title: 'Nghe số (11–99)' },
+        { id: 'date_learn', type: 'learn', title: 'Thứ, ngày, tháng', items: [
+          { big: '星期一', py: 'xīngqī yī', vi: 'Thứ Hai', note: 'Chú ý: 星期一 là Thứ HAI, lệch 1 so với số đếm tiếng Việt.' },
+          { big: '星期二', py: 'xīngqī èr', vi: 'Thứ Ba' }, { big: '星期三', py: 'xīngqī sān', vi: 'Thứ Tư' },
+          { big: '星期四', py: 'xīngqī sì', vi: 'Thứ Năm' }, { big: '星期五', py: 'xīngqī wǔ', vi: 'Thứ Sáu' },
+          { big: '星期六', py: 'xīngqī liù', vi: 'Thứ Bảy' }, { big: '星期天', py: 'xīngqī tiān', vi: 'Chủ nhật', note: 'Cũng nói 星期日 xīngqī rì.' },
+          { big: '今天', py: 'jīntiān', vi: 'Hôm nay' }, { big: '明天', py: 'míngtiān', vi: 'Ngày mai' }, { big: '昨天', py: 'zuótiān', vi: 'Hôm qua' },
+          { big: '十月八号', py: 'shí yuè bā hào', vi: 'Ngày 8 tháng 10', note: 'Tiếng Trung nói THÁNG trước, NGÀY sau: 月 = tháng, 号 = ngày.' },
+          { big: '今天几月几号？', py: 'Jīntiān jǐ yuè jǐ hào?', vi: 'Hôm nay ngày mấy tháng mấy?' },
+        ] },
+        { id: 'weekday_quiz', type: 'quiz', gen: 'weekdays', count: 8, title: 'Đố thứ trong tuần' },
+        { id: 'time_learn', type: 'learn', title: 'Giờ giấc', items: [
+          { big: '点', py: 'diǎn', vi: 'giờ' }, { big: '分', py: 'fēn', vi: 'phút' }, { big: '半', py: 'bàn', vi: 'rưỡi (30 phút)' },
+          { big: '三点', py: 'sān diǎn', vi: '3 giờ' }, { big: '三点半', py: 'sān diǎn bàn', vi: '3 giờ rưỡi' },
+          { big: '八点十分', py: 'bā diǎn shí fēn', vi: '8 giờ 10 phút' },
+          { big: '两点', py: 'liǎng diǎn', vi: '2 giờ', note: '2 giờ nói 两点, không nói 二点.' },
+          { big: '现在几点？', py: 'Xiànzài jǐ diǎn?', vi: 'Bây giờ là mấy giờ?' },
+        ] },
+        { id: 'time_quiz', type: 'quiz', gen: 'time', count: 8, title: 'Nghe giờ' },
+        { id: 'money_learn', type: 'learn', title: 'Tiền & hỏi giá', items: [
+          { big: '块', py: 'kuài', vi: 'đồng (tệ) — cách nói', note: 'Văn viết dùng 元 yuán.' },
+          { big: '毛', py: 'máo', vi: 'hào (1/10 đồng) — cách nói', note: 'Văn viết dùng 角 jiǎo.' },
+          { big: '多少钱？', py: 'Duōshao qián?', vi: 'Bao nhiêu tiền?' },
+          { big: '这个多少钱？', py: 'Zhège duōshao qián?', vi: 'Cái này bao nhiêu tiền?' },
+          { big: '二十五块', py: 'èrshíwǔ kuài', vi: '25 tệ' },
+          { big: '太贵了！', py: 'Tài guì le!', vi: 'Đắt quá!' },
+          { big: '便宜一点儿吧。', py: 'Piányi yìdiǎnr ba.', vi: 'Rẻ hơn một chút đi.' },
+        ] },
+        { id: 'money_quiz', type: 'quiz', gen: 'money', count: 8, title: 'Nghe giá tiền' },
+      ] },
+    { id: 'hsk1', icon: '📚', title: 'Từ vựng HSK 1',
+      desc: '~150 từ cốt lõi của HSK 1: đại từ, động từ cơ bản, gia đình, đồ ăn, địa điểm…',
+      lessons: [] }, // tự sinh từ ZH_HSK1: mỗi nhóm 1 bài học + 1 bài đố (zh-roadmap.js)
+    { id: 'grammar', icon: '🧠', title: 'Ngữ pháp nền tảng',
+      desc: 'Câu S + V + O, câu chữ 是 và 有, phủ định 不 / 没, câu hỏi 吗 và từ để hỏi, 的, lượng từ.',
+      lessons: [
+        { id: 'g_svo', type: 'learn', title: 'Câu cơ bản: Chủ ngữ + Động từ + Tân ngữ', items: [
+          { big: 'S + V + O', vi: 'Trật tự câu giống tiếng Việt', note: 'Ai — làm gì — cái gì. Tiếng Trung KHÔNG chia động từ theo thì hay số nhiều.' },
+          { big: '我吃米饭。', py: 'Wǒ chī mǐfàn.', vi: 'Tôi ăn cơm.' },
+          { big: '她喝茶。', py: 'Tā hē chá.', vi: 'Cô ấy uống trà.' },
+          { big: '我们学习汉语。', py: 'Wǒmen xuéxí Hànyǔ.', vi: 'Chúng tôi học tiếng Hán.' },
+          { big: '今天我去学校。', py: 'Jīntiān wǒ qù xuéxiào.', vi: 'Hôm nay tôi đi học.', note: 'Từ chỉ thời gian đứng TRƯỚC động từ (đầu câu hoặc sau chủ ngữ), khác tiếng Việt hay để cuối câu.' },
+        ] },
+        { id: 'g_shi_you', type: 'learn', title: 'Câu chữ 是 (là) và 有 (có)', items: [
+          { big: '我是学生。', py: 'Wǒ shì xuésheng.', vi: 'Tôi là học sinh.' },
+          { big: '他不是老师。', py: 'Tā bú shì lǎoshī.', vi: 'Anh ấy không phải giáo viên.', note: 'Phủ định 是 bằng 不: 不是.' },
+          { big: '我有一个哥哥。', py: 'Wǒ yǒu yí gè gēge.', vi: 'Tôi có một anh trai.' },
+          { big: '我没有钱。', py: 'Wǒ méiyǒu qián.', vi: 'Tôi không có tiền.', note: 'Phủ định 有 LUÔN dùng 没: 没有 (không bao giờ nói 不有).' },
+        ] },
+        { id: 'g_neg', type: 'learn', title: 'Phủ định 不 và 没', items: [
+          { big: '不', py: 'bù', vi: 'không (hiện tại, tương lai, thói quen, ý muốn)', note: 'Ví dụ: 我不喝茶。Tôi không uống trà. 明天我不去。Mai tôi không đi.' },
+          { big: '没', py: 'méi', vi: 'chưa / đã không (việc trong quá khứ) và phủ định 有', note: 'Ví dụ: 我昨天没去学校。Hôm qua tôi không đi học.' },
+          { big: '我不去。', py: 'Wǒ bú qù.', vi: 'Tôi không đi (không muốn / sẽ không đi).' },
+          { big: '我没去。', py: 'Wǒ méi qù.', vi: 'Tôi (đã) không đi / chưa đi.' },
+        ] },
+        { id: 'g_questions', type: 'learn', title: 'Câu hỏi 吗 và từ để hỏi', items: [
+          { big: '你是学生吗？', py: 'Nǐ shì xuésheng ma?', vi: 'Bạn là học sinh phải không?', note: 'Thêm 吗 vào cuối câu kể là thành câu hỏi có/không.' },
+          { big: '你喝茶吗？', py: 'Nǐ hē chá ma?', vi: 'Bạn uống trà không?' },
+          { big: '他是谁？', py: 'Tā shì shéi?', vi: 'Anh ấy là ai?', note: 'Với từ để hỏi (谁, 什么, 哪儿, 几, 多少) KHÔNG thêm 吗, và từ để hỏi đứng đúng chỗ của câu trả lời.' },
+          { big: '你去哪儿？', py: 'Nǐ qù nǎr?', vi: 'Bạn đi đâu?' },
+          { big: '你吃什么？', py: 'Nǐ chī shénme?', vi: 'Bạn ăn gì?' },
+          { big: '你有几个孩子？', py: 'Nǐ yǒu jǐ gè háizi?', vi: 'Bạn có mấy đứa con?', note: '几 hỏi số nhỏ (dưới 10), 多少 hỏi số lớn hoặc giá tiền.' },
+        ] },
+        { id: 'g_de_measure', type: 'learn', title: '的 (của) và lượng từ', items: [
+          { big: '我的书', py: 'wǒ de shū', vi: 'sách của tôi', note: 'Người sở hữu + 的 + vật: ngược với tiếng Việt.' },
+          { big: '妈妈的朋友', py: 'māma de péngyou', vi: 'bạn của mẹ' },
+          { big: '我妈妈', py: 'wǒ māma', vi: 'mẹ tôi', note: 'Với người thân, bạn bè thân có thể bỏ 的.' },
+          { big: '一个人', py: 'yí gè rén', vi: 'một người', note: 'Số + LƯỢNG TỪ + danh từ. 个 là lượng từ dùng nhiều nhất.' },
+          { big: '两本书', py: 'liǎng běn shū', vi: 'hai quyển sách', note: '本 dùng cho sách, vở.' },
+          { big: '三杯茶', py: 'sān bēi chá', vi: 'ba cốc trà' },
+        ] },
+        { id: 'g_order_1', type: 'order', title: 'Sắp xếp câu (1)', sentences: [
+          { tokens: ['我', '吃', '米饭'], py: 'Wǒ chī mǐfàn.', vi: 'Tôi ăn cơm.' },
+          { tokens: ['我', '是', '学生'], py: 'Wǒ shì xuésheng.', vi: 'Tôi là học sinh.' },
+          { tokens: ['他', '不是', '老师'], py: 'Tā bú shì lǎoshī.', vi: 'Anh ấy không phải giáo viên.' },
+          { tokens: ['我', '没有', '钱'], py: 'Wǒ méiyǒu qián.', vi: 'Tôi không có tiền.' },
+          { tokens: ['今天', '我', '去', '学校'], py: 'Jīntiān wǒ qù xuéxiào.', vi: 'Hôm nay tôi đi học.' },
+        ] },
+        { id: 'g_order_2', type: 'order', title: 'Sắp xếp câu (2)', sentences: [
+          { tokens: ['你', '是', '学生', '吗'], py: 'Nǐ shì xuésheng ma?', vi: 'Bạn là học sinh phải không?', end: '？' },
+          { tokens: ['你', '去', '哪儿'], py: 'Nǐ qù nǎr?', vi: 'Bạn đi đâu?', end: '？' },
+          { tokens: ['这', '是', '我的', '书'], py: 'Zhè shì wǒ de shū.', vi: 'Đây là sách của tôi.' },
+          { tokens: ['我', '有', '两本', '书'], py: 'Wǒ yǒu liǎng běn shū.', vi: 'Tôi có hai quyển sách.' },
+          { tokens: ['我', '昨天', '没', '去'], py: 'Wǒ zuótiān méi qù.', vi: 'Hôm qua tôi không đi.' },
+        ] },
+      ] },
+    { id: 'typing', icon: '⌨️', title: 'Gõ chữ bằng Pinyin',
+      desc: 'Cách cài bộ gõ tiếng Trung, rồi luyện gõ pinyin và chọn đúng chữ Hán mỗi ngày.',
+      lessons: [
+        { id: 'ime_setup', type: 'learn', title: 'Cài bộ gõ tiếng Trung', items: [
+          { big: '📱 iPhone', vi: 'Cài đặt › Cài đặt chung › Bàn phím › Bàn phím › Thêm bàn phím mới', note: 'Chọn "Tiếng Trung, Giản thể" › "Bính âm – QWERTY". Khi gõ, bấm 🌐 để đổi bàn phím.' },
+          { big: '🤖 Android', vi: 'Mở Gboard › Cài đặt › Ngôn ngữ › Thêm bàn phím', note: 'Chọn "Tiếng Trung (giản thể)" › "Bính âm". Tên mục có thể khác nhau tuỳ máy.' },
+          { big: '💻 Máy tính', vi: 'Windows: Cài đặt › Thời gian & ngôn ngữ › Thêm ngôn ngữ › 中文(简体)', note: 'Bộ gõ Microsoft Pinyin có sẵn. Đổi bàn phím bằng Windows + Space.' },
+          { big: 'nihao', py: '→ 你好', vi: 'Gõ pinyin KHÔNG dấu, rồi chọn chữ đúng', note: 'Chữ ü gõ bằng phím v: nǚ → nv, lǜ → lv.' },
+        ] },
+        { id: 'type_1', type: 'type', title: 'Luyện gõ: từ HSK 1 (1)', groups: ['hsk_people', 'hsk_family', 'hsk_numbers', 'hsk_time', 'hsk_places'], count: 10 },
+        { id: 'type_2', type: 'type', title: 'Luyện gõ: từ HSK 1 (2)', groups: ['hsk_things', 'hsk_verbs1', 'hsk_verbs2', 'hsk_adj', 'hsk_function'], count: 10 },
+      ] },
+  ];

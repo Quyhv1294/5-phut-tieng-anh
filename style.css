@@ -164,6 +164,24 @@
     flex: none;
     box-shadow: var(--shadow);
   }
+  /* Cờ ngôn ngữ đang học ở góc dưới logo (app.js gắn vào) */
+  .mascot-flag {
+    position: absolute; right: -6px; bottom: -3px; width: 22px; height: 15px;
+    border-radius: 4px; overflow: hidden; border: 2px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25); line-height: 0;
+  }
+  .mascot-flag svg { width: 100%; height: 100%; display: block; }
+  /* Nền thanh đầu trang nhuộm nhẹ màu cờ + dải màu cờ mảnh trên cùng (lớp phủ, không đổi màu chữ). */
+  .app-header::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0.12;
+  }
+  .app-header::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; pointer-events: none;
+  }
+  .lang-zh-ui .app-header::before { background: linear-gradient(100deg, #EE1C25 0%, #EE1C25 35%, #FFDE00 100%); }
+  .lang-zh-ui .app-header::after { background: linear-gradient(90deg, #EE1C25 70%, #FFDE00 70%); }
+  .lang-en-ui .app-header::before { background: linear-gradient(100deg, #012169 0%, #3B5BA9 45%, #C8102E 100%); opacity: 0.11; }
+  .lang-en-ui .app-header::after { background: linear-gradient(90deg, #012169 0 40%, #FFFFFF 40% 46%, #C8102E 46% 54%, #FFFFFF 54% 60%, #012169 60%); }
   .mascot-accessory {
     position: absolute; top: -6px; right: -8px;
     font-size: 20.5px;
@@ -551,6 +569,41 @@
   .quiz-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; }
   .quiz-prompt { font-size: 16.5px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; }
   .quiz-word { font-family: 'Baloo 2'; font-weight: 800; font-size: 42px; }
+
+  /* ---------- TIẾNG TRUNG (html.lang-zh) ----------
+     Pinyin hiện ngay dưới chữ Hán (setWordText trong app.js). Phần chỉ có ở tiếng Anh (chọn lớp,
+     bài kiểm tra xếp lớp, chữ cái/ngữ âm/truyện, Xếp chữ, Đố ba mẹ) được ẩn — giai đoạn 1 tiếng
+     Trung mới có từ vựng lớp Mầm. */
+  .word-py {
+    display: block; margin-top: 2px;
+    font-family: 'Quicksand'; font-weight: 700; font-size: 0.5em; letter-spacing: 0.02em;
+    color: var(--teal-ink); text-transform: none;
+  }
+  .lang-zh .match-card.match-card--word { flex-direction: column; line-height: 1.15; }
+  .match-card .word-py { font-size: 0.72em; margin-top: 0; }
+  .quiz-opt .word-py { font-size: 0.62em; }
+  .recap-word .recap-py { font-family: 'Quicksand'; font-weight: 700; font-size: 15px; color: var(--teal-ink); }
+  .sentence-py { display: block; font-size: 14.5px; font-weight: 700; color: var(--teal-ink); margin: 2px 0 2px 26px; }
+  .lang-zh [data-class-switch],
+  .lang-zh #placementBanner,
+  .lang-zh #promoCardMam,
+  .lang-zh #homeModeToggle,
+  .lang-zh #gameModeSpellBtn,
+  .lang-zh #gameModeQuizParentBtn,
+  .lang-zh #learningGroupLabel,
+  .lang-zh #learningGroup,
+  .lang-zh #collectionModeToggle,
+  .lang-zh .en-only,
+  html:not(.lang-zh) .zh-only { display: none !important; }
+  .zh-voice-card { max-height: 88vh; overflow-y: auto; text-align: left; }
+  .zh-voice-card .confirm-message { text-align: center; margin-bottom: 8px; }
+  .zh-voice-emoji { font-size: 40px; text-align: center; }
+  .zh-voice-intro { font-size: 14px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 10px; }
+  .zh-voice-guides { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .zh-voice-guides details { border: 2px solid var(--line); border-radius: 14px; padding: 8px 12px; background: var(--surface-2); }
+  .zh-voice-guides summary { font-weight: 700; cursor: pointer; }
+  .zh-voice-guides ol { margin: 8px 0 2px; padding-left: 20px; font-size: 14px; line-height: 1.5; }
+  .zh-voice-guides li + li { margin-top: 4px; }
   .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 320px; }
   .quiz-opt {
     border: 3px solid var(--line);
@@ -1241,6 +1294,33 @@
   .confirm-ok-btn:active, .confirm-actions .ghost-btn:active { transform: scale(0.96); }
   .confirm-ok-btn.is-danger { background: var(--danger); color: #fff; }
 
+  /* Bảng chọn ngôn ngữ bé học (Cài đặt › Ngôn ngữ bé học) — dùng chung khung với hộp xác nhận. */
+  .lang-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .lang-option {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    padding: 12px 14px; border-radius: 16px; cursor: pointer; text-align: left;
+    border: 2px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .lang-option:active { transform: scale(0.97); }
+  .lang-option.is-current {
+    border-color: var(--teal);
+    background: color-mix(in srgb, var(--teal) 14%, var(--surface));
+  }
+  .lang-option-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .lang-option-text strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 19px; }
+  .lang-option-text small { font-family: 'Quicksand'; font-weight: 600; font-size: 13.5px; color: var(--ink-soft); }
+  .lang-option-badge {
+    flex: none; border-radius: 999px; padding: 3px 10px;
+    background: var(--teal); color: #fff; font-family: 'Quicksand'; font-weight: 800; font-size: 12.5px;
+  }
+  .lang-close-btn { display: block; width: 100%; }
+  .lang-flag-img {
+    display: inline-block; width: 26px; height: 18px; border-radius: 4px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.12); line-height: 0; flex: none;
+  }
+  .lang-flag-img svg { width: 100%; height: 100%; display: block; }
+  .lang-flag-img--big { width: 46px; height: 32px; border-radius: 7px; }
+
   /* LOADING OVERLAY (chặn thao tác khác trong lúc chờ xác thực email/khôi phục dữ liệu) */
   .loading-overlay {
     position: fixed; inset: 0; z-index: 500;
@@ -1638,3 +1718,390 @@
     .print-en { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 27.5px; margin-top: 8px; }
     .print-vi { font-size: 16px; color: #555; margin-top: 4px; }
   }
+
+  /* ---------- KHOÁ HỌC TIẾNG TRUNG (zh-course.js, chỉ hiện khi học Tiếng Trung) ---------- */
+  .zh-step-card, .zh-lesson-row {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 18px;
+    padding: 12px 14px; color: var(--ink); box-shadow: var(--shadow);
+  }
+  .zh-step-card:active, .zh-lesson-row:active { transform: scale(0.98); }
+  .zh-step-card.is-done, .zh-lesson-row.is-done { border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); }
+  .zh-step-num {
+    flex: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--accent); color: var(--accent-ink); font-family: 'Baloo 2'; font-weight: 800; font-size: 15px;
+  }
+  .zh-step-card.is-done .zh-step-num { background: var(--teal); color: #fff; }
+  .zh-step-emoji { flex: none; width: 34px; text-align: center; font-size: 26px; line-height: 1; } /* cố định bề rộng để chữ các bước thẳng hàng */
+  .zh-step-text, .zh-lesson-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .zh-step-text strong, .zh-lesson-text strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; line-height: 1.25; }
+  .zh-step-text small, .zh-lesson-text small { font-weight: 700; font-size: 13.5px; color: var(--ink-soft); }
+  .zh-step-bar { display: block; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 4px; }
+  .zh-step-bar-fill { display: block; height: 100%; background: var(--teal); border-radius: 999px; }
+  .zh-lesson-icon { flex: none; width: 38px; height: 38px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
+  .zh-step-head { text-align: center; margin: 4px 0 16px; }
+  .zh-step-icon { font-size: 42px; }
+  .zh-step-head h2 { margin: 4px 0 6px; font-size: 23px; }
+  .zh-step-head p { margin: 0 auto; max-width: 420px; color: var(--ink-soft); font-weight: 600; font-size: 15px; line-height: 1.5; }
+  .zh-lesson-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
+
+  .zh-card { gap: 6px; text-align: center; aspect-ratio: auto; min-height: 300px; }
+  /* Quicksand thay cho Baloo 2: Baloo 2 thiếu các nguyên âm pinyin có dấu thanh (ā, ǎ...) nên dấu bị lệch. */
+  .zh-big { font-family: 'Quicksand', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif; font-weight: 700; line-height: 1.15; color: var(--ink); word-break: break-word; }
+  .zh-big--xl { font-size: 64px; }
+  .zh-big--l { font-size: 48px; }
+  .zh-big--m { font-size: 32px; }
+  .zh-big--s { font-size: 24px; }
+  .zh-py { font-family: 'Quicksand'; font-weight: 700; font-size: 20px; color: var(--teal-ink); }
+  .zh-vi { font-family: 'Quicksand'; font-weight: 700; font-size: 18px; color: var(--ink); }
+  .zh-note { font-weight: 600; font-size: 15px; color: var(--ink-soft); line-height: 1.5; max-width: 300px; margin: 4px auto 0; }
+  .zh-hw { width: 170px; height: 170px; margin: 0 auto; border-radius: 14px; background: var(--surface-2); }
+  .zh-btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .zh-quiz-options .quiz-opt.text-opt { font-family: 'Quicksand', 'PingFang SC', 'Noto Sans SC', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.25; min-height: 64px; }
+  .zh-reveal { min-height: 22px; text-align: center; font-weight: 700; font-size: 17px; color: var(--teal-ink); }
+  .zh-offline { padding: 20px; text-align: center; color: var(--ink-soft); font-weight: 600; }
+
+  .zh-write-info { text-align: center; }
+  .zh-write-box {
+    width: min(280px, 80vw); height: min(280px, 80vw); border-radius: 18px; background: var(--surface);
+    border: 2px solid var(--line); box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center;
+    background-image: linear-gradient(var(--line) 0 0), linear-gradient(var(--line) 0 0);
+    background-size: 100% 1px, 1px 100%; background-position: center; background-repeat: no-repeat; /* ô chữ điền có dấu chữ thập */
+  }
+  .zh-write-hint { margin: 0; text-align: center; font-weight: 700; color: var(--ink-soft); min-height: 22px; }
+
+  .zh-order-vi { text-align: center; font-weight: 700; font-size: 18px; color: var(--ink); margin-bottom: 4px; }
+  .zh-order-answer {
+    min-height: 64px; width: 100%; max-width: 380px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center;
+    border: 2px dashed var(--line); border-radius: 16px; padding: 10px;
+  }
+  .zh-order-answer.is-correct { border-style: solid; border-color: var(--teal); }
+  .zh-order-answer.is-wrong { border-style: solid; border-color: var(--accent); }
+  .zh-order-placeholder { color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+  .zh-order-tiles { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 380px; margin-top: 12px; }
+  .zh-tile {
+    border: 2px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; cursor: pointer;
+    padding: 8px 14px; font-family: 'Quicksand', 'PingFang SC', 'Noto Sans SC', sans-serif; font-weight: 700; font-size: 24px; box-shadow: var(--shadow);
+  }
+  .zh-tile.is-picked { background: color-mix(in srgb, var(--blue) 18%, var(--surface)); box-shadow: none; }
+  .zh-tile:active { transform: scale(0.95); }
+  .zh-order-next { flex: none; margin-top: 10px; min-width: 180px; }
+
+  .zh-type-input {
+    width: 100%; max-width: 320px; margin-top: 10px; border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px;
+    font-family: 'Quicksand'; font-weight: 700; font-size: 20px; background: var(--surface); color: var(--ink); text-align: center;
+  }
+  .zh-candidates {
+    width: 100%; max-width: 380px; min-height: 54px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center;
+    background: var(--surface-2); border-radius: 14px; padding: 8px;
+  }
+  .zh-cand {
+    display: flex; align-items: baseline; gap: 4px; border: 2px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 10px; padding: 6px 10px; cursor: pointer; font-family: 'PingFang SC', 'Noto Sans SC', sans-serif; font-weight: 700; font-size: 22px;
+  }
+  .zh-cand small { font-family: 'Quicksand'; font-size: 12px; color: var(--ink-soft); }
+  .zh-cand.correct { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface)); }
+  .zh-cand.wrong { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+  .zh-cand-empty { color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+  .zh-type-hint { margin-top: 4px; }
+  .zh-done .ghost-btn, .zh-done .cta-btn { min-width: 220px; }
+
+  /* Màu thanh điệu (tô trên pinyin): 1 đỏ · 2 cam · 3 xanh lá · 4 xanh dương · thanh nhẹ giữ màu chữ */
+  :root { --tone1: #D93B30; --tone2: #E07B12; --tone3: #2E9A4E; --tone4: #2F6FD0; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tone1: #FF7A70; --tone2: #FFB057; --tone3: #6BD48A; --tone4: #79A8FF; } }
+  :root[data-theme="dark"] { --tone1: #FF7A70; --tone2: #FFB057; --tone3: #6BD48A; --tone4: #79A8FF; }
+  .tone-1 { color: var(--tone1); } .tone-2 { color: var(--tone2); } .tone-3 { color: var(--tone3); } .tone-4 { color: var(--tone4); }
+  .zh-py .tone-5, .word-py .tone-5 { color: inherit; }
+
+  .zh-hero {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 22px; box-shadow: var(--shadow);
+    padding: 18px 18px 14px; margin-bottom: 14px;
+  }
+  .zh-hero h1 { margin: 0 0 4px; font-size: 24px; line-height: 1.25; }
+  .zh-hero p { margin: 0 0 10px; color: var(--ink-soft); font-weight: 600; font-size: 15px; line-height: 1.5; }
+  .zh-hero-pct { display: block; margin-top: 6px; color: var(--ink-soft); font-weight: 700; font-size: 13px; }
+  .zh-continue {
+    display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; cursor: pointer;
+    border: none; border-radius: 20px; padding: 16px 18px; margin-bottom: 14px;
+    background: var(--accent); color: #3D1E0E; box-shadow: var(--shadow); /* chữ đậm cố định: nền cam ở cả 2 giao diện */
+  }
+  .zh-continue:active { transform: translateY(3px); box-shadow: none; }
+  .zh-continue-icon {
+    flex: none; width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.6); color: #3D1E0E;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .zh-continue-text { display: flex; flex-direction: column; min-width: 0; }
+  .zh-continue-text strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 21px; line-height: 1.2; }
+  .zh-continue-text small { font-weight: 700; font-size: 14px; opacity: 0.9; }
+  .zh-today {
+    display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 12px 14px;
+  }
+  .zh-today-goal { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+  .zh-today-goal strong { font-size: 15.5px; }
+  .zh-goal-chips { display: flex; gap: 6px; }
+  .zh-chip {
+    border: 2px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 999px;
+    padding: 5px 11px; font-family: 'Quicksand'; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap;
+  }
+  .zh-chip.is-active { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 16%, var(--surface)); color: var(--teal-ink); }
+  .zh-today-review {
+    border: none; border-radius: 12px; padding: 10px 12px; text-align: left; cursor: pointer;
+    background: color-mix(in srgb, var(--blue) 16%, var(--surface)); color: var(--blue-ink); font-family: 'Quicksand'; font-weight: 700; font-size: 15px;
+  }
+  .zh-today-review:disabled { background: var(--surface-2); color: var(--ink-soft); cursor: default; }
+
+  /* Bản đồ khoá học: mỗi phần là 1 thẻ thu gọn được, chặng xếp lưới ô nhỏ (3 cột trên điện thoại). */
+  .zh-map-label { margin-top: 18px; }
+  .zh-part {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 20px; box-shadow: var(--shadow);
+    margin-bottom: 12px; overflow: hidden;
+  }
+  .zh-part.is-current { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+  .zh-part-head {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; cursor: pointer;
+    background: none; border: none; text-align: left; color: var(--ink); font: inherit;
+  }
+  .zh-part-num {
+    flex: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); font-family: 'Baloo 2'; font-weight: 800; font-size: 19px; color: var(--ink-soft);
+  }
+  .zh-part.is-current .zh-part-num { background: var(--accent); color: #3D1E0E; }
+  .zh-part.is-done .zh-part-num { background: color-mix(in srgb, var(--teal) 30%, var(--surface)); color: var(--teal-ink); }
+  .zh-part-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .zh-part-title strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 17.5px; line-height: 1.2; }
+  .zh-part-title small { color: var(--ink-soft); font-weight: 600; font-size: 12.5px; line-height: 1.3; }
+  .zh-part-meta { flex: none; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+  .zh-part-meta strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; }
+  .zh-part-meta small { color: var(--ink-soft); font-weight: 700; font-size: 11.5px; }
+  .zh-part-chev { flex: none; font-size: 24px; color: var(--ink-soft); transition: transform 0.2s; }
+  .zh-part.is-open .zh-part-chev { transform: rotate(90deg); }
+  .zh-part-body { padding: 0 12px 12px; }
+  .zh-unit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 8px; }
+  .zh-unit {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0;
+    padding: 12px 6px 9px; cursor: pointer; text-align: center; color: var(--ink);
+    background: var(--surface-2); border: 2px solid transparent; border-radius: 16px; font: inherit;
+  }
+  .zh-unit:active { transform: scale(0.96); }
+  .zh-unit-emoji {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  }
+  .zh-unit-num { color: var(--ink-soft); font-weight: 700; font-size: 11.5px; margin-top: 2px; }
+  .zh-unit-title {
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 14.5px; line-height: 1.15; min-height: 2.3em;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .zh-unit .zh-step-bar { width: 80%; height: 5px; margin-top: 2px; }
+  .zh-unit-badge {
+    position: absolute; top: -1px; right: -1px; padding: 1px 7px; border-radius: 0 14px 0 10px;
+    background: var(--accent); color: #3D1E0E; font-size: 10.5px; font-weight: 800;
+  }
+  .zh-unit-badge--done { background: var(--teal); color: #fff; }
+  .zh-unit.is-done { background: color-mix(in srgb, var(--teal) 12%, var(--surface)); }
+  .zh-unit.is-current { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .zh-unit.is-locked { opacity: 0.5; }
+  .zh-unit.is-locked .zh-step-bar { visibility: hidden; }
+  .zh-skip-btn {
+    display: block; width: 100%; margin-top: 10px; padding: 9px 12px; cursor: pointer;
+    background: none; border: 2px dashed var(--line); border-radius: 12px;
+    color: var(--ink-soft); font-family: 'Quicksand'; font-weight: 700; font-size: 13.5px;
+  }
+  .zh-lesson-row.is-next { border-color: var(--accent); }
+
+  .zh-card-emoji { font-size: 58px; line-height: 1; }
+  .zh-example { margin-top: 6px; padding-top: 10px; border-top: 2px dashed var(--line); width: 100%; }
+  .zh-ex-zh { font-size: 20px; font-weight: 700; color: var(--ink); }
+  .zh-ex-py { font-family: 'Quicksand'; font-weight: 700; font-size: 15px; }
+  .zh-ex-vi { font-weight: 600; font-size: 14.5px; color: var(--ink-soft); }
+  .zh-py-btn { background: none; border: none; cursor: default; padding: 2px 8px; border-radius: 10px; }
+  .zh-py-btn.is-hidden { cursor: pointer; background: var(--surface-2); }
+  .zh-py-btn.is-hidden > * { display: none; }
+  .zh-py-btn.is-hidden::before { content: '👆 Chạm để xem pinyin'; color: var(--ink-soft); font-size: 14px; }
+  .zh-sub { color: var(--ink-soft); font-weight: 600; }
+  .zh-next-btn { flex: none; margin-top: 10px; min-width: 180px; }
+  .zh-quiz-options .quiz-opt:not(.text-opt) { font-size: 46px; padding: 14px 8px; }
+
+  .zh-match { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 380px; }
+  .zh-match-col { display: flex; flex-direction: column; gap: 10px; }
+  .zh-match-card {
+    min-height: 66px; border: 3px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 16px; cursor: pointer;
+    font-family: 'Quicksand', 'PingFang SC', 'Noto Sans SC', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.15; padding: 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .zh-match-card .word-py { font-size: 13px; }
+  .zh-match-card--vi { font-size: 15.5px; }
+  .zh-match-card.is-selected { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 16%, var(--surface)); }
+  .zh-match-card.is-matched { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 18%, var(--surface)); opacity: 0.7; }
+  .zh-match-card.is-wrong { border-color: var(--accent); animation: zh-shake .4s; }
+  @keyframes zh-shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  .zh-write-char { font-size: 26px; font-weight: 700; }
+  .zh-write-info { font-family: 'Quicksand'; font-weight: 700; font-size: 18px; }
+
+  .zh-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .zh-stat { background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 10px 6px; text-align: center; display: flex; flex-direction: column; }
+  .zh-stat strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 20px; }
+  .zh-stat small { color: var(--ink-soft); font-weight: 700; font-size: 12.5px; }
+  .zh-wide-btn { display: block; width: 100%; margin-bottom: 10px; }
+  .zh-wide-btn:disabled { opacity: 0.5; }
+  .zh-word-list { display: flex; flex-direction: column; gap: 6px; }
+  .zh-word-row {
+    display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 10px; text-align: left; cursor: pointer;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 9px 12px; color: var(--ink);
+  }
+  .zh-word-zh { font-size: 22px; font-weight: 700; }
+  .zh-word-py { font-family: 'Quicksand'; font-weight: 700; font-size: 15px; }
+  .zh-word-vi { color: var(--ink-soft); font-weight: 600; font-size: 14.5px; text-align: right; }
+
+  .zh-practice-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 20px; }
+  .zh-practice-tile {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; cursor: pointer;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 14px; color: var(--ink); box-shadow: var(--shadow);
+  }
+  .zh-practice-tile:active { transform: scale(0.97); }
+  .zh-practice-emoji { font-size: 28px; margin-bottom: 4px; }
+  .zh-practice-tile strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 16.5px; }
+  .zh-practice-tile small { color: var(--ink-soft); font-weight: 600; font-size: 13px; }
+
+  .zh-lib-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .zh-lib-body { padding-bottom: 24px; }
+  .zh-lib-search { max-width: none; margin: 0 0 8px; text-align: left; font-size: 17px; }
+  .zh-lib-part { margin: 14px 2px 6px; }
+  .zh-lib-count { display: block; color: var(--ink-soft); font-weight: 700; margin-bottom: 6px; }
+  .zh-tone-legend { display: flex; flex-direction: column; gap: 6px; }
+  .zh-tone-row {
+    display: grid; grid-template-columns: 70px 54px 1fr; align-items: center; gap: 8px; cursor: pointer; text-align: left;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 8px 12px; color: var(--ink);
+  }
+  .zh-tone-py { font-family: 'Quicksand'; font-weight: 700; font-size: 26px; }
+  .zh-tone-contour { font-size: 22px; color: var(--ink-soft); }
+  .zh-pinyin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+  .zh-pinyin-cell {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 8px 4px; color: var(--ink);
+  }
+  .zh-pinyin-cell strong { font-family: 'Quicksand'; font-weight: 700; font-size: 20px; }
+  .zh-pinyin-cell small { font-family: 'Quicksand'; font-weight: 700; font-size: 12.5px; }
+  .zh-gram-card { background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 0 14px; margin-bottom: 8px; }
+  .zh-gram-card.is-open { padding-bottom: 12px; }
+  /* Đầu mục thu gọn (Ngữ pháp, nhóm Từ vựng ở Thư viện) */
+  .zh-acc-head {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 0; cursor: pointer;
+    background: none; border: none; text-align: left; color: var(--ink); font: inherit;
+  }
+  .zh-acc-head strong { flex: 1; min-width: 0; font-family: 'Baloo 2'; font-weight: 800; font-size: 16.5px; line-height: 1.25; }
+  .zh-acc-head small { flex: none; color: var(--ink-soft); font-weight: 700; font-size: 13px; }
+  .zh-gram-card.is-open .zh-part-chev { transform: rotate(90deg); }
+  /* Bộ thủ: thẻ chi tiết + lưới ô */
+  .zh-rad-detail { background: var(--surface); border: 2px solid var(--teal); border-radius: 18px; padding: 12px 14px; margin-bottom: 10px; }
+  .zh-rad-head { display: flex; align-items: center; gap: 14px; }
+  .zh-rad-big { font-size: 40px; font-weight: 700; line-height: 1; }
+  .zh-rad-head-text { display: flex; flex-direction: column; gap: 2px; }
+  .zh-rad-head-text .zh-word-vi { text-align: left; }
+  .zh-rad-ex { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .zh-rad-ex-item {
+    display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; cursor: pointer;
+    background: var(--surface-2); border: none; border-radius: 12px; color: var(--ink); font: inherit;
+  }
+  .zh-rad-ex-item strong { font-size: 24px; font-weight: 700; }
+  .zh-rad-ex-item small { font-family: 'Quicksand'; font-weight: 700; font-size: 12.5px; color: var(--ink-soft); text-align: center; }
+  .zh-rad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; }
+  .zh-rad-cell {
+    display: flex; flex-direction: column; align-items: center; gap: 0; padding: 8px 2px 6px; cursor: pointer;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 14px; color: var(--ink); font: inherit;
+  }
+  .zh-rad-cell strong { font-size: 24px; font-weight: 700; line-height: 1.2; }
+  .zh-rad-cell small { color: var(--ink-soft); font-weight: 700; font-size: 12px; }
+  .zh-rad-cell.is-active { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 14%, var(--surface)); }
+  /* Từ vựng: lưới ô từ */
+  .zh-wtile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+  .zh-wtile {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; padding: 8px 4px; cursor: pointer;
+    background: var(--surface-2); border: 2px solid transparent; border-radius: 12px; color: var(--ink); font: inherit; text-align: center;
+  }
+  .zh-wtile strong { font-size: 19px; font-weight: 700; line-height: 1.25; }
+  .zh-wtile-py { font-family: 'Quicksand'; font-weight: 700; font-size: 13px; }
+  .zh-wtile-vi { color: var(--ink-soft); font-weight: 600; font-size: 12px; line-height: 1.25; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .zh-wtile.is-learned { border-color: color-mix(in srgb, var(--teal) 55%, transparent); }
+  .zh-wtile.is-learned::after { content: '✓'; position: absolute; top: 3px; right: 6px; font-size: 11px; font-weight: 800; color: var(--teal-ink); }
+  .zh-gram-row { display: flex; flex-direction: column; gap: 1px; width: 100%; text-align: left; background: none; border: none; border-top: 1px dashed var(--line); padding: 8px 0; color: var(--ink); cursor: pointer; }
+  .zh-gram-zh { font-size: 19px; font-weight: 700; }
+  .zh-gram-py { font-family: 'Quicksand'; font-weight: 700; font-size: 14.5px; }
+  .zh-gram-vi { color: var(--ink-soft); font-weight: 600; font-size: 14px; line-height: 1.45; }
+  .zh-share-btn { display: block; margin: 16px auto 24px; }
+  .zh-done-goal { font-weight: 700; color: var(--teal-ink); }
+
+  /* ---------- THI THỬ HSK 1 (zh-course.js) ---------- */
+  .zh-exam { display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+  .zh-exam-card {
+    display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 14px; padding: 12px 14px; cursor: pointer; text-align: left;
+    background: color-mix(in srgb, var(--blue) 14%, var(--surface)); border: 2px solid color-mix(in srgb, var(--blue) 45%, var(--line));
+    border-radius: 18px; color: var(--ink); font: inherit; box-shadow: var(--shadow);
+  }
+  .zh-exam-card:active { transform: scale(0.98); }
+  .zh-exam-card-icon { font-size: 30px; flex: none; }
+  .zh-exam-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .zh-exam-card-text strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; }
+  .zh-exam-card-text small { color: var(--ink-soft); font-weight: 700; font-size: 13px; }
+  .zh-exam-structure { padding: 12px 14px; }
+  .zh-exam-structure-title { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; margin-bottom: 4px; }
+  .zh-exam-sec { display: block; margin-top: 8px; font-size: 15px; }
+  .zh-exam-structure ol { margin: 4px 0 0; padding-left: 22px; font-size: 14px; line-height: 1.5; color: var(--ink-soft); font-weight: 600; }
+  .zh-exam-note { font-size: 14px; line-height: 1.5; color: var(--ink-soft); font-weight: 600; margin: 8px 0 0; }
+  .zh-exam-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 800; font-size: 14.5px; color: var(--ink-soft); }
+  .zh-exam-timer { flex: none; font-family: 'Baloo 2'; font-size: 17px; color: var(--ink); background: var(--surface); border: 2px solid var(--line); border-radius: 999px; padding: 2px 12px; }
+  .zh-exam-timer.is-low { color: var(--danger-ink, #C0392B); border-color: currentColor; }
+  .zh-exam-task { margin: 0; font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; line-height: 1.3; }
+  .zh-exam-play { align-self: center; }
+  .zh-exam-bigpic { align-self: center; font-size: 84px; line-height: 1; padding: 8px 0; }
+  .zh-exam-text { background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 12px 14px; text-align: center; }
+  .zh-exam-zh { font-size: 26px; font-weight: 700; line-height: 1.4; }
+  .zh-exam-text--word .zh-exam-zh { font-size: 40px; }
+  .zh-exam-py { font-family: 'Quicksand'; font-weight: 700; font-size: 15px; }
+  .zh-exam-opts { display: grid; gap: 10px; }
+  .zh-exam-opts--judge { grid-template-columns: 1fr 1fr; }
+  .zh-exam-opts--pics { grid-template-columns: repeat(3, 1fr); }
+  .zh-exam-opts--texts { grid-template-columns: 1fr; }
+  .zh-exam-opts--texts.is-six { grid-template-columns: 1fr 1fr; }
+  .zh-exam-opt {
+    position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 58px; padding: 10px 12px; cursor: pointer;
+    background: var(--surface); border: 3px solid var(--line); border-radius: 16px; color: var(--ink); font: inherit; font-weight: 800; font-size: 18px;
+  }
+  .zh-exam-opts--texts .zh-exam-opt { justify-content: flex-start; text-align: left; }
+  .zh-exam-opts--pics .zh-exam-opt { min-height: 86px; }
+  .zh-exam-opt.is-selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .zh-exam-opt.is-yes { color: var(--teal-ink); }
+  .zh-exam-opt.is-no { color: var(--pink-ink); }
+  .zh-exam-letter {
+    flex: none; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); color: var(--ink-soft); font-size: 14px; font-weight: 800;
+  }
+  .zh-exam-opts--pics .zh-exam-letter { position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; font-size: 12.5px; }
+  .zh-exam-optpic { font-size: 42px; line-height: 1; }
+  .zh-exam-opttext { display: flex; flex-direction: column; min-width: 0; }
+  .zh-exam-opttext strong { font-size: 19px; font-weight: 700; line-height: 1.3; }
+  .zh-exam-opttext small { font-family: 'Quicksand'; font-weight: 700; font-size: 13px; }
+  .zh-exam-next { margin-top: 4px; }
+  .zh-exam-next:disabled { opacity: 0.45; }
+  .zh-exam-score { text-align: center; background: var(--surface); border: 3px solid var(--line); border-radius: 22px; padding: 18px 14px; }
+  .zh-exam-score.is-pass { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 10%, var(--surface)); }
+  .zh-exam-score-emoji { font-size: 44px; }
+  .zh-exam-score-num { font-family: 'Baloo 2'; font-weight: 800; font-size: 44px; line-height: 1.1; }
+  .zh-exam-score-verdict { font-family: 'Baloo 2'; font-weight: 800; font-size: 19px; margin: 2px 0 4px; }
+  .zh-exam-score small { color: var(--ink-soft); font-weight: 700; }
+  .zh-exam-parts { padding: 8px 14px; }
+  .zh-exam-part-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px dashed var(--line); font-weight: 700; font-size: 14.5px; }
+  .zh-exam-part-row:first-child { border-top: none; }
+  .zh-exam-part-row > span:first-child { flex: 1; }
+  .zh-exam-dots { color: var(--teal); letter-spacing: 2px; }
+  .zh-exam-review { display: flex; flex-direction: column; gap: 8px; }
+  .zh-exam-rev {
+    display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 10px 12px; cursor: pointer; text-align: left;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 14px; color: var(--ink); font: inherit;
+  }
+  .zh-exam-rev-where { color: var(--ink-soft); font-weight: 700; font-size: 12.5px; }
+  .zh-exam-rev-zh { font-size: 18px; font-weight: 700; line-height: 1.4; }
+  .zh-exam-rev .zh-word-vi { text-align: left; font-size: 13.5px; }
+  .zh-exam-rev-ans { font-weight: 800; font-size: 13.5px; color: var(--accent-ink); margin-top: 2px; }

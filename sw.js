@@ -1,7 +1,7 @@
 // Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
 // LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
 // lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v137';
+const CACHE_VERSION = 'v155';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
 
 importScripts('data/emoji-icons.js');
@@ -13,6 +13,11 @@ const APP_SHELL = [
   './app.js',
   './manifest.json',
   './data/topics.js',
+  './data/topics_zh.js',
+  './data/zh_roadmap.js',
+  './data/zh_course.js',
+  './data/zh_hsk1_exam.js',
+  './zh-course.js',
   './data/alphabet.js',
   './data/phonics.js',
   './data/stories.js',
@@ -139,8 +144,11 @@ self.addEventListener('fetch', event => {
 
   if (isAppShellFile) {
     // Network-first: ưu tiên bản mới nhất khi có mạng, chỉ dùng cache khi mất mạng.
+    // cache: 'no-cache' bắt trình duyệt hỏi lại máy chủ thay vì lấy bản trong HTTP cache — tránh trường
+    // hợp nửa file mới nửa file cũ (vd. zh-course.js mới chạy với app.js cũ). Request điều hướng
+    // (mode 'navigate') không cho tạo lại với tuỳ chọn nên giữ nguyên.
     event.respondWith(
-      fetch(req).then(res => {
+      (req.mode === 'navigate' ? fetch(req) : fetch(req, { cache: 'no-cache' })).then(res => {
         const resClone = res.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(req, resClone));
         return res;
