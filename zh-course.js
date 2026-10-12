@@ -16,8 +16,8 @@
   const SKIP_TEST_PASS = 0.8;
   const SRS_DAYS = [1, 3, 7, 14, 30]; // khoảng ôn theo "hộp" của từ: đúng thì lên hộp, sai về hộp 0
   const HAS_HANZI = /[㐀-鿿]/;
-  const KIND_ICON = { vocab: '🆕', learn: '📖', quiz: '❓', write: '✍️', order: '🧩', type: '⌨️', review: '🔁', test: '🏁' };
-  const KIND_LABEL = { vocab: 'Từ mới', learn: 'Thẻ học', quiz: 'Đố', write: 'Tô chữ', order: 'Sắp xếp câu', type: 'Gõ chữ', review: 'Ôn tập chặng', test: 'Kiểm tra' };
+  const KIND_ICON = { vocab: '🆕', learn: '📖', quiz: '❓', write: '✍️', order: '🧩', type: '⌨️', read: '📰', roleplay: '🎭', review: '🔁', test: '🏁' };
+  const KIND_LABEL = { vocab: 'Từ mới', learn: 'Thẻ học', quiz: 'Đố', write: 'Tô chữ', order: 'Sắp xếp câu', type: 'Gõ chữ', read: 'Đọc hiểu', roleplay: 'Nhập vai', review: 'Ôn tập chặng', test: 'Kiểm tra' };
 
   const $ = id => document.getElementById(id);
   function el(tag, cls, text) {
@@ -68,11 +68,13 @@
   ZH_COURSE.forEach(part => part.units.forEach(u => { u.part = part; ALL_UNITS.push(u); }));
 
   // Chuẩn hoá 1 từ: { zh, py, vi, emoji?, ex?, exPy?, exVi? }
+  // Nhóm từ HSK: danh sách HSK 1 cũ (data/zh_roadmap.js) + HSK 1 chuẩn mới (data/zh_hsk1_new.js, Phần 5).
+  const HSK_GROUPS = ZH_HSK1.concat(typeof ZH_HSK1_NEW !== 'undefined' ? ZH_HSK1_NEW : []);
   function resolveWords(spec) {
     let list = [];
     if (spec.list) list = spec.list.map(w => ({ zh: w[0], py: w[1], vi: w[2], emoji: w[3] }));
     else if (spec.topic) list = (TOPICS_ZH_WORDS[spec.topic] || []).map(w => ({ zh: w.zh, py: w.py, vi: w.vi, emoji: w.emoji, ex: w.ex, exPy: w.exPy, exVi: w.exVi }));
-    else if (spec.hsk) list = (ZH_HSK1.find(g => g.id === spec.hsk) || { words: [] }).words.map(w => ({ zh: w[0], py: w[1], vi: w[2] }));
+    else if (spec.hsk) list = (HSK_GROUPS.find(g => g.id === spec.hsk) || { words: [] }).words.map(w => ({ zh: w[0], py: w[1], vi: w[2], emoji: w[3] }));
     if (spec.only) list = spec.only.map(z => list.find(w => w.zh === z)).filter(Boolean);
     if (spec.range) list = list.slice(spec.range[0], spec.range[1]);
     // Bổ sung hình + câu ví dụ từ bộ từ có hình nếu trùng chữ.
@@ -216,6 +218,7 @@
   makeScreen('choice',
     topbar('zhChoiceBack', 'zhChoiceFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt" id="zhChoicePrompt"></div>' +
+    '<div class="zh-ctx" id="zhChoiceCtx" hidden></div>' +
     '<div class="zh-big" id="zhChoiceBig"></div><button class="zh-py zh-py-btn" id="zhChoicePy"></button>' +
     '<div class="zh-btn-row"><button class="speak-btn" id="zhChoiceSpeak" hidden>🔊 Nghe lại</button>' +
     '<button class="speak-btn zh-slow-btn" id="zhChoiceSlow" hidden aria-label="Nghe chậm">🐢 Nghe chậm</button></div>' +
@@ -718,6 +721,8 @@
       }
       return out;
     }
+    if (l.type === 'read') return readSteps([l.read]);
+    if (l.type === 'roleplay') return roleSteps([l.role]);
     if (l.type === 'write') return l.chars.map(c => ({ kind: 'write', char: c }));
     if (l.type === 'order') return shuffleArr(l.sentences).map(s => ({ kind: 'order', s }));
     if (l.type === 'type') {
@@ -771,6 +776,118 @@
     }, [d.opts[d.a]].concat(d.opts.filter((o, k) => k !== d.a))));
     const out = sq.concat(dq);
     return n ? shuffleArr(out).slice(0, n) : out;
+  }
+  // Đọc hiểu & hội thoại nhập vai (data/zh_reading.js) — chạy trên màn câu đố, đoạn văn / khung chat hiện ở
+  // khối #zhChoiceCtx phía trên câu hỏi.
+  const HAS_READ = typeof ZH_READ !== 'undefined';
+  // Từ điển tách đoạn văn thành từ (chạm vào từ → nghe + xem nghĩa): chữ đơn, từ trong khoá, từ ngoài HSK 1.
+  const READ_DICT = (() => {
+    const d = {};
+    Object.keys(CHAR_INFO).forEach(c => { d[c] = [CHAR_INFO[c].py, CHAR_INFO[c].vi]; });
+    COURSE_WORDS.forEach(w => { d[w.zh] = [w.py, w.vi]; });
+    if (typeof ZH_READ_GLOSS !== 'undefined') Object.assign(d, ZH_READ_GLOSS);
+    return d;
+  })();
+  const READ_MAX = Math.max(...Object.keys(READ_DICT).map(k => [...k].length));
+  // Tách câu thành từ, ưu tiên từ dài nhất có trong từ điển.
+  function segment(text) {
+    const cs = [...text], out = [];
+    for (let i = 0; i < cs.length;) {
+      let n = Math.min(READ_MAX, cs.length - i);
+      while (n > 1 && !READ_DICT[cs.slice(i, i + n).join('')]) n--;
+      out.push(cs.slice(i, i + n).join(''));
+      i += n;
+    }
+    return out;
+  }
+  function tapText(text) {
+    const span = el('span', 'zh-tap-text');
+    segment(text).forEach(w => {
+      const g = READ_DICT[w];
+      if (!g || !HAS_HANZI.test(w)) { span.appendChild(document.createTextNode(w)); return; }
+      const b = el('button', 'zh-tap-word', w);
+      b.type = 'button';
+      b.addEventListener('click', () => { A.speak(w); A.showToast(w + ' · ' + g[0] + ' — ' + g[1], '📖'); });
+      span.appendChild(b);
+    });
+    return span;
+  }
+  function readSteps(units, n) {
+    if (!HAS_READ) return [];
+    let ps = [];
+    units.forEach(u => { if (ZH_READ[u]) ps.push(...ZH_READ[u]); });
+    if (n) ps = shuffleArr(ps).slice(0, n);
+    const out = [];
+    ps.forEach(p => p.qs.forEach(x => out.push(choice('Đọc đoạn văn rồi trả lời câu hỏi', {
+      big: x.q, py: x.qpy, hidePy: true, say: null, ctx: { kind: 'read', p },
+      reveal: x.q + ' ' + x.qpy + ' → ' + x.opts[0][0] + ' ' + x.opts[0][1],
+    }, x.opts))));
+    return out;
+  }
+  // Mỗi lượt của vai B là 1 câu đố; giữ đúng thứ tự trong hội thoại (không trộn).
+  function roleSteps(units, n) {
+    if (!HAS_READ) return [];
+    let ds = [];
+    units.forEach(u => { if (ZH_ROLE[u]) ds.push(...ZH_ROLE[u]); });
+    if (n) ds = shuffleArr(ds).slice(0, n);
+    const out = [];
+    ds.forEach(d => d.lines.forEach((ln, i) => {
+      if (ln[0] !== 'B') return;
+      const prev = d.lines[i - 1];
+      out.push(choice('Nhập vai: chọn câu đáp của bạn', {
+        say: prev && prev[0] === 'A' ? prev[1] : null, ctx: { kind: 'chat', d, upto: i },
+        reveal: ln[1] + ' ' + ln[2], revealVi: ln[3], sayAfter: ln[1],
+      }, [[ln[1], ln[2]]].concat(ln[4])));
+    }));
+    return out;
+  }
+  function ctxBtn(label, aria, fn) {
+    const b = el('button', 'zh-ctx-btn', label);
+    b.type = 'button';
+    b.setAttribute('aria-label', aria);
+    b.addEventListener('click', fn);
+    return b;
+  }
+  function renderCtx(st) {
+    const box = $('zhChoiceCtx');
+    box.innerHTML = '';
+    box.className = 'zh-ctx';
+    box.hidden = !st.ctx;
+    if (!st.ctx) return;
+    const head = el('div', 'zh-ctx-head');
+    box.appendChild(head);
+    if (st.ctx.kind === 'read') {
+      const p = st.ctx.p, full = p.text.map(t => t[0]).join('');
+      box.classList.add('is-read');
+      head.append(el('strong', null, '📰 ' + p.title), ctxBtn('🔊', 'Nghe cả đoạn', () => A.speak(full)),
+        ctxBtn('🐢', 'Nghe chậm cả đoạn', () => A.speak(full, { slow: true })),
+        ctxBtn('Pinyin', 'Hiện / ẩn pinyin', () => box.classList.toggle('show-py')));
+      const body = el('div', 'zh-passage');
+      p.text.forEach(t => {
+        const line = el('div', 'zh-passage-line');
+        const py = el('div', 'zh-passage-py');
+        py.innerHTML = colorPinyin(t[1]);
+        line.append(tapText(t[0]), py);
+        body.appendChild(line);
+      });
+      box.append(body, el('div', 'zh-ctx-vi', '🇻🇳 ' + p.vi));
+      return;
+    }
+    const d = st.ctx.d;
+    box.classList.add('is-chat');
+    head.appendChild(el('strong', null, '🎭 ' + d.title));
+    const list = el('div', 'zh-chat-list');
+    box.appendChild(list);
+    d.lines.slice(0, st.ctx.upto).forEach((ln, i) => {
+      const b = el('div', 'zh-bubble ' + (ln[0] === 'A' ? 'is-a' : 'is-b') + (i === st.ctx.upto - 1 ? ' is-current' : ''));
+      const zh = el('div', 'zh-bubble-zh');
+      zh.append(tapText(ln[1]), ctxBtn('🔊', 'Nghe câu này', () => A.speak(ln[1])));
+      const py = el('div', 'zh-bubble-py');
+      py.innerHTML = colorPinyin(ln[2]);
+      b.append(zh, py, el('div', 'zh-bubble-vi', ln[3]));
+      list.appendChild(b);
+    });
+    list.scrollTop = list.scrollHeight; // khung chat có giới hạn chiều cao → cuộn tới câu vừa nghe
   }
   function shuffleArr(a) { return A.shuffle(a); }
   function startSkipTest(part) {
@@ -834,7 +951,9 @@
     fillFor('zhChoiceFill');
     chLocked = false;
     $('zhChoicePrompt').textContent = (st.warmup ? '🔁 Ôn nhanh · ' : '') + st.prompt;
+    renderCtx(st);
     setBig($('zhChoiceBig'), st.big || '');
+    $('zhChoiceBig').hidden = !st.big;
     const py = $('zhChoicePy');
     py.hidden = !st.py && !st.sub;
     py.classList.toggle('is-hidden', !!st.hidePy);
@@ -872,7 +991,9 @@
     else { btn.classList.add('wrong'); fb.textContent = 'Chưa đúng — đáp án đúng được tô xanh.'; fb.className = 'quiz-feedback no'; }
     // Chỉ tô màu thanh điệu phần chữ Hán + pinyin; nghĩa tiếng Việt để dòng riêng (tránh tô nhầm "có", "là"…).
     if (st.reveal) $('zhChoiceReveal').innerHTML = colorPinyin(st.reveal) + (st.revealVi ? '<div class="zh-reveal-vi">' + esc(st.revealVi) + '</div>' : '');
-    if (ok) setTimeout(() => { if (S && S.steps[S.i] === st) stepDone(true); }, 1000);
+    $('zhChoiceCtx').classList.add('is-answered'); // hiện bản dịch đoạn văn / câu vừa nghe
+    if (st.sayAfter) A.speak(st.sayAfter); // nhập vai: đọc câu đáp đúng của vai mình
+    if (ok) setTimeout(() => { if (S && S.steps[S.i] === st) stepDone(true); }, st.sayAfter ? 2600 : 1000);
     else { $('zhChoiceNext').hidden = false; $('zhChoiceNext').onclick = () => stepDone(false); } // sai: để người học đọc lại rồi mới đi tiếp
   }
 
@@ -1167,6 +1288,8 @@
       ['✍️', 'Tô chữ tự do', 'Chữ trong các từ đã học', () => shuffleArr(chars).slice(0, 6).map(c => ({ kind: 'write', char: c }))],
       ['⌨️', 'Gõ pinyin', 'Gõ rồi chọn đúng chữ', () => shuffleArr(pool).slice(0, 8).map(w => ({ kind: 'type', word: Object.assign({ key: pinyinKey(w.py) }, w) }))],
       ['🎧', 'Luyện nghe câu', 'Nghe câu & hội thoại HSK 1', () => listenSteps(HAS_LISTEN ? Object.keys(ZH_LISTEN) : [], 10)],
+      ['📰', 'Đọc hiểu', 'Đọc đoạn văn, trả lời câu hỏi', () => readSteps(HAS_READ ? Object.keys(ZH_READ) : [], 2)],
+      ['🎭', 'Nhập vai', 'Chọn câu đáp trong hội thoại', () => roleSteps(HAS_READ ? Object.keys(ZH_ROLE) : [], 2)],
       ['🗣️', 'Sắp xếp câu', 'Các câu trong khoá học', () => shuffleArr(allSentences()).slice(0, 6).map(s => ({ kind: 'order', s }))],
       ['🔢', 'Nghe số', 'Số từ 11 đến 99', () => genSteps('numbers', 10)],
       ['🕒', 'Nghe giờ', 'Mấy giờ rồi?', () => genSteps('time', 8)],

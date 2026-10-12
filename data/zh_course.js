@@ -1,4 +1,4 @@
-  // KHOÁ HỌC TIẾNG TRUNG CHO NGƯỜI MỚI BẮT ĐẦU — 4 Phần × 6 Chặng → Bài. Thứ tự theo góp ý của giáo viên:
+  // KHOÁ HỌC TIẾNG TRUNG CHO NGƯỜI MỚI BẮT ĐẦU — 5 Phần × 6 Chặng → Bài. Thứ tự theo góp ý của giáo viên:
   // PINYIN trước (vận mẫu đơn → thanh mẫu → vận mẫu ghép, ví dụ đều đọc thanh 1), rồi THANH ĐIỆU, rồi mới
   // tới nội dung theo chủ đề. Cuối mỗi chặng app tự thêm bài "Ôn tập chặng"; mỗi phần có "Kiểm tra nhảy
   // cóc" cho ai đã biết. Chặng có pinyin: true là chặng phát âm (ôn tập / kiểm tra dùng đề pinyin thay vì
@@ -17,9 +17,11 @@
   //   { type: 'order', title, sentences: [{ tokens, py, vi, end }] }  sắp xếp câu
   //   { type: 'quiz', title, questions: [{ q, big, say, options }] }  đố soạn sẵn (options[0] là đáp án đúng; say: null = không đọc)
   //   { type: 'quiz', title, listen: 'u7' }         luyện nghe câu & hội thoại của chặng (data/zh_listening.js)
+  //   { type: 'read', title, read: 'u7' }          đọc hiểu đoạn văn của chặng (data/zh_reading.js)
+  //   { type: 'roleplay', title, role: 'u7' }       hội thoại nhập vai của chặng (data/zh_reading.js)
   // NGUỒN từ vựng:
   //   { topic: 'family', only: [...] }   từ trong data/topics_zh.js (có hình)
-  //   { hsk: 'hsk_people', range: [0, 8] } từ trong ZH_HSK1 (data/zh_roadmap.js)
+  //   { hsk: 'hsk_people', range: [0, 8] } từ trong ZH_HSK1 (data/zh_roadmap.js) hoặc ZH_HSK1_NEW (data/zh_hsk1_new.js)
   //   { list: [['你好', 'nǐ hǎo', 'Xin chào', '👋'], ...] }  khai báo trực tiếp: chữ, pinyin, nghĩa, hình
   const ZH_COURSE = [
     { id: 'p0', title: 'Phần 1 · Pinyin & thanh điệu', desc: 'Nền tảng phát âm: bảng pinyin rồi 4 thanh điệu', units: [
@@ -145,6 +147,8 @@
         { ref: 'g_questions' },
         { type: 'write', title: 'Viết chữ: 我 你 他 好', chars: ['我', '你', '他', '好'] },
         { type: 'quiz', title: 'Luyện nghe câu & hội thoại', listen: 'u7' },
+        { type: 'read', title: 'Đọc hiểu', read: 'u7' },
+        { type: 'roleplay', title: 'Hội thoại nhập vai', role: 'u7' },
       ] },
       { id: 'u8', emoji: '🏫', title: 'Gia đình & nghề nghiệp', lessons: [
         { type: 'vocab', title: 'Từ mới: gia đình, nghề', words: { hsk: 'hsk_family', range: [0, 8] } },
@@ -153,6 +157,8 @@
         { ref: 'radicals_1' },
         { type: 'write', title: 'Viết chữ: 中 国 学 生', chars: ['中', '国', '学', '生'] },
         { type: 'quiz', title: 'Luyện nghe câu & hội thoại', listen: 'u8' },
+        { type: 'read', title: 'Đọc hiểu', read: 'u8' },
+        { type: 'roleplay', title: 'Hội thoại nhập vai', role: 'u8' },
       ] },
       { id: 'u9', emoji: '🕒', title: 'Giờ giấc & số lượng', lessons: [
         { type: 'vocab', title: 'Từ mới: số lượng', words: { hsk: 'hsk_numbers', range: [10, 17] } },
@@ -161,6 +167,8 @@
         { ref: 'time_quiz' },
         { ref: 'g_de_measure' },
         { type: 'quiz', title: 'Luyện nghe câu & hội thoại', listen: 'u9' },
+        { type: 'read', title: 'Đọc hiểu', read: 'u9' },
+        { type: 'roleplay', title: 'Hội thoại nhập vai', role: 'u9' },
       ] },
       { id: 'u10', emoji: '🛒', title: 'Mua sắm & đồ vật', lessons: [
         { type: 'vocab', title: 'Từ mới: đồ vật', words: { hsk: 'hsk_things', range: [0, 10] } },
@@ -195,6 +203,8 @@
         ] },
         { ref: 'radicals_2' },
         { type: 'quiz', title: 'Luyện nghe câu & hội thoại', listen: 'u10' },
+        { type: 'read', title: 'Đọc hiểu', read: 'u10' },
+        { type: 'roleplay', title: 'Hội thoại nhập vai', role: 'u10' },
       ] },
       { id: 'u11', emoji: '🏃', title: 'Hoạt động hằng ngày', lessons: [
         { type: 'vocab', title: 'Từ mới: động từ (1)', words: { hsk: 'hsk_verbs1' } },
@@ -226,6 +236,8 @@
         { ref: 'g_order_2' },
         { ref: 'radicals_quiz' },
         { type: 'quiz', title: 'Luyện nghe câu & hội thoại', listen: 'u11' },
+        { type: 'read', title: 'Đọc hiểu', read: 'u11' },
+        { type: 'roleplay', title: 'Hội thoại nhập vai', role: 'u11' },
       ] },
       { id: 'u12', emoji: '💬', title: 'Giao tiếp tự nhiên', lessons: [
         { type: 'vocab', title: 'Từ mới: tính từ, phó từ', words: { hsk: 'hsk_adj' } },
@@ -255,6 +267,8 @@
         { ref: 'type_1' },
         { ref: 'type_2' },
         { type: 'quiz', title: 'Luyện nghe câu & hội thoại', listen: 'u12' },
+        { type: 'read', title: 'Đọc hiểu', read: 'u12' },
+        { type: 'roleplay', title: 'Hội thoại nhập vai', role: 'u12' },
       ] },
     ] },
     { id: 'p3', title: 'Phần 4 · Từ vựng mở rộng', desc: 'Học thêm từ qua hình ảnh: màu sắc, thời tiết, cơ thể…', units: [
@@ -288,6 +302,74 @@
         { type: 'vocab', title: 'Từ mới: đồ chơi (2)', words: { topic: 'toys', range: [5, 10] } },
         { type: 'vocab', title: 'Từ mới: đồ vật quen thuộc', words: { topic: 'objects' } },
         { type: 'write', title: 'Viết chữ: 球 书 门 床', chars: ['球', '书', '门', '床'] },
+      ] },
+    ] },
+    { id: 'p4', title: 'Phần 5 · HSK 1 chuẩn mới', desc: '180 từ thông dụng của HSK 1 mới (2021): sinh hoạt, trường lớp, đi lại…', units: [
+      { id: 'u19', emoji: '🌅', title: 'Một ngày của tôi', lessons: [
+        { type: 'vocab', title: 'Từ mới: thời gian trong ngày', words: { hsk: 'hn_day1' } },
+        { type: 'vocab', title: 'Từ mới: sinh hoạt hằng ngày', words: { hsk: 'hn_day2' } },
+        { type: 'vocab', title: 'Từ mới: ngày tháng', words: { hsk: 'hn_day3' } },
+        { type: 'write', title: 'Viết chữ: 早 晚 半 时', chars: ['早', '晚', '半', '时'] },
+        { type: 'order', title: 'Sắp xếp câu', sentences: [
+          { tokens: ['我', '每天', '早上', '七点', '起床'], py: 'Wǒ měitiān zǎoshang qī diǎn qǐchuáng.', vi: 'Mỗi ngày tôi thức dậy lúc 7 giờ sáng.' },
+          { tokens: ['他', '已经', '下班', '了'], py: 'Tā yǐjīng xiàbān le.', vi: 'Anh ấy đã tan làm rồi.' },
+          { tokens: ['明天', '是', '我的', '生日'], py: 'Míngtiān shì wǒ de shēngrì.', vi: 'Ngày mai là sinh nhật tôi.' },
+        ] },
+      ] },
+      { id: 'u20', emoji: '🎒', title: 'Trường lớp & học tập', lessons: [
+        { type: 'vocab', title: 'Từ mới: đi học', words: { hsk: 'hn_school1' } },
+        { type: 'vocab', title: 'Từ mới: trong giờ học', words: { hsk: 'hn_school2' } },
+        { type: 'vocab', title: 'Từ mới: hiểu bài', words: { hsk: 'hn_school3' } },
+        { type: 'write', title: 'Viết chữ: 问 难 对 错', chars: ['问', '难', '对', '错'] },
+        { type: 'order', title: 'Sắp xếp câu', sentences: [
+          { tokens: ['老师', '问', '了', '一个', '问题'], py: 'Lǎoshī wèn le yí gè wèntí.', vi: 'Cô giáo đã hỏi một câu hỏi.' },
+          { tokens: ['明天', '有', '汉语', '考试'], py: 'Míngtiān yǒu Hànyǔ kǎoshì.', vi: 'Ngày mai có bài thi tiếng Hán.' },
+          { tokens: ['我', '不', '知道', '他', '是', '谁'], py: 'Wǒ bù zhīdào tā shì shéi.', vi: 'Tôi không biết anh ấy là ai.' },
+        ] },
+      ] },
+      { id: 'u21', emoji: '🧭', title: 'Đi lại & phương hướng', lessons: [
+        { type: 'vocab', title: 'Từ mới: đường đi', words: { hsk: 'hn_way1' } },
+        { type: 'vocab', title: 'Từ mới: phương hướng', words: { hsk: 'hn_way2' } },
+        { type: 'vocab', title: 'Từ mới: xe cộ & bến bãi', words: { hsk: 'hn_way3' } },
+        { type: 'write', title: 'Viết chữ: 左 右 走 路', chars: ['左', '右', '走', '路'] },
+        { type: 'order', title: 'Sắp xếp câu', sentences: [
+          { tokens: ['学校', '离', '我家', '很', '近'], py: 'Xuéxiào lí wǒ jiā hěn jìn.', vi: 'Trường học cách nhà tôi rất gần.' },
+          { tokens: ['商店', '在', '医院', '旁边'], py: 'Shāngdiàn zài yīyuàn pángbiān.', vi: 'Cửa hàng ở bên cạnh bệnh viện.' },
+          { tokens: ['我们', '打车', '去', '机场'], py: 'Wǒmen dǎchē qù jīchǎng.', vi: 'Chúng tôi đi taxi ra sân bay.' },
+        ] },
+      ] },
+      { id: 'u22', emoji: '🥟', title: 'Ăn uống & mua sắm', lessons: [
+        { type: 'vocab', title: 'Từ mới: ăn uống', words: { hsk: 'hn_shop1' } },
+        { type: 'vocab', title: 'Từ mới: mua bán', words: { hsk: 'hn_shop2' } },
+        { type: 'vocab', title: 'Từ mới: so sánh & lựa chọn', words: { hsk: 'hn_shop3' } },
+        { type: 'write', title: 'Viết chữ: 肉 饭 贵 新', chars: ['肉', '饭', '贵', '新'] },
+        { type: 'order', title: 'Sắp xếp câu', sentences: [
+          { tokens: ['这个', '手机', '太', '贵', '了'], py: 'Zhège shǒujī tài guì le.', vi: 'Cái điện thoại này đắt quá.' },
+          { tokens: ['妈妈', '在', '家', '做饭'], py: 'Māma zài jiā zuòfàn.', vi: 'Mẹ đang nấu cơm ở nhà.' },
+          { tokens: ['你', '要', '茶', '还是', '水'], py: 'Nǐ yào chá háishi shuǐ?', vi: 'Bạn muốn trà hay nước?', end: '？' },
+        ] },
+      ] },
+      { id: 'u23', emoji: '👪', title: 'Con người & sức khoẻ', lessons: [
+        { type: 'vocab', title: 'Từ mới: nhà cửa & gia đình', words: { hsk: 'hn_people1' } },
+        { type: 'vocab', title: 'Từ mới: mọi người', words: { hsk: 'hn_people2' } },
+        { type: 'vocab', title: 'Từ mới: sức khoẻ & cảnh vật', words: { hsk: 'hn_people3' } },
+        { type: 'write', title: 'Viết chữ: 男 女 病 笑', chars: ['男', '女', '病', '笑'] },
+        { type: 'order', title: 'Sắp xếp câu', sentences: [
+          { tokens: ['我', '有', '一个', '弟弟'], py: 'Wǒ yǒu yí gè dìdi.', vi: 'Tôi có một em trai.' },
+          { tokens: ['他', '今天', '生病', '了'], py: 'Tā jīntiān shēngbìng le.', vi: 'Hôm nay anh ấy bị ốm.' },
+          { tokens: ['大家', '都', '很', '累'], py: 'Dàjiā dōu hěn lèi.', vi: 'Mọi người đều rất mệt.' },
+        ] },
+      ] },
+      { id: 'u24', emoji: '🎤', title: 'Sở thích & hành động', lessons: [
+        { type: 'vocab', title: 'Từ mới: sở thích', words: { hsk: 'hn_act1' } },
+        { type: 'vocab', title: 'Từ mới: giúp đỡ & trao đổi', words: { hsk: 'hn_act2' } },
+        { type: 'vocab', title: 'Từ mới: động tác thường ngày', words: { hsk: 'hn_act3' } },
+        { type: 'write', title: 'Viết chữ: 歌 进 出 用', chars: ['歌', '进', '出', '用'] },
+        { type: 'order', title: 'Sắp xếp câu', sentences: [
+          { tokens: ['我的', '爱好', '是', '唱歌'], py: 'Wǒ de àihào shì chànggē.', vi: 'Sở thích của tôi là hát.' },
+          { tokens: ['请', '你', '等', '一会儿'], py: 'Qǐng nǐ děng yíhuìr.', vi: 'Mời bạn đợi một lát.' },
+          { tokens: ['我', '觉得', '这个', '电影', '很', '好看'], py: 'Wǒ juéde zhège diànyǐng hěn hǎokàn.', vi: 'Tôi thấy bộ phim này rất hay.' },
+        ] },
       ] },
     ] },
   ];

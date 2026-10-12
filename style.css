@@ -2108,6 +2108,42 @@
 
   .zh-reveal-vi { color: var(--ink-soft); font-family: 'Quicksand'; font-weight: 700; font-size: 0.9em; margin-top: 2px; }
 
+  /* ---------- Đọc hiểu & hội thoại nhập vai (zh-course.js — renderCtx) ---------- */
+  .zh-ctx {
+    text-align: left; margin: 4px 0 12px; padding: 10px 12px; background: var(--surface);
+    border: 2px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
+  }
+  .zh-ctx[hidden] { display: none; }
+  .zh-ctx-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .zh-ctx-head strong { flex: 1; min-width: 0; font-family: 'Baloo 2'; font-weight: 800; font-size: 15px; }
+  .zh-ctx-btn {
+    flex: none; border: 2px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px;
+    padding: 2px 9px; font: inherit; font-weight: 800; font-size: 13px; cursor: pointer;
+  }
+  .zh-ctx.show-py .zh-ctx-btn:last-child { background: color-mix(in srgb, var(--mint) 25%, var(--surface)); }
+  .zh-passage-line { margin-bottom: 4px; }
+  .zh-passage-line .zh-tap-text { font-size: 20px; line-height: 1.6; }
+  .zh-passage-py { display: none; color: var(--ink-soft); font-size: 13.5px; line-height: 1.35; margin-bottom: 4px; }
+  .zh-ctx.show-py .zh-passage-py { display: block; }
+  .zh-tap-word {
+    border: none; background: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer;
+    border-bottom: 1px dotted color-mix(in srgb, var(--ink-soft) 60%, transparent);
+  }
+  .zh-tap-word:active { background: color-mix(in srgb, var(--gold) 35%, transparent); }
+  .zh-ctx-vi { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); color: var(--ink-soft); font-weight: 700; font-size: 13.5px; }
+  .zh-ctx.is-answered .zh-ctx-vi { display: block; }
+  .zh-chat-list { display: flex; flex-direction: column; gap: 6px; max-height: 36vh; overflow-y: auto; overscroll-behavior: contain; }
+  .zh-tap-word + .zh-tap-word { margin-left: 1px; }
+  .zh-bubble { max-width: 88%; padding: 6px 10px; border-radius: 14px; }
+  .zh-bubble.is-a { align-self: flex-start; background: color-mix(in srgb, var(--blue) 16%, var(--surface)); border-bottom-left-radius: 4px; }
+  .zh-bubble.is-b { align-self: flex-end; background: color-mix(in srgb, var(--mint) 22%, var(--surface)); border-bottom-right-radius: 4px; }
+  .zh-bubble.is-current { box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 55%, transparent); }
+  .zh-bubble-zh { display: flex; align-items: center; gap: 6px; font-size: 18px; line-height: 1.45; }
+  .zh-bubble-zh .zh-ctx-btn { padding: 0 6px; font-size: 12px; }
+  .zh-bubble-py { font-size: 13px; line-height: 1.3; }
+  .zh-bubble-vi { color: var(--ink-soft); font-weight: 700; font-size: 12.5px; margin-top: 2px; }
+  .zh-ctx:not(.is-answered) .zh-bubble.is-current .zh-bubble-vi { display: none; }
+
   /* ---------- Dải mời cài app (app.js — CÀI APP LÊN MÀN HÌNH CHÍNH) ---------- */
   .install-banner {
     display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 10px 10px 14px;
