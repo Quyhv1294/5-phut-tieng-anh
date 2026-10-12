@@ -19,28 +19,29 @@
     [['飞', 'fēi'], ['肥', 'féi'], ['匪', 'fěi'], ['费', 'fèi']],
   ];
   // Thanh mẫu (âm đầu): máy KHÔNG đọc chuẩn âm đứng riêng, nên mỗi âm đi kèm 1 chữ ví dụ để nghe.
-  // group: các âm dễ nhầm với nhau (dùng làm đáp án nhiễu khi đố).
+  // Phần 1 của khoá học (pinyin trước, thanh điệu sau) nên chữ ví dụ đều là THANH 1 (cao, đều) để người
+  // học tập trung vào âm. group: các âm dễ nhầm với nhau (dùng làm đáp án nhiễu khi đố).
   const ZH_INITIALS = [
     { i: 'b', ex: '八', py: 'bā', vi: 'số tám', group: 'bp' },
-    { i: 'p', ex: '跑', py: 'pǎo', vi: 'chạy', group: 'bp' },
+    { i: 'p', ex: '拍', py: 'pāi', vi: 'vỗ, chụp', group: 'bp' },
     { i: 'm', ex: '妈', py: 'mā', vi: 'mẹ', group: 'mf' },
     { i: 'f', ex: '飞', py: 'fēi', vi: 'bay', group: 'mf' },
-    { i: 'd', ex: '大', py: 'dà', vi: 'to', group: 'dt' },
+    { i: 'd', ex: '多', py: 'duō', vi: 'nhiều', group: 'dt' },
     { i: 't', ex: '他', py: 'tā', vi: 'anh ấy', group: 'dt' },
-    { i: 'n', ex: '你', py: 'nǐ', vi: 'bạn', group: 'nl' },
-    { i: 'l', ex: '来', py: 'lái', vi: 'đến', group: 'nl' },
-    { i: 'g', ex: '狗', py: 'gǒu', vi: 'con chó', group: 'gkh' },
-    { i: 'k', ex: '看', py: 'kàn', vi: 'xem', group: 'gkh' },
-    { i: 'h', ex: '好', py: 'hǎo', vi: 'tốt', group: 'gkh' },
+    { i: 'n', ex: '妞', py: 'niū', vi: 'cô bé', group: 'nl' },
+    { i: 'l', ex: '拉', py: 'lā', vi: 'kéo', group: 'nl' },
+    { i: 'g', ex: '哥', py: 'gē', vi: 'anh trai', group: 'gkh' },
+    { i: 'k', ex: '开', py: 'kāi', vi: 'mở', group: 'gkh' },
+    { i: 'h', ex: '喝', py: 'hē', vi: 'uống', group: 'gkh' },
     { i: 'j', ex: '家', py: 'jiā', vi: 'nhà', group: 'jqx' },
     { i: 'q', ex: '七', py: 'qī', vi: 'số bảy', group: 'jqx' },
-    { i: 'x', ex: '小', py: 'xiǎo', vi: 'nhỏ', group: 'jqx' },
+    { i: 'x', ex: '西', py: 'xī', vi: 'phía tây', group: 'jqx' },
     { i: 'zh', ex: '中', py: 'zhōng', vi: 'giữa', group: 'zhchshr' },
     { i: 'ch', ex: '吃', py: 'chī', vi: 'ăn', group: 'zhchshr' },
     { i: 'sh', ex: '书', py: 'shū', vi: 'sách', group: 'zhchshr' },
-    { i: 'r', ex: '热', py: 'rè', vi: 'nóng', group: 'zhchshr' },
-    { i: 'z', ex: '在', py: 'zài', vi: 'ở', group: 'zcs' },
-    { i: 'c', ex: '菜', py: 'cài', vi: 'món ăn', group: 'zcs' },
+    { i: 'r', ex: '扔', py: 'rēng', vi: 'ném', group: 'zhchshr' },
+    { i: 'z', ex: '租', py: 'zū', vi: 'thuê', group: 'zcs' },
+    { i: 'c', ex: '擦', py: 'cā', vi: 'lau', group: 'zcs' },
     { i: 's', ex: '三', py: 'sān', vi: 'số ba', group: 'zcs' },
   ];
   const ZH_INITIAL_NOTES = {
@@ -54,22 +55,69 @@
     sh: 'Âm uốn lưỡi, gần "s" tiếng Việt (miền Bắc đọc "s" nặng).', r: 'Uốn lưỡi như "sh" nhưng có rung, gần "r" nhẹ.',
     z: 'Gần "ch" nhưng đầu lưỡi thẳng, chạm răng.', c: 'Như "z" nhưng bật hơi mạnh.', s: 'Như "x" tiếng Việt.',
   };
-  // Vận mẫu (âm vần): mỗi vần 1 chữ ví dụ.
+  // Vận mẫu (âm vần): [vần, chữ ví dụ, pinyin, nghĩa] — ví dụ thanh 1, trừ ü (女 nǚ) và er (二 èr) vì
+  // hầu như không có chữ thông dụng thanh 1.
   const ZH_FINALS_1 = [
-    ['a', '八', 'bā', 'số tám'], ['o', '哦', 'ó', 'ồ (cảm thán)'], ['e', '饿', 'è', 'đói'],
-    ['i', '一', 'yī', 'một'], ['u', '五', 'wǔ', 'năm'], ['ü', '鱼', 'yú', 'con cá'],
-    ['ai', '爱', 'ài', 'yêu'], ['ei', '黑', 'hēi', 'màu đen'], ['ao', '好', 'hǎo', 'tốt'],
-    ['ou', '狗', 'gǒu', 'con chó'], ['er', '二', 'èr', 'số hai'],
+    ['a', '妈', 'mā', 'mẹ'], ['o', '波', 'bō', 'sóng'], ['e', '哥', 'gē', 'anh trai'],
+    ['i', '衣', 'yī', 'áo'], ['u', '书', 'shū', 'sách'], ['ü', '女', 'nǚ', 'nữ'],
+    ['ai', '开', 'kāi', 'mở'], ['ei', '飞', 'fēi', 'bay'], ['ao', '包', 'bāo', 'cái túi'],
+    ['ou', '都', 'dōu', 'đều'], ['er', '二', 'èr', 'số hai'],
   ];
   const ZH_FINALS_2 = [
-    ['an', '饭', 'fàn', 'cơm'], ['en', '门', 'mén', 'cửa'], ['ang', '糖', 'táng', 'kẹo'],
-    ['eng', '冷', 'lěng', 'lạnh'], ['ong', '红', 'hóng', 'màu đỏ'],
-    ['ia', '家', 'jiā', 'nhà'], ['ie', '谢', 'xiè', 'cảm ơn'], ['iao', '小', 'xiǎo', 'nhỏ'],
-    ['iu', '六', 'liù', 'số sáu'], ['ian', '天', 'tiān', 'trời, ngày'], ['in', '新', 'xīn', 'mới'],
-    ['iang', '想', 'xiǎng', 'muốn'], ['ing', '听', 'tīng', 'nghe'], ['iong', '熊', 'xióng', 'con gấu'],
-    ['ua', '花', 'huā', 'hoa'], ['uo', '我', 'wǒ', 'tôi'], ['uai', '快', 'kuài', 'nhanh'],
-    ['ui', '水', 'shuǐ', 'nước'], ['uan', '玩', 'wán', 'chơi'], ['un', '春', 'chūn', 'mùa xuân'],
-    ['uang', '黄', 'huáng', 'màu vàng'], ['üe', '学', 'xué', 'học'], ['üan', '远', 'yuǎn', 'xa'], ['ün', '云', 'yún', 'mây'],
+    ['an', '三', 'sān', 'số ba'], ['en', '分', 'fēn', 'phút'], ['ang', '汤', 'tāng', 'canh'],
+    ['eng', '风', 'fēng', 'gió'], ['ong', '东', 'dōng', 'phía đông'],
+    ['ia', '家', 'jiā', 'nhà'], ['ie', '接', 'jiē', 'đón'], ['iao', '交', 'jiāo', 'giao'],
+    ['iu', '秋', 'qiū', 'mùa thu'], ['ian', '天', 'tiān', 'trời, ngày'], ['in', '新', 'xīn', 'mới'],
+    ['iang', '香', 'xiāng', 'thơm'], ['ing', '听', 'tīng', 'nghe'], ['iong', '胸', 'xiōng', 'ngực'],
+    ['ua', '花', 'huā', 'hoa'], ['uo', '多', 'duō', 'nhiều'], ['uai', '乖', 'guāi', 'ngoan'],
+    ['ui', '灰', 'huī', 'màu xám'], ['uan', '关', 'guān', 'đóng'], ['un', '春', 'chūn', 'mùa xuân'],
+    ['uang', '光', 'guāng', 'ánh sáng'], ['üe', '约', 'yuē', 'hẹn'], ['üan', '冤', 'yuān', 'oan'], ['ün', '晕', 'yūn', 'chóng mặt'],
+  ];
+  // Cách đọc vần, so với tiếng Việt (gần đúng — để người mới dễ hình dung).
+  const ZH_FINAL_NOTES = {
+    a: 'Mở rộng miệng, như "a" tiếng Việt.',
+    o: 'Tròn môi, gần "ô" tiếng Việt — bō nghe gần "pua".',
+    e: 'Gần "ơ" lướt sang "ưa" — gē nghe gần "cưa".',
+    i: 'Như "i" tiếng Việt. Đứng một mình viết là yi.',
+    u: 'Như "u" tiếng Việt, tròn môi. Đứng một mình viết là wu.',
+    'ü': 'Đọc "i" nhưng tròn môi lại, gần "uy" đọc liền. Sau j, q, x, y viết thành u (ju, qu, xu, yu) nhưng vẫn đọc ü.',
+    ai: 'Như "ai" tiếng Việt.', ei: 'Như "ây" tiếng Việt.', ao: 'Như "ao" tiếng Việt.', ou: 'Như "âu" tiếng Việt.',
+    er: 'Đọc "ơ" rồi cong đầu lưỡi lên.',
+    an: 'Như "an" tiếng Việt.', en: 'Gần "ân" tiếng Việt.', ang: 'Như "ang" tiếng Việt.', eng: 'Gần "âng" tiếng Việt.', ong: 'Gần "ung" tiếng Việt.',
+    ia: 'Đọc liền "i-a", gần "ia" tiếng Việt.', ie: 'Gần "iê" tiếng Việt.', iao: 'Đọc liền "i-ao", gần "eo" kéo dài.',
+    iu: 'Viết iu nhưng đọc gần "iêu" (đầy đủ là iou).', ian: 'Viết ian nhưng đọc gần "iên".', in: 'Như "in" tiếng Việt.',
+    iang: 'Đọc liền "i-ang".', ing: 'Như "inh" tiếng Việt.', iong: 'Gần "i-ung" đọc liền.',
+    ua: 'Gần "oa" tiếng Việt.', uo: 'Gần "ua" tiếng Việt.', uai: 'Gần "oai" tiếng Việt.',
+    ui: 'Viết ui nhưng đọc gần "uây" (đầy đủ là uei).', uan: 'Gần "oan" tiếng Việt.',
+    un: 'Viết un nhưng đọc gần "uân" (đầy đủ là uen).', uang: 'Gần "oang" tiếng Việt.',
+    'üe': 'Gần "uê" nhưng tròn môi (yuē).', 'üan': 'Gần "oen" tròn môi (yuān).', 'ün': 'Gần "uyn" tròn môi (yūn).',
+  };
+  // Âm tiết để luyện GHÉP ÂM (thanh mẫu + vận mẫu), đều thanh 1: [chữ, pinyin, thanh mẫu, vận mẫu, nghĩa].
+  // Bài đố "Nghe và chọn đúng pinyin" lấy đáp án nhiễu bằng cách thay thanh mẫu dễ nhầm (b↔p, zh↔z, j↔q…).
+  const ZH_SYLLABLES = [
+    ['八', 'bā', 'b', 'a', 'số tám'], ['波', 'bō', 'b', 'o', 'sóng'], ['杯', 'bēi', 'b', 'ei', 'cái cốc'], ['包', 'bāo', 'b', 'ao', 'cái túi'], ['冰', 'bīng', 'b', 'ing', 'băng'],
+    ['拍', 'pāi', 'p', 'ai', 'vỗ, chụp'], ['坡', 'pō', 'p', 'o', 'sườn dốc'], ['喷', 'pēn', 'p', 'en', 'phun'], ['偏', 'piān', 'p', 'ian', 'lệch'],
+    ['妈', 'mā', 'm', 'a', 'mẹ'], ['摸', 'mō', 'm', 'o', 'sờ'], ['猫', 'māo', 'm', 'ao', 'con mèo'],
+    ['发', 'fā', 'f', 'a', 'gửi, phát'], ['飞', 'fēi', 'f', 'ei', 'bay'], ['分', 'fēn', 'f', 'en', 'phút'], ['风', 'fēng', 'f', 'eng', 'gió'],
+    ['多', 'duō', 'd', 'uo', 'nhiều'], ['东', 'dōng', 'd', 'ong', 'phía đông'], ['低', 'dī', 'd', 'i', 'thấp'], ['刀', 'dāo', 'd', 'ao', 'con dao'],
+    ['他', 'tā', 't', 'a', 'anh ấy'], ['通', 'tōng', 't', 'ong', 'thông'], ['踢', 'tī', 't', 'i', 'đá (bóng)'], ['汤', 'tāng', 't', 'ang', 'canh'], ['天', 'tiān', 't', 'ian', 'trời, ngày'],
+    ['妞', 'niū', 'n', 'iu', 'cô bé'],
+    ['拉', 'lā', 'l', 'a', 'kéo'], ['溜', 'liū', 'l', 'iu', 'trượt'], ['捞', 'lāo', 'l', 'ao', 'vớt'],
+    ['哥', 'gē', 'g', 'e', 'anh trai'], ['高', 'gāo', 'g', 'ao', 'cao'], ['姑', 'gū', 'g', 'u', 'cô (em bố)'], ['关', 'guān', 'g', 'uan', 'đóng'], ['工', 'gōng', 'g', 'ong', 'công việc'],
+    ['咖', 'kā', 'k', 'a', 'cà (phê)'], ['开', 'kāi', 'k', 'ai', 'mở'], ['科', 'kē', 'k', 'e', 'môn học'], ['空', 'kōng', 'k', 'ong', 'trống không'],
+    ['喝', 'hē', 'h', 'e', 'uống'], ['花', 'huā', 'h', 'ua', 'hoa'], ['黑', 'hēi', 'h', 'ei', 'màu đen'], ['灰', 'huī', 'h', 'ui', 'màu xám'],
+    ['鸡', 'jī', 'j', 'i', 'con gà'], ['家', 'jiā', 'j', 'ia', 'nhà'], ['接', 'jiē', 'j', 'ie', 'đón'], ['居', 'jū', 'j', 'ü', 'ở, cư trú'], ['金', 'jīn', 'j', 'in', 'vàng (kim loại)'],
+    ['七', 'qī', 'q', 'i', 'số bảy'], ['秋', 'qiū', 'q', 'iu', 'mùa thu'], ['区', 'qū', 'q', 'ü', 'khu vực'], ['青', 'qīng', 'q', 'ing', 'xanh'], ['千', 'qiān', 'q', 'ian', 'nghìn'],
+    ['西', 'xī', 'x', 'i', 'phía tây'], ['虾', 'xiā', 'x', 'ia', 'con tôm'], ['需', 'xū', 'x', 'ü', 'cần'], ['新', 'xīn', 'x', 'in', 'mới'], ['香', 'xiāng', 'x', 'iang', 'thơm'],
+    ['知', 'zhī', 'zh', 'i', 'biết'], ['中', 'zhōng', 'zh', 'ong', 'giữa'], ['猪', 'zhū', 'zh', 'u', 'con lợn'], ['张', 'zhāng', 'zh', 'ang', 'tờ, tấm'], ['周', 'zhōu', 'zh', 'ou', 'tuần'],
+    ['吃', 'chī', 'ch', 'i', 'ăn'], ['车', 'chē', 'ch', 'e', 'xe'], ['出', 'chū', 'ch', 'u', 'ra'], ['春', 'chūn', 'ch', 'un', 'mùa xuân'], ['窗', 'chuāng', 'ch', 'uang', 'cửa sổ'],
+    ['师', 'shī', 'sh', 'i', 'thầy'], ['书', 'shū', 'sh', 'u', 'sách'], ['山', 'shān', 'sh', 'an', 'núi'], ['生', 'shēng', 'sh', 'eng', 'sinh'], ['说', 'shuō', 'sh', 'uo', 'nói'],
+    ['扔', 'rēng', 'r', 'eng', 'ném'],
+    ['资', 'zī', 'z', 'i', 'tư (tiền vốn)'], ['租', 'zū', 'z', 'u', 'thuê'], ['脏', 'zāng', 'z', 'ang', 'bẩn'], ['宗', 'zōng', 'z', 'ong', 'tông, dòng'],
+    ['擦', 'cā', 'c', 'a', 'lau'], ['粗', 'cū', 'c', 'u', 'thô, to'], ['猜', 'cāi', 'c', 'ai', 'đoán'], ['聪', 'cōng', 'c', 'ong', 'thông minh'],
+    ['思', 'sī', 's', 'i', 'nghĩ'], ['三', 'sān', 's', 'an', 'số ba'], ['苏', 'sū', 's', 'u', 'tô (họ Tô)'], ['松', 'sōng', 's', 'ong', 'cây thông'],
+    ['衣', 'yī', 'y', 'i', 'áo'], ['鸭', 'yā', 'y', 'ia', 'con vịt'], ['烟', 'yān', 'y', 'ian', 'khói'], ['约', 'yuē', 'y', 'üe', 'hẹn'],
+    ['屋', 'wū', 'w', 'u', 'nhà, phòng'], ['蛙', 'wā', 'w', 'ua', 'con ếch'], ['弯', 'wān', 'w', 'uan', 'cong'], ['窝', 'wō', 'w', 'uo', 'cái tổ'],
   ];
 
   // ---------- BƯỚC 3: BỘ THỦ ----------

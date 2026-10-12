@@ -2105,3 +2105,5 @@
   .zh-exam-rev-zh { font-size: 18px; font-weight: 700; line-height: 1.4; }
   .zh-exam-rev .zh-word-vi { text-align: left; font-size: 13.5px; }
   .zh-exam-rev-ans { font-weight: 800; font-size: 13.5px; color: var(--accent-ink); margin-top: 2px; }
+
+  .zh-reveal-vi { color: var(--ink-soft); font-family: 'Quicksand'; font-weight: 700; font-size: 0.9em; margin-top: 2px; }

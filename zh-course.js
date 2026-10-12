@@ -323,7 +323,7 @@
     today.appendChild(rv);
     box.appendChild(today);
     // Học xong (hoặc nhảy cóc qua) Phần 2 · HSK 1 → mời thi thử ngay trên trang Học.
-    const hskPart = ZH_COURSE[1];
+    const hskPart = ZH_COURSE.find(p => p.id === 'p2');
     if (HAS_EXAM && hskPart && (z.skip[hskPart.id] || hskPart.units.every(unitDone))) box.appendChild(examCard());
 
     // Bản đồ: mỗi phần là 1 thẻ thu gọn được (mặc định chỉ mở phần đang học), chặng xếp lưới ô nhỏ
@@ -537,8 +537,73 @@
   }
   const choice = (prompt, extra, options) => Object.assign({ kind: 'choice', prompt, options, answer: 0 }, extra);
 
+  // ----- Pinyin (Phần 1): vận mẫu, ghép âm, đổi thanh -----
+  const ALL_FINALS = ZH_FINALS_1.concat(ZH_FINALS_2);
+  // Vần dễ nhầm với nhau (làm đáp án nhiễu): mũi trước/sau, có/không có i- u- ü-.
+  const FINAL_CONF = {
+    a: ['o', 'e', 'ai'], o: ['u', 'e', 'ou'], e: ['o', 'a', 'ei'], i: ['ü', 'u', 'ei'], u: ['ü', 'o', 'ou'], 'ü': ['i', 'u', 'ui'],
+    ai: ['ei', 'an', 'ao'], ei: ['ai', 'en', 'ui'], ao: ['ou', 'ai', 'iao'], ou: ['ao', 'uo', 'iu'], er: ['e', 'a', 'ei'],
+    an: ['ang', 'en', 'ian'], en: ['eng', 'an', 'in'], ang: ['an', 'eng', 'iang'], eng: ['en', 'ang', 'ong'], ong: ['eng', 'ang', 'iong'],
+    ia: ['ie', 'ua', 'iao'], ie: ['üe', 'ia', 'ei'], iao: ['iu', 'ao', 'ia'], iu: ['iao', 'ou', 'ui'], ian: ['iang', 'an', 'in'],
+    in: ['ing', 'en', 'ian'], iang: ['ian', 'ang', 'ing'], ing: ['in', 'eng', 'iang'], iong: ['ong', 'ing', 'üan'],
+    ua: ['uo', 'ia', 'uai'], uo: ['ou', 'ua', 'o'], uai: ['ai', 'ua', 'ui'], ui: ['ei', 'iu', 'uai'], uan: ['uang', 'an', 'üan'],
+    un: ['ün', 'en', 'uan'], uang: ['uan', 'ang', 'ong'], 'üe': ['ie', 'ue', 'üan'], 'üan': ['uan', 'ian', 'ün'], 'ün': ['un', 'in', 'üan'],
+  };
+  // Thanh mẫu dễ nhầm (đáp án nhiễu khi đố ghép âm).
+  const INITIAL_CONF = {
+    b: ['p', 'm', 'd'], p: ['b', 'f', 't'], m: ['n', 'b', 'f'], f: ['h', 'p', 'm'], d: ['t', 'b', 'n'], t: ['d', 'k', 'p'],
+    n: ['l', 'm', 'd'], l: ['n', 'r', 'd'], g: ['k', 'h', 'd'], k: ['g', 'h', 't'], h: ['f', 'k', 'g'],
+    j: ['q', 'x', 'zh'], q: ['j', 'x', 'ch'], x: ['j', 'q', 'sh'], zh: ['z', 'j', 'ch'], ch: ['c', 'q', 'zh'], sh: ['s', 'x', 'r'],
+    r: ['l', 'sh', 'y'], z: ['zh', 'c', 'j'], c: ['ch', 'z', 'q'], s: ['sh', 'x', 'c'], y: ['w', 'j', 'l'], w: ['y', 'h', 'f'],
+  };
+  const TONE_SETS = ['āáǎà', 'ēéěè', 'īíǐì', 'ōóǒò', 'ūúǔù', 'ǖǘǚǜ'];
+  // Đổi thanh điệu của 1 âm tiết ngẫu nhiên trong chuỗi pinyin (làm đáp án nhiễu cho bài nghe thanh).
+  function retone(py) {
+    const arr = [...py];
+    const idx = arr.map((c, i) => (TONE_SETS.some(t => t.includes(c)) ? i : -1)).filter(i => i >= 0);
+    if (!idx.length) return null;
+    const i = pick(idx), set = TONE_SETS.find(t => t.includes(arr[i])), cur = set.indexOf(arr[i]);
+    let k = cur;
+    while (k === cur) k = rnd(0, 3);
+    arr[i] = set[k];
+    return arr.join('');
+  }
+  const syllablePool = l => (l && l.initials ? ZH_SYLLABLES.filter(x => l.initials.includes(x[2])) : ZH_SYLLABLES);
+  // Từ dùng cho bài "nghe chọn đúng dấu": bỏ từ có BIẾN ĐIỆU (2 thanh 3 liền nhau, hoặc có 不 / 一) — máy đọc
+  // theo biến điệu (你好 → ní hǎo) nên đáp án "đổi thanh" có thể trùng đúng âm nghe được.
+  const hasSandhi = w => /[不一]/.test(w.zh) || (w.py.match(SYL) || []).map(toneOf).some((t, i, a) => t === 3 && a[i + 1] === 3);
+  const PINYIN_WORDS = () => COURSE_WORDS.filter(w => w.py && [...w.zh].length >= 2 && [...w.zh].length <= 3 && !hasSandhi(w)
+    && TONE_SETS.some(t => [...w.py].some(c => t.includes(c))));
+
   // Đề tự sinh (dùng cho bài quiz có gen, và tab Luyện tập).
   const GEN = {
+    finals(l) {
+      const pool = l && l.only ? ALL_FINALS.filter(f => l.only.includes(f[0])) : ALL_FINALS;
+      const f = pick(pool);
+      const base = pool.length >= 4 ? pool : ALL_FINALS; // đáp án nhiễu chỉ lấy trong nhóm vần của bài (đã học)
+      const near = (FINAL_CONF[f[0]] || []).filter(x => base.some(g => g[0] === x));
+      return choice('Nghe và chọn đúng vận mẫu (vần)', { big: '🔊', say: f[1], reveal: f[1] + ' · ' + f[2], revealVi: 'vần ' + f[0] },
+        uniqueOptions(f[0], () => (near.length && Math.random() < 0.75 ? pick(near) : pick(base)[0]), 4));
+    },
+    syllables(l) {
+      // Đáp án nhiễu chỉ lấy ÂM TIẾT CÓ THẬT trong ngân hàng (không ghép bừa ra "buō"), ưu tiên trong bài:
+      // cùng vần khác âm đầu → âm đầu dễ nhầm → vần dễ nhầm → bất kỳ.
+      const pool = syllablePool(l), x = pick(pool);
+      const conf = INITIAL_CONF[x[2]] || [], nearF = FINAL_CONF[x[3]] || [];
+      const tiers = [pool, ZH_SYLLABLES].reduce((out, src) => out.concat(
+        shuffleArr(src.filter(y => y[3] === x[3] && y[2] !== x[2])),
+        shuffleArr(src.filter(y => conf.includes(y[2]))),
+        shuffleArr(src.filter(y => y[2] === x[2] && nearF.includes(y[3]))),
+      ), []).concat(shuffleArr(pool), shuffleArr(ZH_SYLLABLES));
+      const options = [x[1]];
+      tiers.forEach(y => { if (options.length < 4 && options.indexOf(y[1]) === -1) options.push(y[1]); });
+      return choice('Nghe và chọn đúng pinyin', { big: '🔊', say: x[0], reveal: x[0] + ' · ' + x[1], revealVi: x[4] }, options);
+    },
+    pinyinWord() {
+      const w = pick(PINYIN_WORDS());
+      return choice('Nghe và chọn pinyin đúng (chú ý thanh điệu)', { big: '🔊', say: w.zh, reveal: w.zh + ' · ' + w.py, revealVi: w.vi },
+        uniqueOptions(w.py, () => retone(Math.random() < 0.5 ? w.py : retone(w.py) || w.py) || undefined, 4));
+    },
     tones() {
       const fam = pick(ZH_TONE_FAMILIES), t = pick(fam);
       return choice('Nghe và chọn đúng thanh điệu', { big: '🔊', say: t[0], reveal: t[0] + ' · ' + t[1] }, [t[1]].concat(fam.filter(x => x !== t).map(x => x[1])));
@@ -547,7 +612,7 @@
       const pool = l && l.only ? ZH_INITIALS.filter(x => l.only.includes(x.i)) : ZH_INITIALS;
       const it = pick(pool);
       const same = ZH_INITIALS.filter(x => x.group === it.group && x !== it).map(x => x.i);
-      return choice('Nghe và chọn âm đầu', { big: '🔊', say: it.ex, reveal: it.ex + ' · ' + it.py + ' (' + it.vi + ')' },
+      return choice('Nghe và chọn âm đầu', { big: '🔊', say: it.ex, reveal: it.ex + ' · ' + it.py, revealVi: it.vi },
         uniqueOptions(it.i, () => (same.length && Math.random() < 0.7 ? pick(same) : pick(pool.length >= 4 ? pool : ZH_INITIALS).i), 4));
     },
     radicals() {
@@ -594,17 +659,17 @@
     if (kind === 'listenPicture') {
       const withPic = from.filter(x => x.emoji);
       if (withPic.length >= 3) {
-        return choice('Nghe và chọn đúng hình', { big: '🔊', say: w.zh, reveal: w.zh + ' · ' + w.py + ' — ' + w.vi, word: w, emojiOpts: true },
+        return choice('Nghe và chọn đúng hình', { big: '🔊', say: w.zh, reveal: w.zh + ' · ' + w.py, revealVi: w.vi, word: w, emojiOpts: true },
           uniqueOptions(w.emoji, () => pick(withPic).emoji, 4));
       }
     }
-    return choice('Nghe và chọn đúng chữ', { big: '🔊', say: w.zh, reveal: w.zh + ' · ' + w.py + ' — ' + w.vi, word: w },
+    return choice('Nghe và chọn đúng chữ', { big: '🔊', say: w.zh, reveal: w.zh + ' · ' + w.py, revealVi: w.vi, word: w },
       uniqueOptions([w.zh, hidePy ? '' : w.py], () => { const o = pick(from); return [o.zh, hidePy ? '' : o.py]; }, 4));
   }
   const partIndex = l => (l && l.unit ? ZH_COURSE.indexOf(l.unit.part) : 0);
 
   function buildSteps(l) {
-    const hidePy = partIndex(l) >= 1; // từ Phần 2: pinyin trong câu hỏi ẩn đi, chạm để xem
+    const hidePy = partIndex(l) >= 2; // từ Phần 3 (HSK 1): pinyin trong câu hỏi ẩn đi, chạm để xem
     if (l.type === 'vocab') {
       const words = resolveWords(l.words);
       const steps = [];
@@ -619,7 +684,15 @@
     if (l.type === 'learn') {
       let items = l.items;
       if (l.from === 'initials') items = ZH_INITIALS.filter(x => !l.only || l.only.includes(x.i)).map(x => ({ big: x.i, py: x.ex + ' · ' + x.py, say: x.ex, vi: 'Ví dụ: ' + x.ex + ' (' + x.vi + ')', note: ZH_INITIAL_NOTES[x.i] }));
-      if (l.from === 'finals1' || l.from === 'finals2') items = (l.from === 'finals1' ? ZH_FINALS_1 : ZH_FINALS_2).map(f => ({ big: f[0], py: f[1] + ' · ' + f[2], say: f[1], vi: 'Ví dụ: ' + f[1] + ' (' + f[3] + ')' }));
+      if (l.from === 'finals1' || l.from === 'finals2' || l.from === 'finals') {
+        const src = l.from === 'finals1' ? ZH_FINALS_1 : l.from === 'finals2' ? ZH_FINALS_2 : ALL_FINALS;
+        items = src.filter(f => !l.only || l.only.includes(f[0]))
+          .map(f => ({ big: f[0], py: f[1] + ' · ' + f[2], say: f[1], vi: 'Ví dụ: ' + f[1] + ' ' + f[2] + ' (' + f[3] + ')', note: ZH_FINAL_NOTES[f[0]] }));
+      }
+      if (l.from === 'syllables') items = syllablePool(l).map(x => ({
+        big: x[2] + ' + ' + x[3] + ' = ' + x[1], py: x[0] + ' · ' + x[1], say: x[0], vi: x[4],
+        note: x[3] === 'ü' && 'jqxy'.includes(x[2]) ? 'Sau ' + x[2] + ', ü viết thành u (' + x[1] + ') nhưng vẫn đọc ü — tròn môi.' : (ZH_INITIAL_NOTES[x[2]] || ''),
+      }));
       if (l.from === 'radicals') items = ZH_RADICALS.slice(l.range[0], l.range[1]).map(r => ({
         big: r.r, py: (r.alt ? r.alt + ' · ' : '') + r.py, say: r.alt || r.r, vi: 'Bộ ' + r.name + ' — ' + r.vi,
         note: 'Ví dụ: ' + r.ex.map(e => e[0] + ' ' + e[1] + ' (' + e[2] + ')').join(' · '),
@@ -628,8 +701,9 @@
     }
     if (l.type === 'quiz') {
       if (l.questions) {
-        return shuffleArr(l.questions).map(x => choice(x.q, { big: x.big, py: x.py, say: x.say || x.big }, x.options));
+        return shuffleArr(l.questions).map(x => choice(x.q, { big: x.big, py: x.py, say: 'say' in x ? x.say : x.big }, x.options));
       }
+      if (l.listen) return listenSteps([l.listen]);
       const out = [], seen = new Set();
       let guard = 0;
       while (out.length < (l.count || 10) && guard++ < 200) {
@@ -647,6 +721,10 @@
       const pool = l.groups ? COURSE_WORDS.filter(w => ZH_HSK1.some(g => l.groups.includes(g.id) && g.words.some(x => x[0] === w.zh))) : COURSE_WORDS;
       return shuffleArr(pool).slice(0, l.count || 10).map(w => ({ kind: 'type', word: w }));
     }
+    if (l.type === 'review' && l.unit.pinyin) return pinyinMix(unitLessons(l.unit).filter(x => x.type === 'quiz' && x.gen), 10);
+    if (l.type === 'test' && l.part.units.every(u => u.pinyin)) {
+      return pinyinMix([{ gen: 'finals' }, { gen: 'syllables' }, { gen: 'syllables' }, { gen: 'tones' }, { gen: 'pinyinWord' }], 15);
+    }
     if (l.type === 'review') {
       const words = unitWords(l.unit);
       const pool = words.length >= 4 ? words : COURSE_WORDS;
@@ -659,6 +737,37 @@
       return shuffleArr(words).slice(0, 15).map((w, k) => wordQuestion(w, words, k, false));
     }
     return [];
+  }
+  // Trộn n câu đố tự sinh từ các bài quiz (gen + tham số only/initials) — ôn tập / kiểm tra phần pinyin.
+  function pinyinMix(srcs, n) {
+    if (!srcs.length) srcs = [{ gen: 'syllables' }];
+    const out = [], seen = new Set();
+    for (let k = 0, guard = 0; out.length < n && guard < 200; guard++) {
+      const src = srcs[k % srcs.length];
+      const q = GEN[src.gen](src);
+      const key = q.say + '|' + optText(q.options[0]);
+      if (seen.has(key) && guard < 150) continue;
+      seen.add(key); out.push(q); k++;
+    }
+    return shuffleArr(out);
+  }
+  // Luyện nghe câu & hội thoại (data/zh_listening.js): nghe câu → chọn nghĩa; nghe hội thoại → trả lời câu hỏi.
+  const HAS_LISTEN = typeof ZH_LISTEN !== 'undefined';
+  function listenSteps(units, n) {
+    if (!HAS_LISTEN) return [];
+    const sens = [], dias = [];
+    units.forEach(u => { const b = ZH_LISTEN[u]; if (b) { sens.push(...b.sentences); dias.push(...b.dialogues); } });
+    const allSens = Object.keys(ZH_LISTEN).reduce((a, u) => a.concat(ZH_LISTEN[u].sentences), []);
+    const sq = shuffleArr(sens).map(x => {
+      const others = (sens.length >= 4 ? sens : allSens).filter(y => y !== x);
+      return choice('Nghe câu và chọn nghĩa đúng', { big: '🔊', say: x.s, reveal: x.s + ' · ' + x.py, revealVi: x.vi }, uniqueOptions(x.vi, () => pick(others).vi, 4));
+    });
+    const dq = shuffleArr(dias).map(d => choice('Nghe hội thoại rồi trả lời câu hỏi', {
+      big: d.q, py: d.qpy, hidePy: true, say: d.lines.map(l => l[0]).join('') + d.q,
+      reveal: d.lines.map(l => l[0] + ' ' + l[1]).join(' — '), revealVi: d.vi,
+    }, [d.opts[d.a]].concat(d.opts.filter((o, k) => k !== d.a))));
+    const out = sq.concat(dq);
+    return n ? shuffleArr(out).slice(0, n) : out;
   }
   function shuffleArr(a) { return A.shuffle(a); }
   function startSkipTest(part) {
@@ -751,7 +860,8 @@
     const fb = $('zhChoiceFeedback');
     if (ok) { fb.textContent = pick(['Chính xác! 🎉', 'Giỏi lắm! 🌟', 'Đúng rồi! 👏']); fb.className = 'quiz-feedback ok'; }
     else { btn.classList.add('wrong'); fb.textContent = 'Chưa đúng — đáp án đúng được tô xanh.'; fb.className = 'quiz-feedback no'; }
-    if (st.reveal) $('zhChoiceReveal').innerHTML = colorPinyin(st.reveal);
+    // Chỉ tô màu thanh điệu phần chữ Hán + pinyin; nghĩa tiếng Việt để dòng riêng (tránh tô nhầm "có", "là"…).
+    if (st.reveal) $('zhChoiceReveal').innerHTML = colorPinyin(st.reveal) + (st.revealVi ? '<div class="zh-reveal-vi">' + esc(st.revealVi) + '</div>' : '');
     if (ok) setTimeout(() => { if (S && S.steps[S.i] === st) stepDone(true); }, 1000);
     else { $('zhChoiceNext').hidden = false; $('zhChoiceNext').onclick = () => stepDone(false); } // sai: để người học đọc lại rồi mới đi tiếp
   }
@@ -1037,12 +1147,16 @@
     const chars = [...new Set(pool.map(w => [...w.zh]).flat())].filter(c => HAS_HANZI.test(c));
     const tiles = [
       ['🎵', 'Luyện thanh điệu', 'Nghe và chọn đúng thanh', () => genSteps('tones', 10)],
+      ['🔤', 'Ghép âm pinyin', 'Nghe và chọn đúng pinyin', () => genSteps('syllables', 10)],
+      ['🎶', 'Nghe chọn vần', 'an hay ang? in hay ing?', () => genSteps('finals', 10)],
+      ['🎚️', 'Thanh điệu trong từ', 'Nghe từ, chọn đúng dấu', () => genSteps('pinyinWord', 10)],
       ['👂', 'Âm đầu dễ nhầm', 'b/p, zh/z, j/q/x…', () => genSteps('initials', 10)],
       ['🧩', 'Nối từ', 'Nối chữ với nghĩa', () => [0, 1, 2].map(() => ({ kind: 'match', pairs: shuffleArr(pool).slice(0, 4) }))],
       ['👀', 'Nhận mặt chữ', 'Nhìn chữ, chọn nghĩa', () => shuffleArr(pool).slice(0, 10).map(w => wordQuestion(w, pool, 0, true))],
       ['🎧', 'Nghe chọn chữ', 'Luyện nghe từ đã học', () => shuffleArr(pool).slice(0, 10).map(w => wordQuestion(w, pool, 1, false))],
       ['✍️', 'Tô chữ tự do', 'Chữ trong các từ đã học', () => shuffleArr(chars).slice(0, 6).map(c => ({ kind: 'write', char: c }))],
       ['⌨️', 'Gõ pinyin', 'Gõ rồi chọn đúng chữ', () => shuffleArr(pool).slice(0, 8).map(w => ({ kind: 'type', word: Object.assign({ key: pinyinKey(w.py) }, w) }))],
+      ['🎧', 'Luyện nghe câu', 'Nghe câu & hội thoại HSK 1', () => listenSteps(HAS_LISTEN ? Object.keys(ZH_LISTEN) : [], 10)],
       ['🗣️', 'Sắp xếp câu', 'Các câu trong khoá học', () => shuffleArr(allSentences()).slice(0, 6).map(s => ({ kind: 'order', s }))],
       ['🔢', 'Nghe số', 'Số từ 11 đến 99', () => genSteps('numbers', 10)],
       ['🕒', 'Nghe giờ', 'Mấy giờ rồi?', () => genSteps('time', 8)],
@@ -1113,7 +1227,7 @@
         const b = el('button', 'zh-pinyin-cell');
         b.appendChild(el('strong', null, f[0]));
         const s = el('small'); s.innerHTML = esc(f[1]) + ' ' + colorPinyin(f[2]); b.appendChild(s);
-        b.addEventListener('click', () => A.speak(f[1]));
+        b.addEventListener('click', () => { A.speak(f[1]); if (ZH_FINAL_NOTES[f[0]]) A.showToast(f[0] + ': ' + ZH_FINAL_NOTES[f[0]], '🎶'); });
         g2.appendChild(b);
       });
       body.appendChild(g2);
@@ -1205,7 +1319,7 @@
         groups.push({ id: u.id, part: part.id, title: 'Chặng ' + (ALL_UNITS.indexOf(u) + 1) + ' · ' + u.title, words: ws });
       }));
       groups.push({ id: 'more', part: 'more', title: 'Từ HSK 1 ngoài lộ trình', words: COURSE_WORDS.filter(w => !seen.has(w.zh)) });
-      const partChips = ZH_COURSE.map((p, i) => [p.id, 'Phần ' + (i + 1)]).concat(groups[groups.length - 1].words.length ? [['more', 'Khác']] : []);
+      const partChips = ZH_COURSE.map((p, i) => [p.id, 'Phần ' + (i + 1)]).filter(c => groups.some(g => g.part === c[0] && g.words.length)).concat(groups[groups.length - 1].words.length ? [['more', 'Khác']] : []);
       const draw = () => {
         const q = search.value.trim().toLowerCase(), qk = pinyinKey(q);
         libQuery = search.value;
@@ -1218,7 +1332,7 @@
         }
         listBox.appendChild(el('small', 'zh-lib-count', COURSE_WORDS.length + ' từ · ' + COURSE_WORDS.filter(w => srs[w.zh]).length + ' đã học (✓) · chạm để nghe'));
         // Chọn phần → chỉ hiện các chặng của phần đó (thu gọn được).
-        if (!libWordPart) libWordPart = ZH_COURSE[0].id;
+        if (!libWordPart || !partChips.some(c => c[0] === libWordPart)) libWordPart = partChips[0][0];
         const chips = el('div', 'zh-lib-tabs zh-lib-parts');
         partChips.forEach(c => {
           const b = el('button', 'zh-chip' + (libWordPart === c[0] ? ' is-active' : ''), c[1]);
