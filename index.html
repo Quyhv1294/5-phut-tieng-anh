@@ -59,6 +59,14 @@
     </nav>
   </div>
 
+  <!-- Dải mời cài app lên màn hình chính (app.js tự ẩn khi đã cài / đã đóng) -->
+  <div class="install-banner" id="installBanner" hidden>
+    <span class="install-banner-icon">📲</span>
+    <span class="install-banner-text"><strong>Cài app lên điện thoại</strong><small>Mở nhanh từ màn hình chính, học cả khi mất mạng</small></span>
+    <button class="install-banner-btn" id="installBannerBtn">Cài đặt</button>
+    <button class="install-banner-close" id="installBannerClose" aria-label="Đóng">✕</button>
+  </div>
+
   <!-- ============ HOME SCREEN ============ -->
   <section class="screen active" id="screen-home">
     <div class="class-switch" data-class-switch></div>
@@ -455,6 +463,11 @@
 
       <div class="settings-group-label">Hỗ trợ</div>
       <div class="settings-group">
+        <button class="settings-row" id="installSettingsBtn" hidden>
+          <span class="settings-icon">📲</span>
+          <span class="settings-label">Cài app lên màn hình chính</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
         <button class="settings-row" id="openFeedbackBtn">
           <span class="settings-icon">💬</span>
           <span class="settings-label">Gửi ý kiến cho chúng tôi</span>
@@ -1299,6 +1312,17 @@
     <p class="confirm-message">Bạn muốn học tiếng nào?</p>
     <div class="lang-options" id="langOptions"></div>
     <button class="ghost-btn lang-close-btn" id="langCloseBtn">Đóng</button>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="installOverlay" hidden>
+  <div class="confirm-card install-card">
+    <div class="zh-voice-emoji">📲</div>
+    <p class="confirm-message" id="installTitle">Cài app lên màn hình chính</p>
+    <div id="installSteps"></div>
+    <div class="confirm-actions">
+      <button class="confirm-ok-btn" id="installCloseBtn">Đã hiểu</button>
+    </div>
   </div>
 </div>
 

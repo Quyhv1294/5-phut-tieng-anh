@@ -522,6 +522,8 @@
     if (name !== 'quizparent') stopQuizParentTimer();
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
+    // Dải mời cài app chỉ hiện ở trang chủ (tab Học) — không chen vào lúc đang học bài / làm bài.
+    document.body.classList.toggle('on-home', name === 'home' || name === 'zh-home');
     window.scrollTo(0, 0);
 
     const isTopLevel = TOP_LEVEL_SCREENS.includes(name);
@@ -3585,14 +3587,15 @@
     window.speechSynthesis.onvoiceschanged = pickPreferredVoice;
   }
 
-  function speak(text) {
+  // opts.slow: đọc chậm hơn khoảng một nửa (nút "🐢 Đọc chậm" — nghe rõ từng âm, từng thanh điệu).
+  function speak(text, opts) {
     if (isMuted) return;
     try {
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = IS_ZH ? 'zh-CN' : 'en-US';
-      u.rate = IS_ZH ? 0.7 : SPEECH_RATE;
+      u.rate = (IS_ZH ? 0.7 : SPEECH_RATE) * (opts && opts.slow ? 0.6 : 1);
       u.pitch = 1;
       const voice = preferredVoice || pickPreferredVoice();
       if (voice) u.voice = voice;
@@ -6391,6 +6394,94 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
+
+  // ---------- CÀI APP LÊN MÀN HÌNH CHÍNH ----------
+  // Android / máy tính (Chrome, Edge): giữ lại sự kiện beforeinstallprompt → bấm "Cài đặt" là hiện hộp cài
+  // của hệ thống. iPhone (Safari) không có cách cài 1 chạm → mở hướng dẫn Chia sẻ › Thêm vào MH chính.
+  // Trình duyệt trong Zalo / Facebook / Messenger không cài được → hướng dẫn mở bằng Chrome / Safari.
+  // Dải mời dưới thanh đầu trang đóng được (14 ngày sau mới hiện lại); dòng trong Cài đặt luôn có khi chưa cài.
+  const INSTALL_DISMISS_KEY = '5phut_install_dismissed_v1';
+  let deferredInstall = null;
+  const isInstalledApp = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  function installPlatform() {
+    const ua = navigator.userAgent;
+    if (/FBAN|FBAV|FB_IAB|Instagram|Zalo|Line\/|Messenger|TikTok/i.test(ua)) return 'inapp';
+    if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
+    if (/Android/.test(ua)) return /SamsungBrowser/.test(ua) ? 'samsung' : 'android';
+    return 'desktop';
+  }
+  function renderInstallUi() {
+    const installed = isInstalledApp();
+    document.getElementById('installSettingsBtn').hidden = installed;
+    let dismissed = false;
+    try { dismissed = Date.now() - Number(localStorage.getItem(INSTALL_DISMISS_KEY) || 0) < 14 * 864e5; } catch (e) {}
+    // Máy tính chỉ mời khi trình duyệt thật sự cài được (đã nhận beforeinstallprompt).
+    document.getElementById('installBanner').hidden = installed || dismissed || (!deferredInstall && installPlatform() === 'desktop');
+  }
+  function openInstall() {
+    if (deferredInstall) {
+      const ev = deferredInstall;
+      deferredInstall = null; // mỗi sự kiện chỉ gọi prompt() được 1 lần
+      // Hộp cài của hệ thống không mở được (trình duyệt từ chối) → hiện hướng dẫn cài thủ công.
+      try {
+        const r = ev.prompt();
+        if (r && r.catch) r.catch(showInstallGuide);
+      } catch (e) { showInstallGuide(); return; }
+      ev.userChoice.then(c => { if (c && c.outcome === 'accepted') showToast('Đang cài app lên màn hình chính…', '📲'); renderInstallUi(); }).catch(() => {});
+      return;
+    }
+    showInstallGuide();
+  }
+  function showInstallGuide() {
+    const plat = installPlatform();
+    const guides = {
+      ios: ['Cài trên iPhone / iPad', [
+        'Mở trang này bằng <strong>Safari</strong>.',
+        'Bấm nút <strong>Chia sẻ</strong> (ô vuông có mũi tên lên ⬆️) ở thanh dưới cùng.',
+        'Vuốt danh sách lên, chọn <strong>"Thêm vào MH chính"</strong>.',
+        'Bấm <strong>Thêm</strong> ở góc trên bên phải. Biểu tượng chú cáo 🦊 sẽ có trên màn hình chính.',
+      ]],
+      android: ['Cài trên Android (Chrome)', [
+        'Bấm nút <strong>⋮</strong> (3 chấm) ở góc trên bên phải.',
+        '<strong>Vuốt menu lên</strong> để xem tiếp, chọn <strong>"Thêm vào màn hình chính"</strong> hoặc <strong>"Cài đặt ứng dụng"</strong>.',
+        'Bấm <strong>Cài đặt</strong> (hoặc <strong>Thêm</strong>). Biểu tượng chú cáo 🦊 sẽ có trên màn hình chính.',
+        'Không thấy mục đó? Hãy chắc là bạn không mở ở thẻ ẩn danh.',
+      ]],
+      samsung: ['Cài trên Samsung Internet', [
+        'Bấm nút <strong>≡</strong> (3 gạch) ở thanh dưới cùng.',
+        'Chọn <strong>"Thêm trang vào"</strong> › <strong>"Màn hình chính"</strong>.',
+        'Bấm <strong>Thêm</strong>.',
+      ]],
+      inapp: ['Mở bằng trình duyệt để cài', [
+        'Bạn đang mở trang trong Zalo / Facebook / Messenger — các ứng dụng này <strong>không cho cài</strong>.',
+        'Bấm nút <strong>⋯</strong> hoặc <strong>⋮</strong> ở góc trên, chọn <strong>"Mở bằng trình duyệt"</strong> (Chrome / Safari).',
+        'Trong trình duyệt, bấm lại nút <strong>📲 Cài đặt</strong> trong app.',
+      ]],
+      desktop: ['Cài trên máy tính', [
+        'Dùng <strong>Chrome</strong> hoặc <strong>Edge</strong>.',
+        'Bấm biểu tượng <strong>cài đặt</strong> (màn hình có mũi tên ⤓) ở cuối thanh địa chỉ.',
+        'Hoặc menu <strong>⋮</strong> › <strong>"Truyền, lưu và chia sẻ"</strong> › <strong>"Cài đặt trang dưới dạng ứng dụng"</strong>.',
+      ]],
+    };
+    const g = guides[plat];
+    document.getElementById('installTitle').textContent = g[0];
+    document.getElementById('installSteps').innerHTML = '<ol class="install-steps">' + g[1].map(x => '<li>' + x + '</li>').join('') + '</ol>';
+    document.getElementById('installOverlay').hidden = false;
+  }
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; renderInstallUi(); });
+  window.addEventListener('appinstalled', () => {
+    deferredInstall = null;
+    renderInstallUi();
+    showToast('Đã cài app! Mở từ biểu tượng chú cáo trên màn hình chính nhé.', '🎉');
+  });
+  document.getElementById('installBannerBtn').addEventListener('click', openInstall);
+  document.getElementById('installSettingsBtn').addEventListener('click', openInstall);
+  document.getElementById('installBannerClose').addEventListener('click', () => {
+    try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch (e) {}
+    renderInstallUi();
+  });
+  document.getElementById('installCloseBtn').addEventListener('click', () => { document.getElementById('installOverlay').hidden = true; });
+  renderInstallUi();
 
   // Các hàm dùng chung cho module chạy riêng (zh-course.js — khoá học Tiếng Trung).
   // registerScreen(name, el, tabId): tabId = nút tab của màn (màn đó thành màn chính, thanh tab vẫn hiện).

@@ -208,14 +208,17 @@
       '<div class="zh-example" id="zhCardEx" hidden></div>' +
     '</div>' +
     '<div class="zh-btn-row"><button class="speak-btn" id="zhCardSpeak">🔊 Nghe</button>' +
+      '<button class="speak-btn zh-slow-btn" id="zhCardSlow" aria-label="Đọc chậm">🐢 Đọc chậm</button>' +
       '<button class="speak-btn" id="zhCardExSpeak" hidden>🔊 Nghe câu</button>' +
+      '<button class="speak-btn zh-slow-btn" id="zhCardExSlow" hidden aria-label="Đọc chậm câu">🐢 Câu chậm</button>' +
       '<button class="speak-btn" id="zhCardReplayHw" hidden>✍️ Xem lại nét</button></div>' +
     '<div class="nav-row"><button class="nav-btn" id="zhCardPrev">← Trước</button><button class="nav-btn primary" id="zhCardNext">Tiếp →</button></div></div>');
   makeScreen('choice',
     topbar('zhChoiceBack', 'zhChoiceFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt" id="zhChoicePrompt"></div>' +
     '<div class="zh-big" id="zhChoiceBig"></div><button class="zh-py zh-py-btn" id="zhChoicePy"></button>' +
-    '<button class="speak-btn" id="zhChoiceSpeak" hidden>🔊 Nghe lại</button>' +
+    '<div class="zh-btn-row"><button class="speak-btn" id="zhChoiceSpeak" hidden>🔊 Nghe lại</button>' +
+    '<button class="speak-btn zh-slow-btn" id="zhChoiceSlow" hidden aria-label="Nghe chậm">🐢 Nghe chậm</button></div>' +
     '<div class="quiz-options zh-quiz-options" id="zhChoiceOptions"></div>' +
     '<div class="quiz-feedback" id="zhChoiceFeedback"></div><div class="zh-reveal" id="zhChoiceReveal"></div>' +
     '<button class="nav-btn primary zh-next-btn" id="zhChoiceNext" hidden>Tiếp →</button></div>');
@@ -795,8 +798,10 @@
     ex.hidden = !it.ex;
     if (it.ex) ex.innerHTML = '<div class="zh-ex-zh">' + esc(it.ex) + '</div><div class="zh-ex-py">' + colorPinyin(it.exPy || '') + '</div><div class="zh-ex-vi">' + esc(it.exVi || '') + '</div>';
     $('zhCardExSpeak').hidden = !it.ex;
+    $('zhCardExSlow').hidden = !it.ex;
     const say = it.say || (HAS_HANZI.test(it.big) ? it.big : null);
     $('zhCardSpeak').hidden = !say;
+    $('zhCardSlow').hidden = !say;
     const prevIsCard = S.i > 0 && S.steps[S.i - 1].kind === 'card' && !S.steps[S.i - 1].warmup;
     $('zhCardPrev').disabled = !prevIsCard;
     $('zhCardNext').textContent = S.steps[S.i + 1] ? 'Tiếp →' : 'Xong ✓';
@@ -815,6 +820,9 @@
   function playCardHw(it) { if (!cardWriter) return; cardWriter.hideCharacter(); if (it.hw.stroke !== undefined) cardWriter.animateStroke(it.hw.stroke); else cardWriter.animateCharacter(); }
   $('zhCardSpeak').addEventListener('click', () => { const it = S && S.steps[S.i].item; if (it) A.speak(it.say || it.big); });
   $('zhCardExSpeak').addEventListener('click', () => { const it = S && S.steps[S.i].item; if (it && it.ex) A.speak(it.ex); });
+  // 🐢 Đọc chậm: cùng nội dung, tốc độ khoảng một nửa — nghe rõ từng âm, từng thanh điệu.
+  $('zhCardSlow').addEventListener('click', () => { const it = S && S.steps[S.i].item; if (it) A.speak(it.say || it.big, { slow: true }); });
+  $('zhCardExSlow').addEventListener('click', () => { const it = S && S.steps[S.i].item; if (it && it.ex) A.speak(it.ex, { slow: true }); });
   $('zhCardReplayHw').addEventListener('click', () => { const it = S && S.steps[S.i].item; if (it && it.hw) playCardHw(it); });
   $('zhCardPrev').addEventListener('click', () => { if (S && S.i > 0) { S.i--; nextStep(); } });
   $('zhCardNext').addEventListener('click', () => { if (S) stepDone(true); });
@@ -833,6 +841,7 @@
     py.innerHTML = (st.py ? colorPinyin(st.py) : '') + (st.sub ? ' <span class="zh-sub">· ' + esc(st.sub) + '</span>' : '');
     py.onclick = () => py.classList.remove('is-hidden');
     $('zhChoiceSpeak').hidden = !st.say;
+    $('zhChoiceSlow').hidden = !st.say;
     $('zhChoiceReveal').innerHTML = '';
     const fb = $('zhChoiceFeedback'); fb.textContent = ''; fb.className = 'quiz-feedback';
     $('zhChoiceNext').hidden = true;
@@ -851,6 +860,7 @@
     if (st.say) A.speak(st.say);
   };
   $('zhChoiceSpeak').addEventListener('click', () => { const st = S && S.steps[S.i]; if (st && st.say) A.speak(st.say); });
+  $('zhChoiceSlow').addEventListener('click', () => { const st = S && S.steps[S.i]; if (st && st.say) A.speak(st.say, { slow: true }); });
   function answerChoice(btn, ok) {
     if (chLocked) return;
     chLocked = true;
