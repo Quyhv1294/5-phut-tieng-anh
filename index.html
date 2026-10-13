@@ -94,8 +94,8 @@
     </button>
 
     <div class="reminder-banner" id="reminderBanner" hidden>
-      <span class="reminder-emoji">📚</span>
-      <span>Hôm nay bé chưa học bài nào — chọn 1 chủ đề bên dưới để bắt đầu nhé!</span>
+      <span class="reminder-emoji" id="reminderEmoji">📚</span>
+      <span id="reminderText">Hôm nay bé chưa học bài nào — chọn 1 chủ đề bên dưới để bắt đầu nhé!</span>
     </div>
 
     <div class="streak-banner" id="streakBanner" hidden>
@@ -421,9 +421,20 @@
           <span class="settings-value" id="themeValue">Theo máy</span>
           <span class="settings-chevron" aria-hidden="true">›</span>
         </button>
+        <button class="settings-row" id="fontSizeBtn">
+          <span class="settings-icon">🔠</span>
+          <span class="settings-label">Cỡ chữ</span>
+          <span class="settings-value" id="fontSizeValue">Vừa</span>
+          <span class="settings-chevron" aria-hidden="true">›</span>
+        </button>
         <button class="settings-row" id="muteBtn" role="switch" aria-checked="true">
           <span class="settings-icon" id="muteIcon">🔊</span>
           <span class="settings-label">Âm thanh đọc</span>
+          <span class="settings-switch" aria-hidden="true"></span>
+        </button>
+        <button class="settings-row" id="sfxBtn" role="switch" aria-checked="true">
+          <span class="settings-icon" id="sfxIcon">🔔</span>
+          <span class="settings-label">Âm hiệu ứng &amp; rung</span>
           <span class="settings-switch" aria-hidden="true"></span>
         </button>
       </div>
@@ -1234,7 +1245,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">⚙️</span>
-        <span><strong>Cài đặt</strong> — đổi ngôn ngữ học (Tiếng Anh / Tiếng Trung, tiến độ mỗi ngôn ngữ lưu riêng), giao diện sáng/tối, bật/tắt âm thanh, gửi góp ý hoặc xem lại hướng dẫn này. Tiến độ được lưu theo email đã xác thực, đổi máy vẫn học tiếp được.</span>
+        <span><strong>Cài đặt</strong> — đổi ngôn ngữ học (Tiếng Anh / Tiếng Trung, tiến độ mỗi ngôn ngữ lưu riêng), giao diện sáng/tối, cỡ chữ (Vừa / Lớn / Rất lớn), bật/tắt giọng đọc và âm hiệu ứng (tiếng đúng/sai, rung), gửi góp ý hoặc xem lại hướng dẫn này. Tiến độ được lưu theo email đã xác thực, đổi máy vẫn học tiếp được.</span>
       </div>
     </div>
     <div class="onboarding-steps en-only">
@@ -1276,7 +1287,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🌗</span>
-        <span><strong>Giao diện sáng/tối & Âm thanh</strong> — cũng trong màn Cài đặt (⚙️ ở góc trên), có nút đổi giữa giao diện sáng/tối/theo máy và nút bật/tắt âm thanh đọc.</span>
+        <span><strong>Giao diện, cỡ chữ & Âm thanh</strong> — cũng trong màn Cài đặt (⚙️ ở góc trên): đổi giao diện sáng/tối/theo máy, chọn cỡ chữ Vừa / Lớn / Rất lớn, bật/tắt giọng đọc và bật/tắt âm hiệu ứng (tiếng bấm nút, tiếng đúng/sai, nhạc hoàn thành bài, rung).</span>
       </div>
     </div>
     <button class="cta-btn" id="onboardingStartBtn">Bắt đầu học thôi!</button>

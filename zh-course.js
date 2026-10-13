@@ -322,6 +322,12 @@
     });
     goalLine.appendChild(chips);
     today.appendChild(goalLine);
+    // Hôm qua có học mà hôm nay chưa → nhắc giữ chuỗi ngày liên tiếp.
+    const streak = A.getProgress().streak || {};
+    const yd = new Date(); yd.setDate(yd.getDate() - 1);
+    if (streak.count >= 1 && streak.lastDate === yd.toISOString().slice(0, 10)) {
+      today.appendChild(el('div', 'zh-streak-warn', '🔥 Hôm nay bạn chưa học — học 1 bài để giữ chuỗi ' + streak.count + ' ngày liên tiếp.'));
+    }
     const due = dueWords().length;
     const rv = el('button', 'zh-today-review', due ? '🔁 ' + due + ' từ cần ôn hôm nay →' : '🔁 Chưa có từ nào cần ôn hôm nay');
     rv.disabled = !due;
@@ -987,8 +993,8 @@
     document.querySelectorAll('#zhChoiceOptions .quiz-opt').forEach(b => { b.disabled = true; if (b.dataset.correct) b.classList.add('correct'); });
     $('zhChoicePy').classList.remove('is-hidden');
     const fb = $('zhChoiceFeedback');
-    if (ok) { fb.textContent = pick(['Chính xác! 🎉', 'Giỏi lắm! 🌟', 'Đúng rồi! 👏']); fb.className = 'quiz-feedback ok'; }
-    else { btn.classList.add('wrong'); fb.textContent = 'Chưa đúng — đáp án đúng được tô xanh.'; fb.className = 'quiz-feedback no'; }
+    if (ok) { fb.textContent = pick(['Chính xác! 🎉', 'Giỏi lắm! 🌟', 'Đúng rồi! 👏']); fb.className = 'quiz-feedback ok'; A.sfx('correct'); }
+    else { btn.classList.add('wrong'); fb.textContent = 'Chưa đúng — đáp án đúng được tô xanh.'; fb.className = 'quiz-feedback no'; A.sfx('wrong'); }
     // Chỉ tô màu thanh điệu phần chữ Hán + pinyin; nghĩa tiếng Việt để dòng riêng (tránh tô nhầm "có", "là"…).
     if (st.reveal) $('zhChoiceReveal').innerHTML = colorPinyin(st.reveal) + (st.revealVi ? '<div class="zh-reveal-vi">' + esc(st.revealVi) + '</div>' : '');
     $('zhChoiceCtx').classList.add('is-answered'); // hiện bản dịch đoạn văn / câu vừa nghe
@@ -1020,7 +1026,7 @@
         if (!sel || b.disabled) return;
         if (sel.w.zh === w.zh) {
           sel.b.disabled = b.disabled = true;
-          sel.b.classList.remove('is-selected'); sel.b.classList.add('is-matched'); b.classList.add('is-matched');
+          A.sfx('pair'); sel.b.classList.remove('is-selected'); sel.b.classList.add('is-matched'); b.classList.add('is-matched');
           srsRecord(w, true);
           sel = null; found++;
           if (found === st.pairs.length) {
@@ -1029,7 +1035,7 @@
           }
         } else {
           mistakes++;
-          b.classList.add('is-wrong'); setTimeout(() => b.classList.remove('is-wrong'), 500);
+          b.classList.add('is-wrong'); setTimeout(() => b.classList.remove('is-wrong'), 500); A.sfx('wrong');
         }
       });
       colR.appendChild(b);
@@ -1076,6 +1082,7 @@
     const full = s.tokens.join('') + (s.end || '。');
     const fb = $('zhOrderFeedback');
     fb.textContent = ok ? 'Chính xác! 🎉' : 'Chưa đúng — câu đúng là:'; fb.className = 'quiz-feedback ' + (ok ? 'ok' : 'no');
+    A.sfx(ok ? 'correct' : 'wrong');
     $('zhOrderAnswer').classList.add(ok ? 'is-correct' : 'is-wrong');
     $('zhOrderReveal').innerHTML = esc(full) + '<br>' + colorPinyin(s.py);
     A.speak(full);
@@ -1142,6 +1149,7 @@
       onComplete: sum => {
         if (wr.st !== st) return;
         const ok = sum.totalMistakes <= 3;
+        if (ok) A.sfx('correct');
         $('zhWriteHint').textContent = ok ? '🎉 Viết đúng rồi! (' + sum.totalMistakes + ' lỗi)' : '👍 Xong (' + sum.totalMistakes + ' lỗi) — bấm "Viết lại" để luyện thêm.';
         const nb = $('zhWriteNext');
         nb.disabled = false;
@@ -1194,7 +1202,7 @@
     if (m.zh === w.zh) {
       ty.locked = true;
       btn.classList.add('correct');
-      fb.textContent = ty.tries === 0 ? 'Chính xác! 🎉' : 'Đúng rồi!'; fb.className = 'quiz-feedback ok';
+      fb.textContent = ty.tries === 0 ? 'Chính xác! 🎉' : 'Đúng rồi!'; fb.className = 'quiz-feedback ok'; A.sfx('correct');
       $('zhTypeReveal').innerHTML = esc(w.zh) + ' · ' + colorPinyin(w.py);
       $('zhTypeInput').disabled = true;
       A.speak(w.zh);
@@ -1203,7 +1211,7 @@
     } else {
       ty.tries++;
       btn.classList.add('wrong');
-      fb.textContent = 'Chưa đúng chữ — thử chữ khác hoặc xem gợi ý.'; fb.className = 'quiz-feedback no';
+      fb.textContent = 'Chưa đúng chữ — thử chữ khác hoặc xem gợi ý.'; fb.className = 'quiz-feedback no'; A.sfx('wrong');
     }
   }
   $('zhTypeHint').addEventListener('click', () => { if (!ty) return; ty.tries++; $('zhTypeReveal').innerHTML = 'Gợi ý: ' + colorPinyin(ty.st.word.py) + ' → gõ "' + ty.st.word.key + '"'; });
@@ -1738,7 +1746,7 @@
     if (stars) A.addStars(stars);
     A.updateStreakOnComplete(); // tự lưu tiến độ
     A.renderTotalStars();
-    A.celebrate(t === 200 || firstPass, oldLifetime);
+    A.celebrate(t === 200 || firstPass, oldLifetime, null, t < EXAM_PASS);
     renderExamResult({ l, r, t, used, ok, stars });
   }
 

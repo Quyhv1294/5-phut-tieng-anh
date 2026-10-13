@@ -366,9 +366,191 @@
   // addStars() để phát sao thưởng khi bé vừa hoàn thành đủ nhiệm vụ, nhưng không lặp vô hạn vì
   // bumpDailyMission luôn đánh dấu "đã phát thưởng hôm nay" TRƯỚC khi gọi addStars cho phần thưởng đó).
   function addStars(amount) {
+    if (amount > 0) { sfx('star'); flyStars(amount); }
     progress.stars += amount;
     progress.lifetimeStars += amount;
     bumpDailyMission('starsEarned', amount);
+  }
+
+  // ---------- ÂM HIỆU ỨNG & RUNG ----------
+  // Âm bấm nút, đúng / sai, ghép đúng cặp, nhận sao, hoàn thành bài, huy hiệu — tạo bằng Web Audio
+  // (không cần file âm thanh, dùng được khi mất mạng). Công tắc riêng "Âm hiệu ứng" trong Cài đặt,
+  // độc lập với giọng đọc (muteBtn). Tiếng Trung (người lớn): không có tiếng bấm nút, các âm khác nhỏ
+  // hơn. Rung chỉ có trên Android — iPhone không cho trang web điều khiển rung.
+  const SFX_KEY = '5phut_sfx_v1';
+  let sfxOn = true;
+  try { sfxOn = localStorage.getItem(SFX_KEY) !== '0'; } catch (e) {}
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { audioCtx = new AC(); } catch (e) { return null; }
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    return audioCtx;
+  }
+  // 1 nốt: tần số freq (trượt tới freqEnd nếu có), bắt đầu sau `at` giây, dài `dur` giây.
+  function sfxTone(ctx, out, n) {
+    const t0 = ctx.currentTime + (n.at || 0), dur = n.dur || 0.12;
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = n.type || 'sine';
+    osc.frequency.setValueAtTime(n.freq, t0);
+    if (n.freqEnd) osc.frequency.exponentialRampToValueAtTime(n.freqEnd, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(n.vol || 1, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g);
+    g.connect(out);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+  const SFX_SOUNDS = {
+    tap: [{ freq: 1100, freqEnd: 700, dur: 0.04, vol: 0.35 }],
+    correct: [{ freq: 880, dur: 0.11, type: 'triangle' }, { freq: 1319, at: 0.09, dur: 0.22, type: 'triangle' }],
+    wrong: [{ freq: 240, freqEnd: 150, dur: 0.22, vol: 0.9 }],
+    pair: [{ freq: 660, freqEnd: 990, dur: 0.1, type: 'triangle' }],
+    star: [{ freq: 1568, dur: 0.08, type: 'triangle', vol: 0.6 }, { freq: 2093, at: 0.07, dur: 0.08, type: 'triangle', vol: 0.6 },
+      { freq: 2637, at: 0.14, dur: 0.18, type: 'triangle', vol: 0.6 }],
+    encourage: [{ freq: 523, dur: 0.16, type: 'triangle', vol: 0.7 }, { freq: 659, at: 0.14, dur: 0.3, type: 'triangle', vol: 0.7 }],
+    complete: [{ freq: 523, dur: 0.12, type: 'triangle' }, { freq: 659, at: 0.1, dur: 0.12, type: 'triangle' },
+      { freq: 784, at: 0.2, dur: 0.12, type: 'triangle' }, { freq: 1047, at: 0.3, dur: 0.4, type: 'triangle' }],
+    badge: [{ freq: 784, dur: 0.1, type: 'triangle' }, { freq: 988, at: 0.08, dur: 0.1, type: 'triangle' },
+      { freq: 1175, at: 0.16, dur: 0.1, type: 'triangle' }, { freq: 1568, at: 0.24, dur: 0.14, type: 'triangle' },
+      { freq: 1047, at: 0.38, dur: 0.55, type: 'triangle', vol: 0.6 }, { freq: 1319, at: 0.38, dur: 0.55, type: 'triangle', vol: 0.5 },
+      { freq: 1568, at: 0.38, dur: 0.55, type: 'triangle', vol: 0.5 }],
+  };
+  const SFX_VIBRATE = { correct: 25, pair: 20, wrong: [40, 60, 40], complete: [30, 50, 30], badge: [30, 50, 30, 50, 60] };
+  let lastSfxAt = 0;
+  let pendingStarSfx = null;
+  function playSfx(name) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const out = ctx.createGain();
+    out.gain.value = IS_ZH ? 0.09 : 0.15; // nhỏ hơn giọng đọc
+    out.connect(ctx.destination);
+    SFX_SOUNDS[name].forEach(n => sfxTone(ctx, out, n));
+    if (name !== 'tap') lastSfxAt = Date.now();
+  }
+  function sfx(name) {
+    if (name === 'correct') noteCombo(true);
+    else if (name === 'wrong') noteCombo(false);
+    if (!sfxOn || !SFX_SOUNDS[name]) return;
+    if (name === 'tap' && (IS_ZH || ('speechSynthesis' in window && window.speechSynthesis.speaking))) return;
+    // Sao thường được cộng ngay trước khi celebrate() phát âm hoàn thành / huy hiệu, hoặc ngay sau âm
+    // "đúng" — chờ 1 nhịp để nhường các âm đó, không phát chồng lên nhau.
+    if (name === 'star') {
+      clearTimeout(pendingStarSfx);
+      pendingStarSfx = setTimeout(() => { pendingStarSfx = null; if (Date.now() - lastSfxAt > 500) playSfx('star'); }, 80);
+      return;
+    }
+    if (name === 'complete' || name === 'badge' || name === 'encourage') { clearTimeout(pendingStarSfx); pendingStarSfx = null; }
+    playSfx(name);
+    const v = SFX_VIBRATE[name];
+    if (v && navigator.vibrate) { try { navigator.vibrate(v); } catch (e) {} }
+  }
+  // Tiếng "tách" khi bấm nút / thẻ (trừ ô đáp án — ô đáp án đã có âm đúng / sai).
+  document.addEventListener('pointerdown', e => {
+    const t = e.target.closest && e.target.closest('button, a[href], [role="button"], .topic-card');
+    if (!t || t.disabled || t.closest('.quiz-opt, [data-no-tap-sfx]')) return;
+    sfx('tap');
+  }, { capture: true, passive: true });
+  // iPhone chỉ cho bật âm thanh trong 1 lần chạm thật (click) — mở sẵn AudioContext ở lần chạm đầu.
+  document.addEventListener('click', () => { if (sfxOn && (!audioCtx || audioCtx.state !== 'running')) getAudioCtx(); }, { capture: true, passive: true });
+
+  function applySfxUI() {
+    const btn = document.getElementById('sfxBtn');
+    document.getElementById('sfxIcon').textContent = sfxOn ? '🔔' : '🔕';
+    btn.classList.toggle('is-muted', !sfxOn);
+    btn.setAttribute('aria-checked', sfxOn ? 'true' : 'false');
+  }
+  document.getElementById('sfxBtn').addEventListener('click', () => {
+    sfxOn = !sfxOn;
+    try { localStorage.setItem(SFX_KEY, sfxOn ? '1' : '0'); } catch (e) {}
+    applySfxUI();
+    if (sfxOn) playSfx('correct'); // nghe thử ngay khi bật (không tính vào chuỗi đúng)
+  });
+  applySfxUI();
+
+  // ---------- HIỆU ỨNG: CHUỖI ĐÚNG LIÊN TIẾP + SAO BAY ----------
+  // Chuỗi đúng: trả lời đúng liền 3, 5, 10 câu (rồi cứ mỗi 5 câu) hiện "🔥 … câu đúng liền!"; sai 1 câu hoặc
+  // về trang chủ thì đếm lại. Sao bay (chỉ tiếng Anh — giao diện trẻ em): mỗi lần nhận sao có vài ngôi sao
+  // bay từ giữa màn hình lên ô ⭐ trên đầu trang. Máy bật "Giảm chuyển động" thì bỏ hiệu ứng bay / nảy.
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // Cỡ chữ Lớn / Rất lớn phóng to cả trang bằng CSS zoom (xem FONT SIZE) — toạ độ đo bằng
+  // getBoundingClientRect phải chia cho hệ số này trước khi gán vào left/top của phần tử trong trang.
+  const pageZoom = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+  let comboCount = 0;
+  function noteCombo(ok) {
+    if (!ok) { comboCount = 0; foxCheer('wrong'); return; }
+    comboCount++;
+    if (comboCount === 3 || comboCount === 5 || (comboCount >= 10 && comboCount % 5 === 0)) showComboToast(comboCount);
+    else foxCheer('correct');
+  }
+  // Bạn cáo ló ra góc dưới màn hình nói 1 câu: luôn động viên khi sai, thỉnh thoảng (~1/3) khen khi đúng.
+  // Cách nhau ít nhất 4 giây cho đỡ rối. Chỉ có ở tiếng Anh (giao diện tiếng Trung cho người lớn không dùng linh vật).
+  const FOX_LINES = {
+    correct: ['Giỏi quá!', 'Tuyệt vời!', 'Bé làm tốt lắm!', 'Đúng rồi đó!', 'Hay quá đi!'],
+    wrong: ['Không sao, thử lại nhé!', 'Sắp đúng rồi!', 'Cố lên bé ơi!', 'Sai một chút thôi mà!', 'Lần sau sẽ đúng!'],
+  };
+  let foxCheerAt = 0;
+  function foxCheer(kind) {
+    if (IS_ZH || screens.quizparent.classList.contains('active')) return;
+    const now = Date.now();
+    if (now - foxCheerAt < 4000 || (kind === 'correct' && Math.random() > 0.35)) return;
+    foxCheerAt = now;
+    document.querySelectorAll('.fox-cheer').forEach(x => x.remove());
+    const f = document.createElement('div');
+    f.className = 'fox-cheer' + (kind === 'wrong' ? ' is-wrong' : '');
+    f.setAttribute('aria-hidden', 'true');
+    const img = document.createElement('img');
+    img.src = 'assets/mascot-fox.png';
+    img.alt = '';
+    const bubble = document.createElement('span');
+    bubble.className = 'fox-bubble';
+    const lines = FOX_LINES[kind];
+    bubble.textContent = lines[Math.floor(Math.random() * lines.length)];
+    f.append(img, bubble);
+    document.body.appendChild(f);
+    requestAnimationFrame(() => f.classList.add('is-visible'));
+    setTimeout(() => { f.classList.remove('is-visible'); setTimeout(() => f.remove(), 350); }, 1900);
+  }
+  function showComboToast(n) {
+    document.querySelectorAll('.combo-toast').forEach(t => t.remove());
+    const t = document.createElement('div');
+    t.className = 'combo-toast';
+    t.setAttribute('role', 'status');
+    t.textContent = '🔥 ' + n + (IS_ZH ? ' câu đúng liên tiếp!' : ' câu đúng liền! Giỏi quá!');
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('is-visible'));
+    setTimeout(() => { t.classList.remove('is-visible'); setTimeout(() => t.remove(), 300); }, 1400);
+  }
+  function flyStars(amount) {
+    if (IS_ZH || amount <= 0 || reduceMotion()) return;
+    const pill = document.querySelector('.stars-pill');
+    if (!pill || !pill.offsetParent || !document.body.animate) return;
+    const z = pageZoom(), r = pill.getBoundingClientRect();
+    const to = { left: r.left / z, top: r.top / z, height: r.height / z };
+    const n = Math.min(amount, 5);
+    for (let i = 0; i < n; i++) {
+      const star = document.createElement('div');
+      star.className = 'fly-star';
+      star.textContent = '⭐';
+      const x0 = window.innerWidth / z / 2 + (Math.random() * 80 - 40), y0 = window.innerHeight / z * 0.55;
+      star.style.left = x0 + 'px';
+      star.style.top = y0 + 'px';
+      document.body.appendChild(star);
+      const dx = to.left + 18 - x0, dy = to.top + to.height / 2 - y0;
+      const anim = star.animate([
+        { transform: 'translate(-50%, -50%) scale(0.6)', opacity: 0 },
+        { transform: 'translate(-50%, -50%) scale(1.2)', opacity: 1, offset: 0.2 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) scale(0.5)', opacity: 0.9 },
+      ], { duration: 750, delay: i * 90, easing: 'cubic-bezier(.45,0,.75,1)', fill: 'forwards' });
+      anim.onfinish = () => {
+        star.remove();
+        pill.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 220 });
+      };
+    }
   }
 
   // ---------- GHI NHỚ TỪ VỰNG (lặp lại ngắt quãng — spaced repetition) ----------
@@ -523,6 +705,7 @@
     screens[name].classList.add('active');
     // Dải mời cài app chỉ hiện ở trang chủ (tab Học) — không chen vào lúc đang học bài / làm bài.
     document.body.classList.toggle('on-home', name === 'home' || name === 'zh-home');
+    if (name === 'home' || name === 'zh-home') comboCount = 0;
     window.scrollTo(0, 0);
 
     const isTopLevel = TOP_LEVEL_SCREENS.includes(name);
@@ -810,6 +993,7 @@
 
   // ---------- CONFETTI (hiệu ứng ăn mừng, không cần thư viện ngoài) ----------
   function launchConfetti() {
+    if (reduceMotion()) return;
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'position:fixed;inset:0;z-index:200;pointer-events:none;width:100%;height:100%;';
     canvas.width = window.innerWidth;
@@ -935,10 +1119,12 @@
   // Gọi sau khi bé hoàn thành 1 lượt học/ôn tập: mở khoá huy hiệu (nếu có) + hiệu ứng ăn mừng.
   // oldLifetimeStars phải chụp lại TRƯỚC khi addStars() chạy ở nơi gọi, vì lifetimeStars không bao
   // giờ giảm (khác progress.stars có thể bị trừ khi mua đồ) nên không thể suy ra số cũ từ số hiện tại.
-  function celebrate(isPerfect, oldLifetimeStars, newPieceTopic) {
+  // failed: bài có ngưỡng đạt (chủ đề tiếng Anh, thi thử HSK 1) mà chưa đạt → âm động viên nhẹ thay cho nhạc mừng.
+  function celebrate(isPerfect, oldLifetimeStars, newPieceTopic, failed) {
     const newBadges = checkNewBadges();
     const levelUp = checkLevelUp(oldLifetimeStars);
     if (isPerfect || newBadges.length || levelUp || newPieceTopic) launchConfetti();
+    sfx(newBadges.length || levelUp ? 'badge' : failed ? 'encourage' : 'complete');
     showRewardsSummaryToast(newBadges, levelUp, newPieceTopic);
     renderTotalStars(); // huy hiệu chuỗi ngày có thể vừa cộng thêm sao thưởng, cập nhật lại topbar cho khớp
   }
@@ -1064,6 +1250,14 @@
 
     const reminderBanner = document.getElementById('reminderBanner');
     reminderBanner.hidden = !(progress.streak.lastDate && !studiedToday);
+    // Hôm qua có học (đang có chuỗi ngày) mà hôm nay chưa → nhắc giữ chuỗi thay cho câu nhắc chung.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const streakAtRisk = !studiedToday && progress.streak.count >= 1 && progress.streak.lastDate === toDateStr(yesterday);
+    document.getElementById('reminderEmoji').textContent = streakAtRisk ? '🔥' : '📚';
+    document.getElementById('reminderText').textContent = streakAtRisk
+      ? 'Hôm nay bé chưa học — học 1 bài để giữ chuỗi ' + progress.streak.count + ' ngày liên tiếp nhé!'
+      : 'Hôm nay bé chưa học bài nào — chọn 1 chủ đề bên dưới để bắt đầu nhé!';
 
     const streakBanner = document.getElementById('streakBanner');
     if (studiedToday && progress.streak.count > 1) {
@@ -1306,26 +1500,28 @@
     piece.addEventListener('pointerdown', e => {
       e.preventDefault();
       const rect = piece.getBoundingClientRect();
+      const z = pageZoom(); // cỡ chữ Lớn / Rất lớn: toạ độ màn hình ÷ z mới ra toạ độ left/top trong trang
       puzzleDragState = {
         topicId: piece.dataset.topicId,
         el: piece,
         offsetX: e.clientX - rect.left,
         offsetY: e.clientY - rect.top,
+        z,
       };
       piece.setPointerCapture(e.pointerId);
       piece.classList.add('is-dragging');
       document.body.appendChild(piece);
       piece.style.position = 'fixed';
-      piece.style.width = rect.width + 'px';
-      piece.style.height = rect.height + 'px';
-      piece.style.left = rect.left + 'px';
-      piece.style.top = rect.top + 'px';
+      piece.style.width = rect.width / z + 'px';
+      piece.style.height = rect.height / z + 'px';
+      piece.style.left = rect.left / z + 'px';
+      piece.style.top = rect.top / z + 'px';
       piece.style.zIndex = 500;
     });
     piece.addEventListener('pointermove', e => {
       if (!puzzleDragState || puzzleDragState.el !== piece) return;
-      piece.style.left = (e.clientX - puzzleDragState.offsetX) + 'px';
-      piece.style.top = (e.clientY - puzzleDragState.offsetY) + 'px';
+      piece.style.left = (e.clientX - puzzleDragState.offsetX) / puzzleDragState.z + 'px';
+      piece.style.top = (e.clientY - puzzleDragState.offsetY) / puzzleDragState.z + 'px';
     });
     piece.addEventListener('pointerup', e => finishPuzzleDrag(piece, e.clientX, e.clientY));
     piece.addEventListener('pointercancel', () => finishPuzzleDrag(piece, null, null));
@@ -2475,7 +2671,78 @@
   document.getElementById('onboardingStartBtn').addEventListener('click', () => {
     try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) {}
     hideOnboarding();
+    queueCoachTour();
   });
+
+  // ---------- HƯỚNG DẪN CHỈ TAY (sau màn chào) ----------
+  // Đóng màn chào (onboarding) xong thì lần lượt khoanh sáng từng khu vực chính kèm 1 câu giải thích.
+  // Chỉ chạy khi đang ở trang chủ và không có hộp thoại nào khác đang mở (VD tạo hồ sơ, kiểm tra trình
+  // độ) — chưa sẵn sàng thì đợi. Bước nào không tìm thấy khu vực (đang ẩn) thì bỏ qua.
+  const COACH_STEPS = IS_ZH ? [
+    { el: () => document.querySelector('.zh-continue'), text: 'Bấm vào đây để học — app tự dẫn tới đúng bài tiếp theo trong lộ trình.' },
+    { el: () => document.getElementById('tabbar'), text: 'Ôn tập, Luyện tập, Thư viện và Thành tích nằm ở thanh này.' },
+    { el: () => document.querySelector('.zh-today'), text: 'Chọn mục tiêu mỗi ngày (5, 10 hay 15 phút) và ôn lại các từ đến hạn ở đây.' },
+    { el: () => document.getElementById('settingsBtn'), text: 'Cài đặt: âm thanh, cỡ chữ, giao diện, cài app lên điện thoại…' },
+  ] : [
+    { el: () => document.getElementById('tabbar'), text: 'Đây là các khu vực chính: Học, Trò chơi, Câu, Thành tích… Chạm để chuyển qua lại.' },
+    { el: () => [...document.querySelectorAll('#screen-home .topic-card')].find(c => c.offsetParent), text: 'Chạm vào 1 chủ đề để bé bắt đầu học. Học xong sẽ mở khoá chủ đề tiếp theo.' },
+    { el: () => document.querySelector('.stars-pill'), text: 'Sao bé kiếm được và cấp độ hiện ở đây — học càng nhiều càng lên cấp!' },
+    { el: () => document.getElementById('settingsBtn'), text: 'Cài đặt: âm thanh, cỡ chữ, giao diện sáng / tối, cài app lên điện thoại…' },
+  ];
+  let coachPending = false;
+  let coachTries = 0;
+  function queueCoachTour() { coachPending = true; coachTries = 0; tryCoachTour(); }
+  function tryCoachTour() {
+    if (!coachPending) return;
+    const active = document.querySelector('.screen.active');
+    const onHome = active && (active.id === 'screen-home' || active.id === 'screen-zh-home');
+    const blocked = [...document.querySelectorAll('[class*="overlay"]')].some(o => !o.hidden && o.getClientRects().length > 0);
+    if (!onHome || blocked) {
+      if (++coachTries < 90) setTimeout(tryCoachTour, 1000); // chờ tối đa ~1,5 phút (đang tạo hồ sơ…)
+      return;
+    }
+    coachPending = false;
+    runCoachTour();
+  }
+  const COACH_KEY = '5phut_coach_seen_v1_' + LEARN_LANG; // mỗi ngôn ngữ 1 bộ bước riêng
+  function runCoachTour() {
+    try { localStorage.setItem(COACH_KEY, '1'); } catch (e) {}
+    const steps = COACH_STEPS.filter(st => { const e = st.el(); return e && e.getClientRects().length > 0; });
+    if (!steps.length) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'coach';
+    wrap.innerHTML = '<div class="coach-hole"></div><div class="coach-tip" role="dialog" aria-live="polite">' +
+      '<p class="coach-text"></p><div class="coach-actions"><span class="coach-count"></span>' +
+      '<button class="coach-skip" type="button">Bỏ qua</button><button class="coach-next" type="button"></button></div></div>';
+    document.body.appendChild(wrap);
+    const hole = wrap.querySelector('.coach-hole'), tip = wrap.querySelector('.coach-tip');
+    let i = -1;
+    const close = () => { wrap.remove(); window.removeEventListener('resize', place); };
+    function place() {
+      const target = steps[i].el();
+      if (!target) return;
+      const z = pageZoom(), r = target.getBoundingClientRect(), pad = 6;
+      const top = r.top / z - pad, left = r.left / z - pad, w = r.width / z + pad * 2, h = r.height / z + pad * 2;
+      Object.assign(hole.style, { top: top + 'px', left: left + 'px', width: w + 'px', height: h + 'px' });
+      const vh = window.innerHeight / z, below = top + h + 12;
+      tip.style.top = (below + 170 < vh ? below : Math.max(12, top - 12 - tip.offsetHeight)) + 'px';
+    }
+    function go(n) {
+      i = n;
+      if (i >= steps.length) { close(); return; }
+      const target = steps[i].el();
+      target.scrollIntoView({ block: 'center', behavior: 'auto' });
+      wrap.querySelector('.coach-text').textContent = steps[i].text;
+      wrap.querySelector('.coach-count').textContent = (i + 1) + '/' + steps.length;
+      wrap.querySelector('.coach-next').textContent = i === steps.length - 1 ? (IS_ZH ? 'Bắt đầu học!' : 'Bắt đầu thôi!') : 'Tiếp →';
+      requestAnimationFrame(place);
+    }
+    wrap.querySelector('.coach-next').addEventListener('click', e => { e.stopPropagation(); go(i + 1); });
+    wrap.querySelector('.coach-skip').addEventListener('click', e => { e.stopPropagation(); close(); });
+    wrap.addEventListener('click', e => { if (!tip.contains(e.target)) go(i + 1); }); // chạm vùng tối cũng sang bước sau
+    window.addEventListener('resize', place);
+    go(0);
+  }
   document.getElementById('replayOnboardingBtn').addEventListener('click', showOnboarding);
 
   // ---------- GAMES TAB ----------
@@ -2804,12 +3071,12 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       speak(word.en);
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng, từ đúng là "' + word.en + '"';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       reverseIndex++;
@@ -2882,13 +3149,13 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       document.getElementById('fillBlankSentence').textContent = word.example;
       speak(word.example);
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng, từ đúng là "' + word.en + '"';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       fillBlankIndex++;
@@ -3263,12 +3530,12 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       grammarQuizCorrectCount++;
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng rồi, đáp án là "' + q.answer + '"';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       grammarQuizIndex++;
@@ -3440,6 +3707,66 @@
   });
   applyMuteUI();
 
+  // ---------- BẢNG CHỌN XỔ XUỐNG TRONG CÀI ĐẶT (Cỡ chữ, Giao diện) ----------
+  // Bấm dòng → xổ danh sách lựa chọn ngay bên dưới (mục đang chọn có dấu ✓), chọn xong tự thu lại.
+  // Chỉ mở 1 bảng chọn một lúc. options: [{ value, label, icon? (chuỗi HTML nhỏ) }].
+  function makeSettingsPicker(rowId, options, getValue, setValue) {
+    const row = document.getElementById(rowId);
+    const panel = document.createElement('div');
+    panel.className = 'settings-options';
+    panel.hidden = true;
+    panel.setAttribute('role', 'listbox');
+    row.after(panel);
+    row.setAttribute('aria-haspopup', 'listbox');
+    row.setAttribute('aria-expanded', 'false');
+    const render = () => {
+      panel.innerHTML = '';
+      options.forEach(o => {
+        const b = document.createElement('button');
+        const on = o.value === getValue();
+        b.className = 'settings-option' + (on ? ' is-selected' : '');
+        b.setAttribute('role', 'option');
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.innerHTML = '<span class="settings-option-icon">' + (o.icon || '') + '</span><span class="settings-option-label"></span><span class="settings-option-check">' + (on ? '✓' : '') + '</span>';
+        b.querySelector('.settings-option-label').textContent = o.label;
+        b.addEventListener('click', () => { if (o.value !== getValue()) setValue(o.value); setOpen(false); });
+        panel.appendChild(b);
+      });
+    };
+    const setOpen = open => {
+      if (open) document.querySelectorAll('.settings-row.is-open').forEach(r => { if (r !== row) r.click(); });
+      if (open) render();
+      panel.hidden = !open;
+      row.classList.toggle('is-open', open);
+      row.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    row.addEventListener('click', () => setOpen(panel.hidden));
+  }
+
+  // ---------- CỠ CHỮ (Vừa / Lớn / Rất lớn) ----------
+  // Phóng to cả trang bằng CSS zoom trên <html> (style.css: html.fs-l / html.fs-xl) — chữ, nút, hình đều to
+  // ra cùng tỉ lệ nên bố cục không vỡ. Hữu ích cho người lớn tuổi học tiếng Trung, hoặc bé nhỏ mới tập đọc.
+  const FONT_KEY = '5phut_fontsize_v1';
+  const FONT_SIZES = [['m', 'Vừa'], ['l', 'Lớn'], ['xl', 'Rất lớn']];
+  let fontSize = 'm';
+  try { const f = localStorage.getItem(FONT_KEY); if (FONT_SIZES.some(x => x[0] === f)) fontSize = f; } catch (e) {}
+  function applyFontSize() {
+    document.documentElement.classList.toggle('fs-l', fontSize === 'l');
+    document.documentElement.classList.toggle('fs-xl', fontSize === 'xl');
+    const label = FONT_SIZES.find(x => x[0] === fontSize)[1];
+    document.getElementById('fontSizeValue').textContent = label;
+    document.getElementById('fontSizeBtn').setAttribute('aria-label', 'Cỡ chữ: ' + label + '. Bấm để chọn');
+  }
+  makeSettingsPicker('fontSizeBtn',
+    FONT_SIZES.map((x, i) => ({ value: x[0], label: x[1], icon: '<span style="font-size:' + (14 + i * 4) + 'px">Aa</span>' })),
+    () => fontSize,
+    v => {
+      fontSize = v;
+      try { if (fontSize === 'm') localStorage.removeItem(FONT_KEY); else localStorage.setItem(FONT_KEY, fontSize); } catch (e) {}
+      applyFontSize();
+    });
+  applyFontSize();
+
   // ---------- THEME TOGGLE (sáng / tối / theo máy) ----------
   const THEME_KEY = '5phut_theme_v1';
   let themeMode = 'auto'; // 'auto' | 'light' | 'dark'
@@ -3457,28 +3784,31 @@
     };
     if (themeMode === 'light') {
       document.documentElement.setAttribute('data-theme', 'light');
-      setUI('☀️', 'Sáng', 'Giao diện: sáng. Bấm để đổi sang tối');
+      setUI('☀️', 'Sáng', 'Giao diện: sáng. Bấm để chọn');
     } else if (themeMode === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
-      setUI('🌙', 'Tối', 'Giao diện: tối. Bấm để đổi theo máy');
+      setUI('🌙', 'Tối', 'Giao diện: tối. Bấm để chọn');
     } else {
       document.documentElement.removeAttribute('data-theme');
-      setUI('🌗', 'Theo máy', 'Giao diện: theo máy. Bấm để đổi sang sáng');
+      setUI('🌗', 'Theo máy', 'Giao diện: theo máy. Bấm để chọn');
     }
   }
-  document.getElementById('themeBtn').addEventListener('click', () => {
-    themeMode = themeMode === 'auto' ? 'light' : (themeMode === 'light' ? 'dark' : 'auto');
-    try {
-      if (themeMode === 'auto') localStorage.removeItem(THEME_KEY);
-      else localStorage.setItem(THEME_KEY, themeMode);
-    } catch (e) {}
-    applyThemeUI();
-    showToast(
-      themeMode === 'light' ? '☀️ Đã đổi sang giao diện sáng' :
-      themeMode === 'dark' ? '🌙 Đã đổi sang giao diện tối' :
-      '🌗 Đã đổi theo giao diện máy', '🎨'
-    );
-  });
+  makeSettingsPicker('themeBtn',
+    [{ value: 'auto', label: 'Theo máy', icon: '🌗' }, { value: 'light', label: 'Sáng', icon: '☀️' }, { value: 'dark', label: 'Tối', icon: '🌙' }],
+    () => themeMode,
+    v => {
+      themeMode = v;
+      try {
+        if (themeMode === 'auto') localStorage.removeItem(THEME_KEY);
+        else localStorage.setItem(THEME_KEY, themeMode);
+      } catch (e) {}
+      applyThemeUI();
+      showToast(
+        themeMode === 'light' ? '☀️ Đã đổi sang giao diện sáng' :
+        themeMode === 'dark' ? '🌙 Đã đổi sang giao diện tối' :
+        '🌗 Đã đổi theo giao diện máy', '🎨'
+      );
+    });
   applyThemeUI();
 
   // ---------- NGÔN NGỮ BÉ HỌC (Cài đặt) ---------- (xem LEARN_LANG ở đầu file)
@@ -3780,12 +4110,12 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       phonicsQuizCorrectCount++;
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng rồi, thử lại lần sau nhé!';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       phonicsQuizIndex++;
@@ -3923,12 +4253,12 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       storyQuizCorrectCount++;
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng rồi, đọc lại truyện lần sau nhé!';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       storyQuizIndex++;
@@ -4096,12 +4426,12 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       quizCorrectCount++;
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng rồi, thử lại lần sau nhé!';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       quizIndex++;
@@ -4268,6 +4598,7 @@
       l.matched = true;
       r.matched = true;
       matchFoundCount++;
+      sfx('pair');
       matchSelectedLeft = null;
       matchSelectedRight = null;
       renderMatchGame();
@@ -4288,6 +4619,7 @@
     } else {
       matchLock = true;
       matchWrong = true;
+      sfx('wrong');
       renderMatchGame();
       setTimeout(() => {
         matchSelectedLeft = null;
@@ -4495,12 +4827,12 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       sightCorrect++;
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng rồi, thử lại lần sau nhé!';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       sightQuizIndex++;
@@ -4632,6 +4964,7 @@
     const first = memCards[memFirst];
     if (first.pairId === c.pairId) {
       first.matched = true; c.matched = true; memFound++;
+      sfx('pair');
       memFirst = null;
       renderMemory();
       if (memFound === MEMORY_PAIRS) setTimeout(finishMemory, 700);
@@ -4725,6 +5058,7 @@
     const fb = document.getElementById('simonFeedback');
     fb.textContent = correct ? '✅ Đúng rồi!' : (r.isSimon ? '❌ Simon CÓ nói mà, phải làm theo chứ!' : '❌ Simon không nói nhé, phải đứng yên chứ!');
     fb.className = 'quiz-feedback ' + (correct ? 'ok' : 'no');
+    sfx(correct ? 'correct' : 'wrong');
     document.getElementById('simonYesBtn').disabled = true;
     document.getElementById('simonNoBtn').disabled = true;
     setTimeout(() => {
@@ -4937,7 +5271,7 @@
     if (r.coverage >= WRITE_MIN_COVERAGE && r.precision >= WRITE_MIN_PRECISION) {
       wBusy = true;
       fb.textContent = 'Đẹp lắm! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       progress.choi.lettersWritten++;
       setTimeout(() => {
         wIndex++;
@@ -4949,7 +5283,7 @@
         } else renderWriteStep();
       }, 900);
     } else {
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
       fb.textContent = r.precision < WRITE_MIN_PRECISION && r.coverage >= WRITE_MIN_COVERAGE
         ? 'Bé tô theo nét chữ mờ nhé — bấm "Xoá" để làm lại.'
         : 'Bé tô kín nét chữ hơn nhé!';
@@ -5086,7 +5420,7 @@
     if (assembled.join(' ') === s.tokens.join(' ')) {
       slotBtns.forEach(b => b.classList.add('is-correct'));
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       progress[sbClassId].sentencesBuilt++;
       speak(s.en);
       setTimeout(() => {
@@ -5105,7 +5439,7 @@
     } else {
       slotBtns.forEach(b => b.classList.add('is-wrong'));
       fb.textContent = 'Chưa đúng, thử lại nhé!';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
       setTimeout(() => { // xếp lại từ đầu, giữ nguyên câu này
         sbSlots = new Array(s.tokens.length).fill(null);
         sbTiles.forEach(t => { t.used = false; });
@@ -5202,6 +5536,7 @@
       l.matched = true;
       r.matched = true;
       laQaFoundCount++;
+      sfx('pair');
       laQaSelectedLeft = null;
       laQaSelectedRight = null;
       renderLaQa();
@@ -5215,6 +5550,7 @@
     } else {
       laQaLock = true;
       laQaWrong = true;
+      sfx('wrong');
       renderLaQa();
       setTimeout(() => {
         laQaSelectedLeft = null;
@@ -5280,13 +5616,13 @@
     if (isCorrect) {
       btn.classList.add('correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       laDlgCorrectCount++;
       speak(turn.b.en);
     } else {
       btn.classList.add('wrong');
       fb.textContent = 'Chưa đúng rồi, câu trả lời đúng là "' + turn.b.en + '"';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
     }
     setTimeout(() => {
       laDlgIndex++;
@@ -5373,7 +5709,7 @@
     if (isCorrect) {
       input.classList.add('is-correct');
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       laWriteCorrectCount++;
       speak(s.en);
       if (laWriteTopicsArr === PARAGRAPH_LA_TOPICS) {
@@ -5383,7 +5719,7 @@
     } else {
       input.classList.add('is-wrong');
       fb.textContent = 'Chưa đúng rồi, xem câu đúng nhé:';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
       const ansEl = document.getElementById('laWriteAnswer');
       ansEl.textContent = s.en;
       ansEl.hidden = false;
@@ -5553,7 +5889,7 @@
       }
       slotBtns.forEach(b => b.classList.add('is-correct'));
       fb.textContent = 'Chính xác! 🎉';
-      fb.className = 'quiz-feedback ok';
+      fb.className = 'quiz-feedback ok'; sfx('correct');
       speak(word.en);
       setTimeout(() => {
         spellingIndex++;
@@ -5574,7 +5910,7 @@
       if (spellingClassId === 'mam' || wordClassId(word) === spellingClassId) recordWordAnswer(word, false);
       slotBtns.forEach(b => b.classList.add('is-wrong'));
       fb.textContent = 'Chưa đúng, thử lại nhé!';
-      fb.className = 'quiz-feedback no';
+      fb.className = 'quiz-feedback no'; sfx('wrong');
       setTimeout(() => {
         spellingSlots = new Array(word.en.length).fill(null);
         spellingTiles.forEach(t => { t.used = false; });
@@ -5674,6 +6010,7 @@
     speedActive = false;
     document.querySelectorAll('#speedOptions .quiz-opt').forEach(o => o.disabled = true);
     btn.classList.add(isCorrect ? 'correct' : 'wrong');
+    sfx(isCorrect ? 'correct' : 'wrong');
     recordWordAnswer(speedWords[speedIndex], isCorrect);
     if (isCorrect) speedCorrectCount++;
     renderSpeedStats();
@@ -5808,6 +6145,7 @@
 
   function judgeQuizParent(parentCorrect) {
     if (parentCorrect) quizParentScore++;
+    sfx(parentCorrect ? 'correct' : 'wrong');
     quizParentIndex++;
     if (quizParentIndex >= quizParentWords.length) endQuizParent();
     else renderQuizParentQuestion();
@@ -5931,7 +6269,7 @@
     replayBtn.onclick = () => startTopic(currentTopic.id);
 
     renderTotalStars();
-    celebrate(isPerfect, oldLifetimeStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null);
+    celebrate(isPerfect, oldLifetimeStars, isNewTopic && PUZZLE_TOPICS.includes(currentTopic) ? currentTopic : null, !passed);
     resetChest();
     showScreen('done');
   }
@@ -6273,6 +6611,11 @@
     let onboardingSeen = false;
     try { onboardingSeen = localStorage.getItem(ONBOARDING_KEY) === '1'; } catch (e) {}
     if (!onboardingSeen) showOnboarding();
+    else {
+      let coachSeen = false;
+      try { coachSeen = localStorage.getItem(COACH_KEY) === '1'; } catch (e) {}
+      if (!coachSeen) queueCoachTour();
+    }
   }
 
   // Xác thực email + hồ sơ bé là bắt buộc trước khi vào học (xem enforceGate ở trên). Nếu email
@@ -6396,7 +6739,7 @@
     showScreen, goHome, speak, shuffle, showToast, launchConfetti,
     getProgress: () => progress,
     saveProgress: () => saveProgress(progress),
-    addStars, celebrate, updateStreakOnComplete, bumpDailyMission, renderTotalStars,
+    addStars, celebrate, updateStreakOnComplete, sfx, bumpDailyMission, renderTotalStars,
     confirm: showConfirmDialog,
   };
 })();

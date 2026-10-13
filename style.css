@@ -694,7 +694,22 @@
   }
   .settings-label { flex: 1; min-width: 0; }
   .settings-value { color: var(--ink-soft); font-weight: 700; font-size: 15px; white-space: nowrap; }
-  .settings-chevron { color: var(--ink-soft); font-size: 24px; line-height: 1; margin-left: 2px; flex: none; }
+  .settings-chevron { color: var(--ink-soft); font-size: 24px; line-height: 1; margin-left: 2px; flex: none; transition: transform .2s; }
+  /* Bảng chọn xổ xuống (app.js — makeSettingsPicker): Cỡ chữ, Giao diện */
+  .settings-row.is-open .settings-chevron { transform: rotate(90deg); }
+  .settings-options { border-top: 2px solid var(--line); background: var(--surface-2); padding: 4px 0; }
+  .settings-options[hidden] { display: none; }
+  .settings-options + .settings-row { border-top: 2px solid var(--line); }
+  .settings-option {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 8px 16px 8px 62px;
+    background: none; border: none; color: var(--ink); cursor: pointer; text-align: left;
+    font-family: 'Quicksand'; font-weight: 700; font-size: 16px;
+  }
+  .settings-option:active { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .settings-option-icon { width: 28px; flex: none; text-align: center; font-family: 'Baloo 2'; font-weight: 800; line-height: 1; }
+  .settings-option-label { flex: 1; }
+  .settings-option-check { flex: none; color: var(--teal); font-weight: 800; font-size: 18px; }
+  .settings-option.is-selected { color: var(--teal-ink); }
   .settings-switch {
     position: relative; flex: none; width: 50px; height: 30px; border-radius: 999px;
     background: var(--teal); transition: background .2s;
@@ -2166,3 +2181,77 @@
   .install-steps li + li { margin-top: 6px; }
   .zh-slow-btn { background: color-mix(in srgb, var(--mint) 18%, var(--surface)); }
   body:not(.on-home) .install-banner { display: none; }
+
+  /* ---------- Hiệu ứng phản hồi (app.js — HIỆU ỨNG: CHUỖI ĐÚNG LIÊN TIẾP + SAO BAY) ---------- */
+  @keyframes fx-pop { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 70% { transform: scale(0.97); } 100% { transform: scale(1); } }
+  @keyframes fx-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+  .quiz-opt.correct, .spelling-slot.is-correct, .sb-slot.is-correct, .write-input.is-correct,
+  .zh-order-answer.is-correct, .zh-match-card.is-matched { animation: fx-pop 0.38s ease-out; }
+  .quiz-opt.wrong, .spelling-slot.is-wrong, .sb-slot.is-wrong, .write-input.is-wrong,
+  .zh-order-answer.is-wrong, .match-card.is-wrong { animation: fx-shake 0.4s ease-in-out; }
+  .combo-toast {
+    position: fixed; left: 50%; top: 138px; z-index: 1000; pointer-events: none;
+    transform: translate(-50%, -12px) scale(0.9); opacity: 0; transition: transform 0.25s ease-out, opacity 0.25s;
+    padding: 8px 18px; border-radius: 999px; white-space: nowrap; box-shadow: var(--shadow);
+    background: linear-gradient(135deg, var(--gold), var(--accent)); color: #fff;
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  }
+  .combo-toast.is-visible { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  .fly-star { position: fixed; z-index: 1001; font-size: 28px; line-height: 1; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .quiz-opt.correct, .spelling-slot.is-correct, .sb-slot.is-correct, .write-input.is-correct, .zh-order-answer.is-correct, .zh-match-card.is-matched,
+    .quiz-opt.wrong, .spelling-slot.is-wrong, .sb-slot.is-wrong, .write-input.is-wrong, .zh-order-answer.is-wrong, .match-card.is-wrong,
+    .zh-match-card.is-wrong { animation: none; }
+    .combo-toast { transition: opacity 0.2s; transform: translate(-50%, 0); }
+  }
+
+  /* ---------- Bạn cáo động viên (app.js — foxCheer, chỉ tiếng Anh) ---------- */
+  .fox-cheer {
+    position: fixed; left: 10px; bottom: 14px; z-index: 950; pointer-events: none;
+    display: flex; align-items: flex-end; gap: 4px;
+    transform: translateY(130%); opacity: 0; transition: transform 0.3s cubic-bezier(.3,1.4,.6,1), opacity 0.25s;
+  }
+  .fox-cheer.is-visible { transform: translateY(0); opacity: 1; }
+  .fox-cheer img { width: 72px; height: 72px; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18)); }
+  .fox-bubble {
+    margin-bottom: 40px; padding: 8px 12px; border-radius: 16px 16px 16px 4px; max-width: 220px;
+    background: var(--surface); color: var(--ink); border: 2px solid var(--mint); box-shadow: var(--shadow);
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 16px; line-height: 1.25;
+  }
+  .fox-cheer.is-wrong .fox-bubble { border-color: var(--gold); }
+
+  /* ---------- Hướng dẫn chỉ tay (app.js — HƯỚNG DẪN CHỈ TAY) ---------- */
+  .coach { position: fixed; inset: 0; z-index: 3000; }
+  .coach-hole {
+    position: fixed; border-radius: 16px; pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(20, 14, 8, 0.62), 0 0 0 3px var(--gold);
+    transition: top 0.25s, left 0.25s, width 0.25s, height 0.25s;
+  }
+  .coach-tip {
+    position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto;
+    padding: 14px 16px 12px; border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+  }
+  .coach-text { margin: 0 0 10px; font-weight: 700; font-size: 16px; line-height: 1.45; }
+  .coach-actions { display: flex; align-items: center; gap: 8px; }
+  .coach-count { flex: 1; color: var(--ink-soft); font-weight: 800; font-size: 13px; }
+  .coach-skip { border: none; background: none; color: var(--ink-soft); font: inherit; font-weight: 700; padding: 8px; cursor: pointer; }
+  .coach-next {
+    border: none; border-radius: 999px; padding: 9px 18px; cursor: pointer;
+    background: var(--teal); color: #fff; font-family: 'Baloo 2'; font-weight: 800; font-size: 15.5px;
+  }
+
+  /* ---------- Nhắc giữ chuỗi ngày (zh-course.js — trang chủ tiếng Trung) ---------- */
+  .zh-streak-warn {
+    margin-top: 8px; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 14px;
+    background: color-mix(in srgb, var(--gold) 22%, var(--surface)); color: var(--gold-ink);
+  }
+
+  /* ---------- Cỡ chữ (app.js — CỠ CHỮ) ---------- */
+  html.fs-l { zoom: 1.12; }
+  html.fs-xl { zoom: 1.25; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .topic-path .topic-card .current-badge, .treasure-map-chest.is-open .chest-icon, .chest-btn { animation: none; }
+    .fox-cheer { transform: none; transition: opacity 0.2s; }
+    .coach-hole { transition: none; }
+  }
