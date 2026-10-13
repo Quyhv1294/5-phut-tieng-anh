@@ -309,7 +309,7 @@
         writeGroups: (p.choi && p.choi.writeGroups) || {},     // nhóm Tập viết đã hoàn thành
         lettersWritten: (p.choi && p.choi.lettersWritten) || 0,
         simonPlayed: (p.choi && p.choi.simonPlayed) || {},     // đã chơi xong 1 ván Simon nói (key cố định 'simon')
-        songsPlayed: (p.choi && p.choi.songsPlayed) || {},     // bài hát đã hát xong ít nhất 1 lần
+        songsPlayed: (p.choi && p.choi.songsPlayed) || {},     // bài hát đã hát (phần Bài hát đã bỏ — giữ dữ liệu cũ)
       },
       // Tiến độ riêng của lớp Lá (Xếp chữ dài + Sắp xếp câu ở tab Trò chơi; Hỏi-đáp + Đối thoại +
       // Viết câu ở tab Câu) — xem finishLaRound.
@@ -475,7 +475,6 @@
     sight: document.getElementById('screen-sight'),
     memory: document.getElementById('screen-memory'),
     simon: document.getElementById('screen-simon'),
-    songPlay: document.getElementById('screen-song'),
     write: document.getElementById('screen-write'),
     achievements: document.getElementById('screen-achievements'),
     settings: document.getElementById('screen-settings'),
@@ -719,8 +718,6 @@
       check: p => STORY_TOPICS_CHOI.every(t => p.doneTopics[t.id]) },
     { id: 'choi_simon', group: 'choi', icon: '🕺', label: 'Nhanh như Simon', desc: 'Chơi xong 1 ván Simon nói (+5 sao)', bonus: 5,
       check: p => !!(p.choi && p.choi.simonPlayed && p.choi.simonPlayed.simon) },
-    { id: 'choi_singer', group: 'choi', icon: '🎤', label: 'Ca sĩ nhí', desc: 'Hát xong 1 bài hát tiếng Anh (+5 sao)', bonus: 5,
-      check: p => !!(p.choi && p.choi.songsPlayed && Object.keys(p.choi.songsPlayed).length > 0) },
     { id: 'choi_master', group: 'choi', icon: '🏅', label: 'Học trò xuất sắc lớp Chồi', desc: 'Đạt cả 6 huy hiệu: Thợ ghép vần, Bạn của từ mới, Đọc nhanh như chớp, Bàn tay vàng, Thợ xếp chữ, Nhà văn nhí (+40 sao)', bonus: 40,
       check: p => !!(p.badges.choi_phonics_all && p.badges.choi_vocab && p.badges.choi_sight && p.badges.choi_writer && p.badges.choi_speller && p.badges.choi_sentences) },
     // ----- Huy hiệu riêng của Lớp Lá (group: 'la' → nhóm riêng ở tab Sưu tập, xem renderBadgesScreen) -----
@@ -748,13 +745,11 @@
       check: p => READING_LA_TOPICS.every(t => p.doneTopics[t.id]) },
     { id: 'la_paragraph', group: 'la', icon: '📝', label: 'Nhà văn nhí lớp Lá', desc: 'Viết xong cả 4 đoạn văn ngắn (+15 sao)', bonus: 15,
       check: p => p.la && PARAGRAPH_LA_TOPICS.every(t => p.la.paragraphGroups[t.id]) },
-    // choi_simon/choi_singer (xem BADGES nhóm 'choi') KHÔNG bắt buộc cho choi_master — Lật thẻ/Simon
-    // nói/Bài hát là nội dung "thêm" (bonus), không phải nội dung cốt lõi — la_memory (không có, xem
-    // finishLaRound comment), la_simon, la_songs cũng theo đúng tinh thần đó: không bắt buộc cho la_master.
+    // choi_simon (xem BADGES nhóm 'choi') KHÔNG bắt buộc cho choi_master — Lật thẻ/Simon nói là nội
+    // dung "thêm" (bonus), không phải nội dung cốt lõi — la_memory (không có, xem finishLaRound comment),
+    // la_simon cũng theo đúng tinh thần đó: không bắt buộc cho la_master.
     { id: 'la_simon', group: 'la', icon: '🕺', label: 'Nhanh như Simon', desc: 'Chơi xong 1 ván Simon nói nâng cao (+5 sao)', bonus: 5,
       check: p => !!(p.la && p.la.simonPlayed && p.la.simonPlayed.simon) },
-    { id: 'la_songs', group: 'la', icon: '🎤', label: 'Ca sĩ nhí lớp Lá', desc: 'Hát xong 1 bài hát tiếng Anh (+5 sao)', bonus: 5,
-      check: p => !!(p.la && p.la.songsPlayed && Object.keys(p.la.songsPlayed).length > 0) },
     { id: 'la_master', group: 'la', icon: '🏅', label: 'Học trò xuất sắc lớp Lá', desc: 'Đạt đủ 12 huy hiệu Lớp Lá: Học giả nhí, Bậc thầy ngữ pháp, Cao thủ ghép âm, Độc giả nhí, Thợ xếp chữ dài, Cao thủ sắp câu, Nhà hùng biện nhí, Diễn viên nhí, Cây bút nhí, Giao tiếp giỏi, Chuyên gia tra cứu, Nhà văn nhí lớp Lá (+40 sao)', bonus: 40,
       check: p => !!(p.badges.la_vocab && p.badges.la_grammar && p.badges.la_phonics && p.badges.la_reader && p.badges.la_speller && p.badges.la_sentence_builder && p.badges.la_qa && p.badges.la_dialogue && p.badges.la_writer && p.badges.la_phrases && p.badges.la_reading && p.badges.la_paragraph) },
   ];
@@ -1133,7 +1128,6 @@
         '<div class="progress-subhead">📗 Truyện</div>' + rowsOf(STORY_TOPICS_CHOI, progress.doneTopics, '✓ Đã đọc', 'Chưa đọc') +
         '<div class="progress-subhead">✍️ Tập viết chữ</div>' + rowsOf(WRITE_GROUPS, c.writeGroups, '✓ Đã viết', 'Chưa viết') +
         '<div class="progress-subhead">🧩 Ghép câu</div>' + rowsOf(SENTENCE_BUILD_TOPICS, c.sentenceGroups, '✓ Đã chơi', 'Chưa chơi') +
-        '<div class="progress-subhead">🎵 Bài hát</div>' + rowsOf(SONGS_CHOI.map(s => ({ id: s.id, emoji: s.emoji, label: s.titleVi })), c.songsPlayed, '✓ Đã hát', 'Chưa hát') +
         '<div class="progress-subhead">🎮 Trò chơi</div>' +
         sumRow('🔤', 'Xếp chữ', played(c.spellTopics, spellList), spellList.length) +
         sumRow('🧠', 'Lật thẻ', played(c.memoryTopics, memList), memList.length) +
@@ -1162,7 +1156,6 @@
         '<div class="progress-subhead">📗 Truyện</div>' + rowsOf(STORY_TOPICS_LA, '✓ Đã đọc', 'Chưa đọc') +
         '<div class="progress-subhead">🗣️ Cụm từ thông dụng</div>' + rowsOf(PHRASES_LA_TOPICS, '✓ Đã học', 'Chưa học') +
         '<div class="progress-subhead">📋 Đọc hiểu văn bản</div>' + rowsOf(READING_LA_TOPICS, '✓ Đã đọc', 'Chưa đọc') +
-        '<div class="progress-subhead">🎵 Bài hát</div>' + rowsOfLa(SONGS_LA.map(s => ({ id: s.id, emoji: s.emoji, label: s.titleVi })), c.songsPlayed, '✓ Đã hát', 'Chưa hát') +
         '<div class="progress-subhead">🎮 Trò chơi</div>' +
         sumRow('🔤', 'Xếp chữ dài', played(c.spellTopics, spellList), spellList.length) +
         sumRow('🧠', 'Lật thẻ nâng cao', played(c.memoryTopics, memList), memList.length) +
@@ -2998,7 +2991,6 @@
     { key: 'phonics', btn: 'choiModePhonicsBtn', panel: 'choiPanelPhonics' },
     { key: 'sight', btn: 'choiModeSightBtn', panel: 'choiPanelSight' },
     { key: 'write', btn: 'choiModeWriteBtn', panel: 'choiPanelWrite' },
-    { key: 'songs', btn: 'choiModeSongsBtn', panel: 'choiPanelSongs' },
     { key: 'stories', btn: 'choiModeStoriesBtn', panel: 'choiPanelStories' },
   ];
   function setChoiHomeMode(mode) {
@@ -3156,7 +3148,6 @@
     { key: 'phonics', btn: 'laModePhonicsBtn', panel: 'laPanelPhonics' },
     { key: 'stories', btn: 'laModeStoriesBtn', panel: 'laPanelStories' },
     { key: 'phrases', btn: 'laModePhrasesBtn', panel: 'laPanelPhrases' },
-    { key: 'songs', btn: 'laModeSongsBtn', panel: 'laPanelSongs' },
     { key: 'reading', btn: 'laModeReadingBtn', panel: 'laPanelReading' },
   ];
   function setLaHomeMode(mode) {
@@ -3324,14 +3315,12 @@
     renderChoiVocab();
     renderSightSection();
     renderWriteSection();
-    renderSongsSection();
     renderStoryChoiSection();
     renderChoiSummary();
     renderLaVocab();
     renderPhonics3Section();
     renderStoryLaSection();
     renderPhraseSection();
-    renderSongsSection('la');
     renderReadingSection();
     renderLaSummary();
     renderPromoCards();
@@ -4326,7 +4315,7 @@
   // nhận thêm, nên bé không thể "cày" sao.
   function finishChoiRound(kind, groupId, msgEl, baseText) {
     const c = progress.choi;
-    const seen = { spell: c.spellTopics, sentence: c.sentenceGroups, memory: c.memoryTopics, write: c.writeGroups, simon: c.simonPlayed, song: c.songsPlayed }[kind];
+    const seen = { spell: c.spellTopics, sentence: c.sentenceGroups, memory: c.memoryTopics, write: c.writeGroups, simon: c.simonPlayed }[kind];
     const oldLifetimeStars = progress.lifetimeStars;
     const isFirst = !seen[groupId];
     if (isFirst) { seen[groupId] = true; addStars(CHOI_FIRST_ROUND_STARS); }
@@ -4337,21 +4326,20 @@
     renderChoiSpellGrid();
     renderChoiSentenceGrid();
     renderWriteSection();
-    renderSongsSection();
     renderChoiSummary();
     renderPromoCards();
     if (msgEl) msgEl.textContent = baseText + (isFirst ? ' Nhận thêm ⭐ ' + CHOI_FIRST_ROUND_STARS + ' sao vì lần đầu hoàn thành nhóm này!' : '');
   }
 
   // ---------- TIẾN ĐỘ RIÊNG CỦA LỚP LÁ (Xếp chữ dài + Sắp xếp câu, cả 2 đều ở tab Trò chơi) ----------
-  // Giống hệt finishChoiRound nhưng chỉ 2 kind (không có memory/write/simon/song vì Lá chưa có các
+  // Giống hệt finishChoiRound nhưng chỉ 2 kind (không có memory/write/simon vì Lá chưa có các
   // trò đó) và bumpDailyMission('games') thay vì ('sentences') cho kind 'sentence' — vì Sắp xếp câu
   // của Lá sống ở tab Trò chơi (Lá chưa có tab Câu), khác Ghép câu của Chồi sống ở tab Câu.
   function finishLaRound(kind, groupId, msgEl, baseText) {
     const c = progress.la;
     // spell/sentence sống ở tab Trò chơi (bumpDailyMission 'games'); qa/dialogue/write sống ở tab Câu
     // (bumpDailyMission 'sentences') — 2 tab khác nhau nên 2 nhiệm vụ hằng ngày khác nhau.
-    const seen = { spell: c.spellTopics, sentence: c.sentenceGroups, qa: c.qaGroups, dialogue: c.dialogueGroups, write: c.writeSentGroups, paragraph: c.paragraphGroups, memory: c.memoryTopics, simon: c.simonPlayed, song: c.songsPlayed }[kind];
+    const seen = { spell: c.spellTopics, sentence: c.sentenceGroups, qa: c.qaGroups, dialogue: c.dialogueGroups, write: c.writeSentGroups, paragraph: c.paragraphGroups, memory: c.memoryTopics, simon: c.simonPlayed }[kind];
     const oldLifetimeStars = progress.lifetimeStars;
     const isFirst = !seen[groupId];
     if (isFirst) { seen[groupId] = true; addStars(CHOI_FIRST_ROUND_STARS); }
@@ -4405,93 +4393,6 @@
       '<span class="pr-emoji">' + emoji + '</span><span class="pr-label">' + label + '</span>' +
       '<span class="pr-status">' + (done ? doneText : todoText) + '</span></div>';
   }
-
-  // ---------- BÀI HÁT (lớp Chồi, tab Học) ----------
-  // 6 bài đồng dao tiếng Anh cổ điển (SONGS_CHOI, data/songs_choi.js), không có file nhạc thật —
-  // nghe bằng giọng đọc máy (TTS), giống cách các dòng câu ở tab Câu dùng chung .sentence-card/.sentence-list.
-  // Không phải bài học có đáp án nên bé bấm "Xong" để tự báo đã hát xong (không tự dò xem TTS đã đọc hết chưa,
-  // vì onend của SpeechSynthesis không đáng tin cậy trên mọi trình duyệt/WebView).
-  // classId 'choi' (mặc định): SONGS_CHOI, lưới #songsTopicGrid, progress.choi.songsPlayed.
-  // classId 'la': SONGS_LA (6 bài khác hẳn, không trùng), lưới #songsLaTopicGrid, progress.la.songsPlayed.
-  let songId = null;
-  let songClassId = 'choi';
-  function renderSongsSection(classId) {
-    classId = classId || 'choi';
-    const grid = document.getElementById(classId === 'la' ? 'songsLaTopicGrid' : 'songsTopicGrid');
-    if (!grid) return;
-    const songs = classId === 'la' ? SONGS_LA : SONGS_CHOI;
-    const played = classId === 'la' ? progress.la.songsPlayed : progress.choi.songsPlayed;
-    grid.innerHTML = '';
-    songs.forEach(song => {
-      const done = !!played[song.id];
-      const btn = document.createElement('button');
-      btn.className = 'topic-card ' + song.cls + (done ? ' is-done' : '');
-      btn.innerHTML =
-        (done ? '<span class="done-badge">✓ Đã hát</span>' : '') +
-        '<span class="emoji">' + song.emoji + '</span>' +
-        '<span><span class="label">' + song.titleVi + '</span><br>' +
-        '<span class="count">' + song.lines.length + ' câu' + (done ? '' : ' · +' + CHOI_FIRST_ROUND_STARS + '⭐') + '</span></span>';
-      btn.addEventListener('click', () => startSong(song.id, classId));
-      grid.appendChild(btn);
-    });
-  }
-
-  function startSong(id, classId) {
-    classId = classId || 'choi';
-    const song = (classId === 'la' ? SONGS_LA : SONGS_CHOI).find(s => s.id === id);
-    if (!song) return;
-    songId = id;
-    songClassId = classId;
-    document.getElementById('songTitle').textContent = song.title + ' 🎵 ' + song.titleVi;
-    const list = document.getElementById('songLineList');
-    list.innerHTML = '';
-    song.lines.forEach((line, i) => {
-      const card = document.createElement('div');
-      card.className = 'sentence-card';
-      card.dataset.songLine = i;
-      card.innerHTML =
-        '<span class="sentence-emoji">🎵</span>' +
-        '<span class="sentence-text">' +
-          '<span class="sentence-en"><span class="lang-flag">🇬🇧</span>' + line.en + '</span>' +
-          '<span class="sentence-vi"><span class="lang-flag">🇻🇳</span>' + line.vi + '</span>' +
-        '</span>' +
-        '<button class="sentence-listen-btn" aria-label="Nghe câu">🔊</button>';
-      card.querySelector('.sentence-listen-btn').addEventListener('click', () => speak(line.en));
-      list.appendChild(card);
-    });
-    document.getElementById('songDoneMsg').textContent = '';
-    showScreen('songPlay');
-  }
-
-  // Đọc lần lượt từng câu, tô sáng câu đang hát để bé dễ dõi theo lời — chờ cố định theo độ dài câu
-  // (không dựa vào sự kiện 'end' của SpeechSynthesis vì không đáng tin cậy trên mọi thiết bị).
-  let songPlayToken = 0;
-  async function playSongAll() {
-    const song = (songClassId === 'la' ? SONGS_LA : SONGS_CHOI).find(s => s.id === songId);
-    if (!song) return;
-    const myToken = ++songPlayToken;
-    const cards = document.querySelectorAll('#songLineList .sentence-card');
-    for (let i = 0; i < song.lines.length; i++) {
-      if (myToken !== songPlayToken) return; // bé đã bấm phát lại hoặc rời màn giữa chừng
-      cards.forEach(c => c.classList.remove('is-playing'));
-      if (cards[i]) cards[i].classList.add('is-playing');
-      if (cards[i]) cards[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
-      speak(song.lines[i].en);
-      const waitMs = Math.max(1400, song.lines[i].en.length * 65);
-      await new Promise(r => setTimeout(r, waitMs));
-    }
-    if (myToken === songPlayToken) cards.forEach(c => c.classList.remove('is-playing'));
-  }
-
-  function finishSong() {
-    const msgEl = document.getElementById('songDoneMsg');
-    if (songClassId === 'la') finishLaRound('song', songId, msgEl, 'Bé đã hát xong bài này rồi!');
-    else finishChoiRound('song', songId, msgEl, 'Bé đã hát xong bài này rồi!');
-  }
-
-  document.getElementById('backFromSong').addEventListener('click', () => { songPlayToken++; showScreen('home'); });
-  document.getElementById('songPlayAllBtn').addEventListener('click', () => playSongAll());
-  document.getElementById('songDoneBtn').addEventListener('click', () => finishSong());
 
   // ---------- TỪ HAY GẶP / CỤM TỪ THÔNG DỤNG (lớp Chồi + lớp Lá, tab Học) ----------
   // Từ hay gặp (Chồi, SIGHT_TOPICS): 9 nhóm × 8 từ đơn. Cụm từ thông dụng (Lá, PHRASES_LA_TOPICS):

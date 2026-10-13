@@ -12,8 +12,8 @@
 //   • Lớp Chồi: Từ vựng (vocab_choi.js), Ngữ âm 2 (phonics2.js), Từ hay gặp (sight_choi.js), Tập viết chữ, Xếp chữ 3–6 chữ cái,
 //     Lật thẻ trí nhớ, Ghép câu (sentences_choi.js).
 //   • Lớp Lá: tab Học xong — Từ vựng (vocab_la.js), Ngữ pháp cơ bản (grammar_la.js, 9 bài), Ngữ âm 3
-//     (phonics3.js), Truyện dài (stories_la.js), Cụm từ thông dụng (phrases_la.js), Bài hát
-//     (songs_la.js), Đọc hiểu văn bản thông tin (reading_la.js, dùng chung màn Truyện). Tab Trò chơi
+//     (phonics3.js), Truyện dài (stories_la.js), Cụm từ thông dụng (phrases_la.js),
+//     Đọc hiểu văn bản thông tin (reading_la.js, dùng chung màn Truyện). Tab Trò chơi
 //     xong — Xếp chữ từ dài, Đố nhanh nâng cao (5 lựa chọn), Sắp xếp câu (sentences_la.js), Lật thẻ
 //     nâng cao (chữ-nghĩa thay vì hình-chữ), Simon nói nâng cao (simon_la.js, lệnh 2 hành động). Tab
 //     Câu xong — Hỏi-đáp (qa_la.js, nối câu), Đối thoại nhập vai (dialogues_la.js, chọn lời thoại
@@ -36,7 +36,7 @@ const CLASS_CONTENT = {
     upcoming: { home: [], games: [], sentences: [] },
     // Tiêu đề + câu giới thiệu ở đầu từng tab khi chọn lớp này (không khai báo = dùng câu gốc của lớp Mầm).
     hero: {
-      home: { title: 'Chào ba mẹ! 👋', text: 'Chọn Từ vựng, Ngữ pháp, Ngữ âm 3, Truyện, Cụm từ, Bài hát hoặc Đọc hiểu bên dưới để bé học nâng cao hơn nhé.' },
+      home: { title: 'Chào ba mẹ! 👋', text: 'Chọn Từ vựng, Ngữ pháp, Ngữ âm 3, Truyện, Cụm từ hoặc Đọc hiểu bên dưới để bé học nâng cao hơn nhé.' },
       games: { title: 'Trò chơi 🎮', text: 'Chọn Xếp chữ, Đố nhanh, Sắp xếp câu, Lật thẻ hoặc Simon nói, rồi chọn 1 chủ đề — chơi lại bao nhiêu lần cũng được!' },
       sentences: { title: 'Câu 💬', text: 'Chọn Hỏi-đáp, Đối thoại nhập vai, Viết câu ngắn hoặc Viết đoạn văn, rồi chọn 1 chủ đề để luyện giao tiếp nhé!' },
     },

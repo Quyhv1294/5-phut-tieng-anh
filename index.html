@@ -162,7 +162,6 @@
         <button class="mode-grid-btn" id="choiModePhonicsBtn">🔊 Ngữ âm 2</button>
         <button class="mode-grid-btn" id="choiModeSightBtn">👀 Từ hay gặp</button>
         <button class="mode-grid-btn" id="choiModeWriteBtn">✍️ Tập viết</button>
-        <button class="mode-grid-btn" id="choiModeSongsBtn">🎵 Bài hát</button>
         <button class="mode-grid-btn" id="choiModeStoriesBtn">📗 Truyện</button>
       </div>
       <div class="home-mode-panel" id="choiPanelVocab">
@@ -180,10 +179,6 @@
         <p class="class-intro">Bé dùng ngón tay tô theo nét chữ mờ: mỗi chữ tô chữ hoa rồi chữ thường.</p>
         <div class="topic-grid" id="writeTopicGrid"></div>
       </div>
-      <div class="home-mode-panel" id="choiPanelSongs" hidden>
-        <p class="class-intro">Nghe và hát theo các bài đồng dao tiếng Anh kinh điển, vừa vui vừa nhớ từ lâu hơn!</p>
-        <div class="topic-grid" id="songsTopicGrid"></div>
-      </div>
       <div class="home-mode-panel" id="choiPanelStories" hidden>
         <p class="class-intro">Truyện tranh dài hơn lớp Mầm, đọc xong trả lời 3 câu hỏi hiểu truyện.</p>
         <div class="topic-grid" id="storyChoiTopicGrid"></div>
@@ -197,7 +192,6 @@
         <button class="mode-grid-btn" id="laModePhonicsBtn">🔊 Ngữ âm 3</button>
         <button class="mode-grid-btn" id="laModeStoriesBtn">📗 Truyện</button>
         <button class="mode-grid-btn" id="laModePhrasesBtn">🗣️ Cụm từ</button>
-        <button class="mode-grid-btn" id="laModeSongsBtn">🎵 Bài hát</button>
         <button class="mode-grid-btn" id="laModeReadingBtn">📋 Đọc hiểu</button>
       </div>
       <div class="home-mode-panel" id="laPanelVocab">
@@ -218,10 +212,6 @@
       <div class="home-mode-panel" id="laPanelPhrases" hidden>
         <p class="class-intro">30 cụm từ thông dụng bé hay dùng ở lớp học, ở nhà và khi chơi cùng bạn bè.</p>
         <div class="topic-grid" id="phraseTopicGrid"></div>
-      </div>
-      <div class="home-mode-panel" id="laPanelSongs" hidden>
-        <p class="class-intro">Nghe và hát theo các bài đồng dao tiếng Anh kinh điển, vừa vui vừa nhớ từ lâu hơn!</p>
-        <div class="topic-grid" id="songsLaTopicGrid"></div>
       </div>
       <div class="home-mode-panel" id="laPanelReading" hidden>
         <p class="class-intro">Đọc nội quy, thực đơn, thời khoá biểu... rồi trả lời câu hỏi — khác truyện kể, đây là kỹ năng đọc-tra cứu thông tin thật.</p>
@@ -322,20 +312,6 @@
     <div class="sentence-wrap">
       <div class="sentence-topic-title" id="sentenceTopicTitle">Gia đình</div>
       <div class="sentence-list" id="sentenceList"></div>
-    </div>
-  </section>
-
-  <!-- ============ SONG SCREEN (Bài hát — lớp Chồi) ============ -->
-  <section class="screen" id="screen-song">
-    <div class="card-topbar">
-      <button class="icon-btn" id="backFromSong" aria-label="Quay lại">←</button>
-    </div>
-    <div class="sentence-wrap">
-      <div class="sentence-topic-title" id="songTitle">Twinkle, Twinkle, Little Star</div>
-      <button class="cta-btn" id="songPlayAllBtn">▶️ Nghe & hát theo cả bài</button>
-      <div class="sentence-list" id="songLineList"></div>
-      <button class="ghost-btn ghost-btn--solid" id="songDoneBtn">✅ Bé hát được rồi!</button>
-      <p class="quiz-feedback" id="songDoneMsg"></p>
     </div>
   </section>
 
@@ -1284,7 +1260,7 @@
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🧪</span>
-        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ở đầu các tab Học, Trò chơi và Câu có 3 ô Lớp Mầm, Lớp Chồi, Lớp Lá — mỗi lớp có bài học và trò chơi riêng (Lớp Chồi có Từ vựng, Ngữ âm 2, Từ hay gặp, Tập viết chữ, Bài hát, Truyện, Xếp chữ, Lật thẻ, Simon nói và Ghép câu; Lớp Lá có Từ vựng, Ngữ pháp cơ bản, Ngữ âm 3, Truyện, Cụm từ thông dụng, Bài hát, Đọc hiểu văn bản ở tab Học, Xếp chữ từ dài/Đố nhanh/Sắp xếp câu/Lật thẻ nâng cao/Simon nói nâng cao ở tab Trò chơi, và Hỏi-đáp/Đối thoại nhập vai/Viết câu ngắn/Viết đoạn văn ở tab Câu). Mỗi lớp có tiến độ và huy hiệu riêng (xem ở tab Thành tích). Đủ điều kiện ở thẻ "Lên lớp" thì bé được làm bài kiểm tra ngắn để lên lớp trên. Ba mẹ cũng có thể chuyển lớp, đổi lớp cho bé hoặc làm lại bài kiểm tra bất cứ lúc nào (thẻ "Lớp của bé" ở trang Học).</span>
+        <span><strong>Kiểm tra trình độ</strong> — ngay sau khi tạo hồ sơ, bé làm bài 5–10 câu (không mất sao) để app xếp lớp Mầm, Chồi hoặc Lá cho hợp. Ở đầu các tab Học, Trò chơi và Câu có 3 ô Lớp Mầm, Lớp Chồi, Lớp Lá — mỗi lớp có bài học và trò chơi riêng (Lớp Chồi có Từ vựng, Ngữ âm 2, Từ hay gặp, Tập viết chữ, Truyện, Xếp chữ, Lật thẻ, Simon nói và Ghép câu; Lớp Lá có Từ vựng, Ngữ pháp cơ bản, Ngữ âm 3, Truyện, Cụm từ thông dụng, Đọc hiểu văn bản ở tab Học, Xếp chữ từ dài/Đố nhanh/Sắp xếp câu/Lật thẻ nâng cao/Simon nói nâng cao ở tab Trò chơi, và Hỏi-đáp/Đối thoại nhập vai/Viết câu ngắn/Viết đoạn văn ở tab Câu). Mỗi lớp có tiến độ và huy hiệu riêng (xem ở tab Thành tích). Đủ điều kiện ở thẻ "Lên lớp" thì bé được làm bài kiểm tra ngắn để lên lớp trên. Ba mẹ cũng có thể chuyển lớp, đổi lớp cho bé hoặc làm lại bài kiểm tra bất cứ lúc nào (thẻ "Lớp của bé" ở trang Học).</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">👤</span>
@@ -1430,7 +1406,6 @@
 <script src="data/vocab_choi.js"></script>
 <script src="data/sight_choi.js"></script>
 <script src="data/sentences_choi.js"></script>
-<script src="data/songs_choi.js"></script>
 <script src="data/stories_choi.js"></script>
 <script src="data/vocab_la.js"></script>
 <script src="data/grammar_la.js"></script>
@@ -1442,7 +1417,6 @@
 <script src="data/write_la.js"></script>
 <script src="data/simon_la.js"></script>
 <script src="data/phrases_la.js"></script>
-<script src="data/songs_la.js"></script>
 <script src="data/paragraph_la.js"></script>
 <script src="data/reading_la.js"></script>
 <script src="data/classes.js"></script>
