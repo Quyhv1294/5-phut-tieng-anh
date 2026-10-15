@@ -277,86 +277,36 @@
     grid-template-columns: 1fr 1fr;
     gap: 14px;
   }
-  /* BẢN ĐỒ KHO BÁU (trang chủ) — cùng 1 danh sách .topic-card như .topic-grid, chỉ đổi cách xếp:
-     1 cột, so le trái/phải nối bằng con đường đứt nét ở giữa như đường mòn trên bản đồ kho báu,
-     mỗi điểm dừng đánh số thứ tự, kết thúc bằng 1 rương kho báu. Tab Trò chơi/Câu/Tiến độ vẫn giữ
-     .topic-grid (chọn nhanh 1 hoạt động, không cần cảm giác hành trình).
-     Toàn bộ hoạ tiết (giấy da, la bàn, rương...) đều vẽ bằng CSS/emoji — không dùng ảnh ngoài, để
-     nhẹ, tự đổi màu theo giao diện sáng/tối, và khớp phong cách "vẽ tay" đã dùng ở bức tranh ghép
-     hình trong mục Sưu tập. */
-  .treasure-map {
-    position: relative;
-    background: linear-gradient(155deg, var(--surface-2), var(--surface));
-    border: 3px dashed var(--gold-ink);
-    border-radius: 26px;
-    padding: 34px 14px 22px;
+  /* LƯỚI Ô CHỦ ĐỀ (trang chủ lớp Mầm) — 3 cột, mỗi ô chỉ có hình + tên cho bé dễ nhận và dễ bấm, 12 chủ
+     đề gọn trong khoảng 1 màn hình (trước đây là bản đồ kho báu 1 cột so le, phải kéo rất dài). */
+  .topic-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 4px 0 6px; }
+  .topic-card.topic-tile {
+    align-items: center; justify-content: center; text-align: center; gap: 6px;
+    min-height: 116px; padding: 22px 6px 12px; border-radius: 20px;
   }
-  .treasure-map-compass {
-    position: absolute; top: 14px; right: 18px;
-    font-size: 32px; transform: rotate(12deg);
-    opacity: 0.85;
+  .topic-tile .emoji { font-size: 36px; line-height: 1.1; display: flex; justify-content: center; flex-wrap: nowrap; }
+  .topic-tile .emoji:has(img:nth-child(3)) { font-size: 22px; } /* emoji ghép nhiều người (Gia đình) */
+  .topic-tile .label { font-size: 15px; line-height: 1.2; }
+  .topic-tile .tile-num { position: absolute; top: 6px; left: 9px; font-family: 'Baloo 2'; font-weight: 800; font-size: 13px; opacity: 0.55; }
+  .topic-tile .tile-mark {
+    position: absolute; top: 5px; right: 6px; min-width: 22px; padding: 1px 6px; border-radius: 999px;
+    background: rgba(255,255,255,0.8); font-size: 12.5px; font-weight: 800; color: var(--teal-ink); line-height: 1.5;
   }
-  .treasure-map-start {
-    text-align: center; margin: 0 0 18px;
-    font-family: 'Baloo 2'; font-weight: 800; font-size: 16px;
-    color: var(--ink-soft);
+  .topic-tile.is-current { box-shadow: 0 0 0 3px var(--teal), var(--shadow); }
+  .topic-tile .tile-here {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    background: var(--teal); color: #fff; font-family: 'Baloo 2'; font-weight: 800; font-size: 12px;
+    padding: 1px 9px; border-radius: 999px; box-shadow: var(--shadow);
   }
-  .topic-path {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    padding: 4px 0 10px;
+  /* Giao diện tối: nền ô vẫn là màu pastel sáng → chữ phải tối mới đọc rõ (màu chữ riêng của từng chủ đề
+     ở giao diện tối là màu sáng, chìm vào nền). */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .topic-tile .label, :root:not([data-theme="light"]) .topic-tile .tile-num { color: #2E2419; }
   }
-  .topic-path::before {
-    content: '';
-    position: absolute;
-    left: 50%; top: 6px; bottom: 6px;
-    border-left: 4px dashed var(--gold-ink);
-    opacity: 0.55;
-    transform: translateX(-50%);
-    z-index: 0;
-  }
-  .topic-path .topic-card { position: relative; width: 64%; z-index: 1; }
-  .topic-path .topic-card:nth-child(odd) { align-self: flex-start; }
-  .topic-path .topic-card:nth-child(even) { align-self: flex-end; }
-  .topic-path .topic-card.is-current { box-shadow: 0 0 0 3px var(--teal), var(--shadow); }
-  .topic-path .topic-card .stop-number {
-    position: absolute; top: -8px; left: -8px;
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--gold); color: var(--gold-ink);
-    border: 2px solid var(--surface);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Baloo 2'; font-weight: 800; font-size: 14px;
-    box-shadow: var(--shadow);
-  }
-  .topic-path .topic-card .current-badge {
-    position: absolute; top: -34px; left: 50%; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center;
-    font-size: 30px; line-height: 1.1; white-space: nowrap;
-    animation: current-badge-bounce 1.2s ease-in-out infinite;
-  }
-  .topic-path .topic-card .current-badge small {
-    font-size: 11.5px; font-weight: 800; font-family: 'Baloo 2';
-    background: var(--teal); color: #fff;
-    border-radius: 999px; padding: 1px 7px; margin-top: 2px;
-  }
+  :root[data-theme="dark"] .topic-tile .label, :root[data-theme="dark"] .topic-tile .tile-num { color: #2E2419; }
   @keyframes current-badge-bounce {
     0%, 100% { transform: translateX(-50%) translateY(0); }
     50% { transform: translateX(-50%) translateY(-6px); }
-  }
-  .treasure-map-chest {
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    margin-top: 26px; padding-top: 18px;
-    border-top: 3px dashed var(--gold-ink);
-    text-align: center;
-  }
-  .treasure-map-chest .chest-icon { font-size: 52px; filter: grayscale(0.6); opacity: 0.7; }
-  .treasure-map-chest .chest-label { font-weight: 700; font-size: 15px; color: var(--ink-soft); max-width: 220px; }
-  .treasure-map-chest.is-open .chest-icon { filter: none; opacity: 1; animation: current-badge-bounce 1s ease-in-out infinite; }
-  .treasure-map-chest.is-open .chest-label { color: var(--gold-ink); font-weight: 800; }
-  @media (max-width: 380px) {
-    .topic-path .topic-card { width: 72%; }
   }
   .topic-card {
     position: relative;
@@ -2251,7 +2201,88 @@
   html.fs-xl { zoom: 1.25; }
 
   @media (prefers-reduced-motion: reduce) {
-    .topic-path .topic-card .current-badge, .treasure-map-chest.is-open .chest-icon, .chest-btn { animation: none; }
+    .chest-btn { animation: none; }
     .fox-cheer { transform: none; transition: opacity 0.2s; }
     .coach-hole { transition: none; }
   }
+
+  /* Nút nghe lại ở màn đố (đợt A — trẻ chưa biết đọc cần nghe lại từ bất cứ lúc nào) */
+  .quiz-replay-btn { display: block; margin: 0 auto 14px; }
+
+  /* ---------- Trang chủ cho bé (đợt B): nút "Học tiếp", Góc ba mẹ, gợi ý chơi thử, cổng ba mẹ ---------- */
+  .kid-continue {
+    display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 14px; padding: 12px 16px 12px 10px;
+    border: none; border-radius: 24px; cursor: pointer; text-align: left; color: #fff;
+    background: linear-gradient(135deg, var(--teal), color-mix(in srgb, var(--teal) 60%, var(--mint)));
+    box-shadow: 0 6px 0 color-mix(in srgb, var(--teal) 60%, #000), var(--shadow);
+  }
+  .kid-continue:active { transform: translateY(4px); box-shadow: 0 2px 0 color-mix(in srgb, var(--teal) 60%, #000), var(--shadow); }
+  .kid-continue-avatar {
+    width: 60px; height: 60px; flex: none; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: #fff; border: 3px solid rgba(255,255,255,0.6); background-clip: padding-box;
+    font-size: 36px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .kid-continue-avatar img { width: 38px; height: 38px; }
+  .kid-continue-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+  .kid-continue-text small { font-weight: 800; font-size: 14px; opacity: 0.9; }
+  .kid-continue-text strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 25px; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .kid-continue-play {
+    flex: none; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: #fff; color: var(--teal); font-size: 24px; padding-left: 4px; box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+  }
+  .parent-corner { margin: 18px 0 8px; border: 2px dashed var(--line); border-radius: 18px; background: var(--surface); }
+  .parent-corner > summary {
+    position: relative; list-style: none; cursor: pointer; padding: 12px 44px 12px 16px; display: flex; flex-direction: column; gap: 2px;
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; color: var(--ink);
+  }
+  .parent-corner > summary::-webkit-details-marker { display: none; }
+  .parent-corner > summary::after { content: '›'; position: absolute; right: 16px; top: 50%; margin-top: -14px; line-height: 1; font-size: 24px; color: var(--ink-soft); transition: transform .2s; }
+  .parent-corner[open] > summary::after { transform: rotate(90deg); }
+  .parent-corner > summary small { font-family: 'Quicksand'; font-weight: 700; font-size: 13px; color: var(--ink-soft); }
+  .parent-corner-body { padding: 0 12px 12px; }
+
+  /* ---------- Đợt C: thẻ khoá "sương mù", màn kết quả, sổ sticker, nhiệm vụ bằng biểu tượng ---------- */
+  .topic-card.is-locked { filter: saturate(0.55); opacity: 0.9; }
+  .topic-card.is-locked:not(.topic-tile) .emoji { filter: blur(5px) grayscale(0.3); opacity: 0.35; }
+  .topic-tile.is-locked .emoji { font-size: 32px; }
+  .topic-card .fog-q { position: absolute; top: 14px; left: 18px; font-size: 34px; line-height: 1; pointer-events: none; }
+  .topic-card.is-next-lock { box-shadow: 0 0 0 3px var(--gold), var(--shadow); }
+  .topic-card.is-next-lock .fog-q { animation: fx-pop 1.6s ease-in-out infinite; }
+  .done-next-btn { font-size: 20px; padding: 16px 22px; }
+  .done-parent { width: 100%; max-width: 420px; margin-top: 6px; text-align: center; }
+  .done-parent > summary { cursor: pointer; color: var(--ink-soft); font-weight: 800; font-size: 14px; padding: 8px; list-style: none; }
+  .done-parent > summary::-webkit-details-marker { display: none; }
+  .done-parent[open] > summary { color: var(--ink); }
+  .done-parent .parent-tip { margin: 4px 0 10px; }
+  .kid-missions { display: flex; align-items: center; gap: 10px; margin: -4px 0 14px; padding: 8px 10px 8px 14px; border-radius: 18px; background: var(--surface); border: 2px solid var(--line); }
+  .kid-missions-label { flex: 1; min-width: 0; font-weight: 800; font-size: 13.5px; color: var(--ink-soft); line-height: 1.3; }
+  .kid-missions-icons { display: flex; gap: 8px; flex: none; }
+  .kid-mission {
+    position: relative; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--line);
+    background: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+  }
+  .kid-mission-icon { font-size: 22px; line-height: 1; filter: grayscale(0.6); opacity: 0.7; }
+  .kid-mission.is-done { border-color: var(--teal); background: color-mix(in srgb, var(--teal) 18%, var(--surface)); }
+  .kid-mission.is-done .kid-mission-icon { filter: none; opacity: 1; }
+  .kid-mission-check {
+    position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--teal); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  }
+  .badge-progress { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-weight: 700; color: var(--ink-soft); }
+  .badge-progress strong { font-family: 'Baloo 2'; font-size: 22px; color: var(--ink); }
+  .badge-progress-bar { flex-basis: 100%; height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .badge-progress-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gold), var(--accent)); }
+  .badge-group-label { grid-column: 1 / -1; }
+  .badge-item { cursor: pointer; }
+  html.lang-en-ui .badge-grid { grid-template-columns: repeat(3, 1fr); }
+  html.lang-en-ui .badge-item { flex-direction: column; justify-content: flex-start; text-align: center; gap: 6px; padding: 12px 6px; min-height: 120px; }
+  html.lang-en-ui .badge-item .badge-icon {
+    width: 62px; height: 62px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); font-size: 34px; border: 3px dashed var(--line);
+  }
+  html.lang-en-ui .badge-item.is-unlocked .badge-icon { border: 3px solid var(--gold); background: color-mix(in srgb, var(--gold) 22%, var(--surface)); transform: rotate(-6deg); }
+  html.lang-en-ui .badge-item .badge-text br, html.lang-en-ui .badge-item .badge-desc { display: none; }
+  html.lang-en-ui .badge-item .badge-label { font-size: 13.5px; line-height: 1.25; }
+  @media (prefers-reduced-motion: reduce) { .topic-card.is-next-lock .fog-q { animation: none; } }
+  /* Hàng sao ở màn Hoàn thành: 10 sao không còn tràn ra hai mép — xuống dòng khi không đủ chỗ */
+  .earned-row { max-width: 100%; flex-wrap: wrap; justify-content: center; overflow-wrap: anywhere; }

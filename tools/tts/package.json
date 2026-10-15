@@ -1,0 +1,9 @@
+{
+  "name": "5phut-tts-tool",
+  "private": true,
+  "description": "Công cụ tạo giọng đọc tiếng Anh (Gemini TTS) — chỉ chạy trên máy, không đưa vào app.",
+  "type": "module",
+  "dependencies": {
+    "@breezystack/lamejs": "^1.2.7"
+  }
+}

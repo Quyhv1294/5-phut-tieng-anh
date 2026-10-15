@@ -1,8 +1,11 @@
 // Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
 // LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
 // lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v168';
+const CACHE_VERSION = 'v176';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
+// Giọng đọc thu sẵn (assets/tts/): tên file là mã băm của câu, đổi giọng thì đổi thư mục → file không bao giờ
+// đổi nội dung, nên giữ ở cache RIÊNG, không xoá khi tăng CACHE_VERSION (bé khỏi phải tải lại).
+const TTS_CACHE = '5phut-tts-v1';
 
 importScripts('data/emoji-icons.js');
 
@@ -45,6 +48,7 @@ const APP_SHELL = [
   './data/classes.js',
   './data/emoji-icons.js',
   './data/sheets-config.js',
+  './data/tts-en.js',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
   './assets/icons/icon-512-maskable.png',
@@ -121,7 +125,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME && k !== TTS_CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -142,6 +146,16 @@ self.addEventListener('fetch', event => {
 
   const isAppShellFile = url.origin === self.location.origin &&
     (/\.(html|js|css|json)$/.test(url.pathname) || url.pathname.endsWith('/'));
+
+  if (url.origin === self.location.origin && url.pathname.includes('/assets/tts/')) {
+    event.respondWith(
+      caches.open(TTS_CACHE).then(cache => cache.match(req).then(cached => cached || fetch(req).then(res => {
+        if (res && res.ok) cache.put(req, res.clone());
+        return res;
+      })))
+    );
+    return;
+  }
 
   if (isAppShellFile) {
     // Network-first: ưu tiên bản mới nhất khi có mạng, chỉ dùng cache khi mất mạng.

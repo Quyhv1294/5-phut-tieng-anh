@@ -70,25 +70,24 @@
   <!-- ============ HOME SCREEN ============ -->
   <section class="screen active" id="screen-home">
     <div class="class-switch" data-class-switch></div>
-    <div class="home-hero">
-      <h1>Chào ba mẹ! 👋</h1>
-      <p>Chọn một chủ đề bên dưới, học cùng bé 10 từ mới, rồi chơi mini game ôn lại — chỉ mất khoảng 5 phút thôi ạ.</p>
+    <!-- Nút học chính cho bé: chủ đề tiếp theo của lớp đang chọn (app.js — renderKidContinue) -->
+    <button class="kid-continue" id="kidContinueBtn">
+      <span class="kid-continue-avatar" id="kidContinueAvatar" aria-hidden="true">🧒</span>
+      <span class="kid-continue-text">
+        <small id="kidContinueEyebrow">Bắt đầu học</small>
+        <strong id="kidContinueTitle"></strong>
+      </span>
+      <span class="kid-continue-play" aria-hidden="true">▶</span>
+    </button>
+    <div class="kid-missions" id="kidMissions">
+      <span class="kid-missions-label"></span>
+      <span class="kid-missions-icons"></span>
     </div>
-
     <button class="week-banner" id="weekBanner" hidden>
       <span class="wb-emoji" id="weekBannerEmoji">🗓️</span>
       <span>
         <span class="wb-eyebrow">Bài ôn tập tuần này</span><br>
         <span class="wb-title" id="weekBannerTitle">Con vật</span>
-      </span>
-      <span class="wb-arrow">→</span>
-    </button>
-
-    <button class="week-banner placement-banner" id="placementBanner">
-      <span class="wb-emoji" id="placementBannerEmoji">🧪</span>
-      <span>
-        <span class="wb-eyebrow" id="placementBannerEyebrow">Kiểm tra nhỏ · 3 phút</span><br>
-        <span class="wb-title" id="placementBannerTitle">Xem bé hợp lớp nào nhé!</span>
       </span>
       <span class="wb-arrow">→</span>
     </button>
@@ -104,22 +103,7 @@
       <span class="streak-freeze-badge" id="streakFreezeBadge" hidden>🛡️×<span id="streakFreezeCount">0</span></span>
     </div>
 
-    <div class="section-label">✅ Nhiệm vụ hôm nay</div>
-    <div class="daily-mission-card">
-      <div class="daily-mission-list" id="dailyMissionList"></div>
-      <p class="daily-mission-claimed" id="dailyMissionClaimed" hidden>🎉 Bé đã xong hết nhiệm vụ hôm nay, được thưởng thêm sao rồi!</p>
-    </div>
-
-    <div class="class-content" id="classContentReview" data-class-content="mam,choi">
-    <div class="section-label">🔁 Ôn tập</div>
-    <div class="progress-actions">
-      <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
-      <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
-      <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
-    </div>
-    </div>
     <div class="class-content" id="classContentHome" data-class-content="mam">
-    <div class="promo-slot" id="promoCardMam"></div>
 
     <div class="segment-toggle" id="homeModeToggle">
       <div class="segment-thumb"></div>
@@ -130,15 +114,7 @@
     </div>
 
     <div class="home-mode-panel" id="homeModeVocabPanel">
-      <div class="treasure-map">
-        <span class="treasure-map-compass">🧭</span>
-        <div class="treasure-map-start">🚩 Xuất phát</div>
-        <div class="topic-path" id="topicGrid"></div>
-        <div class="treasure-map-chest" id="treasureChest">
-          <span class="chest-icon" id="treasureChestIcon">📦</span>
-          <span class="chest-label" id="treasureChestLabel">Kho báu bí mật — học hết 12 chủ đề để mở khoá!</span>
-        </div>
-      </div>
+      <div class="topic-tiles" id="topicGrid"></div>
     </div>
 
     <div class="home-mode-panel" id="homeModeAbcPanel" hidden>
@@ -152,11 +128,10 @@
     <div class="home-mode-panel" id="homeModeStoryPanel" hidden>
       <div class="topic-grid" id="storyTopicGrid"></div>
     </div>
+    <div class="promo-slot" id="promoCardMam"></div>
 
     </div>
     <div class="class-content" id="classContentHomeChoi" data-class-content="choi" hidden>
-      <div class="choi-summary" id="choiSummary"></div>
-      <div class="promo-slot" id="promoCardChoi"></div>
       <div class="mode-grid" id="choiHomeModeToggle">
         <button class="mode-grid-btn active" id="choiModeVocabBtn">📚 Từ vựng</button>
         <button class="mode-grid-btn" id="choiModePhonicsBtn">🔊 Ngữ âm 2</button>
@@ -183,9 +158,10 @@
         <p class="class-intro">Truyện tranh dài hơn lớp Mầm, đọc xong trả lời 3 câu hỏi hiểu truyện.</p>
         <div class="topic-grid" id="storyChoiTopicGrid"></div>
       </div>
+      <div class="promo-slot" id="promoCardChoi"></div>
+      <div class="choi-summary" id="choiSummary"></div>
     </div>
     <div class="class-content" id="classContentHomeLa" data-class-content="la" hidden>
-      <div class="choi-summary" id="laSummary"></div>
       <div class="mode-grid" id="laHomeModeToggle">
         <button class="mode-grid-btn active" id="laModeVocabBtn">📚 Từ vựng</button>
         <button class="mode-grid-btn" id="laModeGrammarBtn">🔤 Ngữ pháp</button>
@@ -217,7 +193,43 @@
         <p class="class-intro">Đọc nội quy, thực đơn, thời khoá biểu... rồi trả lời câu hỏi — khác truyện kể, đây là kỹ năng đọc-tra cứu thông tin thật.</p>
         <div class="topic-grid" id="readingLaTopicGrid"></div>
       </div>
+      <div class="choi-summary" id="laSummary"></div>
     </div>
+    <div class="class-content" id="classContentReview" data-class-content="mam,choi">
+    <div class="section-label">🔁 Ôn tập</div>
+    <div class="progress-actions">
+      <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
+      <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
+      <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
+    </div>
+    </div>
+
+    <!-- Góc ba mẹ: lời chào, kiểm tra trình độ, nhiệm vụ hôm nay — gom lại, thu gọn sẵn (app.js — PARENT CORNER) -->
+    <details class="parent-corner" id="parentCorner">
+      <summary><span>👪 Góc ba mẹ</span><small>Hướng dẫn · kiểm tra trình độ · nhiệm vụ hôm nay</small></summary>
+      <div class="parent-corner-body">
+        <div class="home-hero">
+          <h1>Chào ba mẹ! 👋</h1>
+          <p>Chọn một chủ đề bên dưới, học cùng bé 10 từ mới, rồi chơi mini game ôn lại — chỉ mất khoảng 5 phút thôi ạ.</p>
+        </div>
+
+        <button class="week-banner placement-banner" id="placementBanner">
+          <span class="wb-emoji" id="placementBannerEmoji">🧪</span>
+          <span>
+            <span class="wb-eyebrow" id="placementBannerEyebrow">Kiểm tra nhỏ · 3 phút</span><br>
+            <span class="wb-title" id="placementBannerTitle">Xem bé hợp lớp nào nhé!</span>
+          </span>
+          <span class="wb-arrow">→</span>
+        </button>
+
+        <div class="section-label">✅ Nhiệm vụ hôm nay</div>
+        <div class="daily-mission-card">
+          <div class="daily-mission-list" id="dailyMissionList"></div>
+          <p class="daily-mission-claimed" id="dailyMissionClaimed" hidden>🎉 Bé đã xong hết nhiệm vụ hôm nay, được thưởng thêm sao rồi!</p>
+        </div>
+
+      </div>
+    </details>
     <div class="class-soon" id="classSoonHome" hidden></div>
 
     <div class="home-footnote">"5 Phút Tiếng Anh Mỗi Ngày" 💚</div>
@@ -804,6 +816,7 @@
     <div class="quiz-wrap">
       <div class="quiz-prompt">Đâu là...</div>
       <div class="quiz-word" id="quizWord">CAT</div>
+      <button class="speak-btn quiz-replay-btn" id="quizReplayBtn" aria-label="Nghe lại từ">🔊 Nghe lại</button>
       <div class="quiz-options" id="quizOptions"></div>
       <div class="quiz-feedback" id="quizFeedback"></div>
     </div>
@@ -1196,10 +1209,14 @@
         <button class="chest-btn" id="chestBtn">🎁 Mở rương may mắn</button>
         <div class="chest-reward" id="chestReward" hidden></div>
       </div>
-      <div class="parent-tip" id="parentTip"></div>
+      <button class="cta-btn done-next-btn" id="doneNextBtn" hidden>▶ Học tiếp</button>
       <button class="cta-btn" id="backHomeBtn">Về trang chủ</button>
       <button class="ghost-btn ghost-btn--solid" id="replayBtn">Học lại chủ đề này</button>
-      <button class="ghost-btn ghost-btn--solid" id="printBtn">🖨️ In flashcard chủ đề này</button>
+      <details class="done-parent">
+        <summary>👪 Dành cho ba mẹ</summary>
+        <div class="parent-tip" id="parentTip"></div>
+        <button class="ghost-btn ghost-btn--solid" id="printBtn">🖨️ In flashcard chủ đề này</button>
+      </details>
     </div>
   </section>
 
@@ -1251,15 +1268,15 @@
     <div class="onboarding-steps en-only">
       <div class="onboarding-step">
         <span class="onboarding-step-icon">📚</span>
-        <span><strong>Học</strong> — có 4 tab nhỏ: "🗺️ Từ vựng" (các chủ đề mở LẦN LƯỢT theo thứ tự trên bản đồ kho báu: học 1 chủ đề bằng flashcard rồi làm mini quiz, đạt từ 80% câu đúng trở lên thì chủ đề tiếp theo mới mở khoá, sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết), "🔤 Bảng chữ cái" (học 26 chữ cái A-Z, luôn mở sẵn không cần chờ), "🔊 Ngữ âm" (ghép âm các nhóm vần đơn giản như -at/-og/-ug/-an, cũng luôn mở sẵn) và "📗 Truyện tranh" (đọc truyện tranh song ngữ ngắn từng trang kèm nghĩa tiếng Việt, đọc xong trả lời vài câu hỏi hiểu truyện, cũng luôn mở sẵn). Học/ôn xong 1 bài còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "✅ Nhiệm vụ hôm nay" (hoàn thành cả 3 việc nhỏ được thưởng thêm sao) và "Ôn tập thông minh", "Luyện từ khó", "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
+        <span><strong>Học</strong> — có 4 tab nhỏ: "🗺️ Từ vựng" (12 chủ đề luôn mở sẵn, bé chọn chủ đề nào cũng được; nút "▶ Học tiếp" gợi ý chủ đề kế tiếp theo thứ tự. Học 1 chủ đề bằng flashcard rồi làm mini quiz, đúng từ 7/10 câu là đạt; sai từ nào sẽ được làm lại riêng từ đó đến khi đúng hết), "🔤 Bảng chữ cái" (học 26 chữ cái A-Z, luôn mở sẵn không cần chờ), "🔊 Ngữ âm" (ghép âm các nhóm vần đơn giản như -at/-og/-ug/-an, cũng luôn mở sẵn) và "📗 Truyện tranh" (đọc truyện tranh song ngữ ngắn từng trang kèm nghĩa tiếng Việt, đọc xong trả lời vài câu hỏi hiểu truyện, cũng luôn mở sẵn). Học/ôn xong 1 bài còn được mở 1 "🎁 rương may mắn" nhận thêm sao ngẫu nhiên! Phía trên màn Học còn có "✅ Nhiệm vụ hôm nay" (hoàn thành cả 3 việc nhỏ được thưởng thêm sao) và "Ôn tập thông minh", "Luyện từ khó", "Ôn tập tổng hợp" để ôn lại từ đã học.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🎮</span>
-        <span><strong>Trò chơi</strong> — chọn "Ghép tranh", "Xếp chữ", "Tính giờ" hoặc "🎤 Đố ba mẹ" (bé đưa máy cho ba mẹ xem hình, ba mẹ có 10 giây để đoán trước khi bị tính hết giờ) để ôn từ vựng; chế độ tính giờ càng nhanh càng được nhiều sao! Mỗi chủ đề cần học xong ở tab "Học" (mục Từ vựng) trước thì mới mở khoá chơi được ở đây, không phải tốn sao mua.</span>
+        <span><strong>Trò chơi</strong> — chọn "Ghép tranh", "Xếp chữ", "Tính giờ" hoặc "🎤 Đố ba mẹ" (bé đưa máy cho ba mẹ xem hình, ba mẹ có 10 giây để đoán trước khi bị tính hết giờ) để ôn từ vựng; chế độ tính giờ càng nhanh càng được nhiều sao! Mọi chủ đề đều chơi được ngay, không cần học trước.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">💬</span>
-        <span><strong>Câu</strong> — chọn "Đọc câu", "Đoán nghĩa" hoặc "Điền từ" để luyện nhớ từ vựng qua câu ví dụ. Cũng cần học xong chủ đề đó ở tab "Học" trước mới mở khoá, giống tab Trò chơi.</span>
+        <span><strong>Câu</strong> — chọn "Đọc câu", "Đoán nghĩa" hoặc "Điền từ" để luyện nhớ từ vựng qua câu ví dụ. Mọi chủ đề đều luyện được ngay, giống tab Trò chơi.</span>
       </div>
       <div class="onboarding-step">
         <span class="onboarding-step-icon">🏆</span>
@@ -1433,6 +1450,7 @@
 <script src="data/classes.js"></script>
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>
+<script src="data/tts-en.js"></script>
 <script src="app.js"></script>
 <script src="zh-course.js"></script>
 </body>

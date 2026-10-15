@@ -4,3 +4,9 @@
 # Rác hệ điều hành
 .DS_Store
 Thumbs.db
+
+# Công cụ tạo giọng đọc (tools/tts): khoá API và file nghe thử — KHÔNG đưa lên GitHub.
+tools/tts/gemini-api-key.txt
+tools/tts/node_modules/
+tools/tts/samples/
+tools/tts/generate*.log
