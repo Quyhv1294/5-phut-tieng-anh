@@ -104,8 +104,20 @@
   }
   localizeLangText(document.body);
   // Chữ của từ + pinyin (nếu có) ngay bên dưới, dùng cho mọi chỗ hiện 1 từ đang học.
+  // Cỡ chữ theo độ dài (data-fit, xem style.css): thẻ có bề rộng cố định nên từ / câu dài phải nhỏ chữ
+  // lại cho khỏi tràn khỏi thẻ. Mốc tính theo số ký tự — s: từ ngắn … xl: câu dài 3 dòng.
+  function fitClass(text, steps) {
+    const n = String(text || '').length;
+    const keys = ['s', 'm', 'l', 'xl'];
+    for (let i = 0; i < steps.length; i++) if (n <= steps[i]) return keys[i];
+    return keys[steps.length];
+  }
+  const FIT_WORD = [7, 9, 12];      // thẻ từ đơn: MOM … SUPERMARKET
+  const FIT_SENTENCE = [16, 32, 48]; // câu truyện / cụm từ
+
   function setWordText(el, w) {
     el.textContent = w.en;
+    el.dataset.fit = fitClass(w.en, FIT_WORD);
     if (w.py) {
       const py = document.createElement('span');
       py.className = 'word-py';
@@ -905,7 +917,7 @@
       check: p => p.choi && p.choi.spellWords >= 30 },
     { id: 'choi_sentences', group: 'choi', icon: '🧩', label: 'Nhà văn nhí', desc: 'Ghép đúng 30 câu ở tab Câu (+10 sao)', bonus: 10,
       check: p => p.choi && p.choi.sentencesBuilt >= 30 },
-    { id: 'choi_vocab', group: 'choi', icon: '📚', label: 'Bạn của từ mới', desc: 'Học xong cả 9 chủ đề từ vựng Lớp Chồi (+20 sao)', bonus: 20,
+    { id: 'choi_vocab', group: 'choi', icon: '📚', label: 'Bạn của từ mới', desc: 'Học xong cả ' + CHOI_TOPICS.length + ' chủ đề từ vựng Lớp Chồi (+20 sao)', bonus: 20,
       check: p => CHOI_TOPICS.every(t => p.doneTopics[t.id]) },
     { id: 'choi_sight', group: 'choi', icon: '👀', label: 'Đọc nhanh như chớp', desc: 'Học xong cả 9 nhóm Từ hay gặp (+20 sao)', bonus: 20,
       check: p => SIGHT_TOPICS.every(t => p.doneTopics[t.id]) },
@@ -918,7 +930,7 @@
     { id: 'choi_master', group: 'choi', icon: '🏅', label: 'Học trò xuất sắc lớp Chồi', desc: 'Đạt cả 6 huy hiệu: Thợ ghép vần, Bạn của từ mới, Đọc nhanh như chớp, Bàn tay vàng, Thợ xếp chữ, Nhà văn nhí (+40 sao)', bonus: 40,
       check: p => !!(p.badges.choi_phonics_all && p.badges.choi_vocab && p.badges.choi_sight && p.badges.choi_writer && p.badges.choi_speller && p.badges.choi_sentences) },
     // ----- Huy hiệu riêng của Lớp Lá (group: 'la' → nhóm riêng ở tab Sưu tập, xem renderBadgesScreen) -----
-    { id: 'la_vocab', group: 'la', icon: '📚', label: 'Học giả nhí', desc: 'Học xong cả 5 chủ đề từ vựng Lớp Lá (+20 sao)', bonus: 20,
+    { id: 'la_vocab', group: 'la', icon: '📚', label: 'Học giả nhí', desc: 'Học xong cả ' + LA_TOPICS.length + ' chủ đề từ vựng Lớp Lá (+20 sao)', bonus: 20,
       check: p => LA_TOPICS.every(t => p.doneTopics[t.id]) },
     { id: 'la_grammar', group: 'la', icon: '🔤', label: 'Bậc thầy ngữ pháp', desc: 'Học xong cả 9 bài Ngữ pháp cơ bản (+20 sao)', bonus: 20,
       check: p => GRAMMAR_LA_TOPICS.every(t => p.doneTopics[t.id]) },
@@ -3284,7 +3296,7 @@
     });
   }
 
-  // Từ vựng lớp Chồi (CHOI_TOPICS, data/vocab_choi.js): 9 chủ đề, luôn mở, học theo luồng thẻ → đố → hoàn thành
+  // Từ vựng lớp Chồi (CHOI_TOPICS, data/vocab_choi.js): các chủ đề luôn mở, học theo luồng thẻ → đố → hoàn thành
   // như chủ đề lớp Mầm nhưng không khoá tuần tự và không có mảnh ghép tranh (xem startTopic / finishTopic).
   function renderChoiVocab() {
     const grid = document.getElementById('choiVocabGrid');
@@ -4371,8 +4383,11 @@
   function renderStoryPage() {
     const page = currentStory.pages[storyPageIndex];
     document.getElementById('storyPageEmoji').textContent = page.emoji;
-    document.getElementById('storyPageEn').textContent = page.en;
+    const enEl = document.getElementById('storyPageEn');
+    enEl.textContent = page.en;
+    enEl.dataset.fit = fitClass(page.en, FIT_SENTENCE);
     document.getElementById('storyPageVi').textContent = page.vi;
+    document.getElementById('storyPageNo').textContent = (storyPageIndex + 1) + '/' + currentStory.pages.length;
     speak(page.en);
     const pct = (storyPageIndex / currentStory.pages.length) * 100;
     document.getElementById('storyReadProgressFill').style.width = pct + '%';
@@ -4959,7 +4974,17 @@
 
   function renderSightCard() {
     const w = currentSight.words[sightIndex];
-    document.getElementById('sightWord').textContent = w.en;
+    // Cụm từ (lớp Lá) là cả câu kèm 1 câu đáp → thẻ kiểu hội thoại (.is-phrase); Từ hay gặp (Chồi) giữ chữ to.
+    const isPhrase = PHRASES_LA_TOPICS.includes(currentSight);
+    document.getElementById('sightCard').classList.toggle('is-phrase', isPhrase);
+    const pic = document.getElementById('sightPic');
+    pic.hidden = !isPhrase;
+    if (isPhrase) pic.textContent = currentSight.emoji;
+    document.getElementById('sightSpeakLabel').textContent = isPhrase ? 'Nghe cụm từ' : 'Nghe từ';
+    document.getElementById('sightSpeakSentLabel').textContent = isPhrase ? 'Nghe câu đáp' : 'Nghe câu ví dụ';
+    const wordEl = document.getElementById('sightWord');
+    wordEl.textContent = w.en;
+    wordEl.dataset.fit = isPhrase ? fitClass(w.en, FIT_SENTENCE) : '';
     document.getElementById('sightVi').textContent = w.vi;
     document.getElementById('sightExample').textContent = w.example;
     document.getElementById('sightExampleVi').textContent = w.exampleVi;

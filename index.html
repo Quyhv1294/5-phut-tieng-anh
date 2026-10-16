@@ -781,10 +781,15 @@
       <div class="progress-track"><div class="progress-fill" id="storyReadProgressFill"></div></div>
     </div>
     <div class="flash-wrap">
-      <div class="flashcard" id="storyFlashcard">
-        <div class="big-emoji" id="storyPageEmoji">🧒</div>
-        <div class="word-en" id="storyPageEn">This is me.</div>
-        <div class="word-vi" id="storyPageVi">Đây là tôi.</div>
+      <div class="flashcard story-card" id="storyFlashcard">
+        <div class="story-pic">
+          <span class="story-page-no" id="storyPageNo"></span>
+          <div class="big-emoji" id="storyPageEmoji">🧒</div>
+        </div>
+        <div class="story-text">
+          <div class="story-en" id="storyPageEn">This is me.</div>
+          <div class="story-vi" id="storyPageVi">Đây là tôi.</div>
+        </div>
       </div>
       <button class="speak-btn" id="storyReadSpeakBtn">🔊 Nghe đọc câu</button>
       <div class="nav-row">
@@ -1033,14 +1038,20 @@
       <div class="progress-track"><div class="progress-fill" id="sightProgressFill"></div></div>
     </div>
     <div class="flash-wrap" id="sightLearn">
-      <div class="flashcard sight-card">
+      <div class="flashcard sight-card" id="sightCard">
+        <div class="phrase-pic" id="sightPic" hidden></div>
         <div class="sight-word" id="sightWord">the</div>
         <div class="word-vi" id="sightVi"></div>
-        <div class="sight-example" id="sightExample"></div>
-        <div class="sight-example-vi" id="sightExampleVi"></div>
+        <div class="sight-reply">
+          <div class="sight-reply-label">Đáp lại</div>
+          <div class="sight-example" id="sightExample"></div>
+          <div class="sight-example-vi" id="sightExampleVi"></div>
+        </div>
       </div>
-      <button class="speak-btn" id="sightSpeakBtn">🔊 Nghe từ</button>
-      <button class="speak-btn" id="sightSpeakSentBtn">🔊 Nghe câu ví dụ</button>
+      <div class="speak-row">
+        <button class="speak-btn" id="sightSpeakBtn">🔊 <span id="sightSpeakLabel">Nghe từ</span></button>
+        <button class="speak-btn" id="sightSpeakSentBtn">🔊 <span id="sightSpeakSentLabel">Nghe câu ví dụ</span></button>
+      </div>
       <div class="nav-row">
         <button class="nav-btn" id="sightPrevBtn">← Trước</button>
         <button class="nav-btn primary" id="sightNextBtn">Tiếp →</button>

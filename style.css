@@ -298,12 +298,16 @@
     background: var(--teal); color: #fff; font-family: 'Baloo 2'; font-weight: 800; font-size: 12px;
     padding: 1px 9px; border-radius: 999px; box-shadow: var(--shadow);
   }
-  /* Giao diện tối: nền ô vẫn là màu pastel sáng → chữ phải tối mới đọc rõ (màu chữ riêng của từng chủ đề
-     ở giao diện tối là màu sáng, chìm vào nền). */
+  /* Giao diện tối: nền thẻ / ô chủ đề vẫn là màu pastel sáng → chữ phải tối mới đọc rõ (màu chữ riêng của
+     từng chủ đề ở giao diện tối là màu sáng, chìm vào nền). Áp dụng cho mọi thẻ chủ đề (Mầm, Chồi, Lá…). */
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .topic-tile .label, :root:not([data-theme="light"]) .topic-tile .tile-num { color: #2E2419; }
+    :root:not([data-theme="light"]) .topic-card.t-pink, :root:not([data-theme="light"]) .topic-card.t-blue,
+    :root:not([data-theme="light"]) .topic-card.t-gold, :root:not([data-theme="light"]) .topic-card.t-mint,
+    :root:not([data-theme="light"]) .topic-card.t-accent, :root:not([data-theme="light"]) .topic-tile .tile-num { color: #2E2419; }
   }
-  :root[data-theme="dark"] .topic-tile .label, :root[data-theme="dark"] .topic-tile .tile-num { color: #2E2419; }
+  :root[data-theme="dark"] .topic-card.t-pink, :root[data-theme="dark"] .topic-card.t-blue,
+  :root[data-theme="dark"] .topic-card.t-gold, :root[data-theme="dark"] .topic-card.t-mint,
+  :root[data-theme="dark"] .topic-card.t-accent, :root[data-theme="dark"] .topic-tile .tile-num { color: #2E2419; }
   @keyframes current-badge-bounce {
     0%, 100% { transform: translateX(-50%) translateY(0); }
     50% { transform: translateX(-50%) translateY(-6px); }
@@ -462,6 +466,8 @@
   .progress-fill.is-urgent { background: var(--danger); }
 
   .flash-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+  /* Nội dung cao hơn màn hình (câu dài, máy thấp) thì canh từ trên xuống, không bị cắt mất phần đầu. */
+  .flash-wrap { justify-content: safe center; }
   .flashcard {
     width: 100%;
     max-width: 320px;
@@ -474,7 +480,10 @@
     text-align: center;
   }
   .flashcard .big-emoji { font-size: 96px; line-height: 1; }
-  .flashcard .word-en { font-family: 'Baloo 2'; font-weight: 800; font-size: 46px; letter-spacing: 0.5px; }
+  .flashcard .word-en { font-family: 'Baloo 2'; font-weight: 800; font-size: 46px; letter-spacing: 0.5px; line-height: 1.15; overflow-wrap: anywhere; }
+  .flashcard .word-en[data-fit="m"] { font-size: 40px; }
+  .flashcard .word-en[data-fit="l"] { font-size: 34px; }
+  .flashcard .word-en[data-fit="xl"] { font-size: 30px; }
   .flashcard .word-vi { font-family: 'Quicksand'; font-weight: 700; font-size: 20.5px; opacity: 0.85; }
   /* Lớp Chồi: ẩn nghĩa tiếng Việt, bé đoán trước rồi mới bấm xem (xem toggleViReveal trong app.js). */
   .flashcard .word-vi.vi-hidden { display: none; }
@@ -1443,6 +1452,53 @@
   .promo-note { margin: 0; font-size: 15.5px; font-weight: 700; color: var(--ink-soft); line-height: 1.5; }
   /* Từ hay gặp */
   .sight-card { gap: 6px; }
+  .sight-reply-label { display: none; }
+
+  /* ---------- Trang truyện / đọc hiểu / cụm từ: cả CÂU chứ không phải 1 từ ----------
+     Thẻ cao theo nội dung (không khoá tỉ lệ 4:5 như thẻ từ), rộng hơn, chữ nhỏ dần theo độ dài câu
+     (data-fit do app.js gán theo số ký tự), hình nằm trong ô tranh ở đầu thẻ như trang sách tranh. */
+  .flashcard.story-card, .flashcard.sight-card.is-phrase {
+    aspect-ratio: auto; max-width: 440px; min-height: 360px;
+    justify-content: flex-start; gap: 14px; padding: 14px 14px 20px;
+    background: var(--surface);
+  }
+  .story-pic {
+    position: relative; width: 100%; padding: 18px 0 16px; border-radius: 22px;
+    display: flex; justify-content: center;
+    background: color-mix(in srgb, var(--teal) 16%, var(--surface-2));
+  }
+  .story-pic .big-emoji { font-size: 84px; }
+  .story-page-no {
+    position: absolute; top: 10px; right: 12px; padding: 1px 10px; border-radius: 999px;
+    background: var(--surface); color: var(--ink-soft); font-family: 'Baloo 2'; font-weight: 800; font-size: 13px;
+  }
+  .story-text { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 0 6px; }
+  .story-en, .sight-card.is-phrase .sight-word {
+    font-family: 'Baloo 2'; font-weight: 800; color: var(--ink); line-height: 1.28; text-wrap: balance; overflow-wrap: anywhere;
+    font-size: 34px;
+  }
+  .story-en[data-fit="m"], .sight-card.is-phrase .sight-word[data-fit="m"] { font-size: 28px; }
+  .story-en[data-fit="l"], .sight-card.is-phrase .sight-word[data-fit="l"] { font-size: 25px; }
+  .story-en[data-fit="xl"], .sight-card.is-phrase .sight-word[data-fit="xl"] { font-size: 22px; }
+  .story-vi {
+    padding-top: 12px; border-top: 2px dashed var(--line);
+    font-family: 'Quicksand'; font-weight: 700; font-size: 16.5px; line-height: 1.45; color: var(--ink-soft); text-wrap: balance;
+  }
+  /* Cụm từ: hình chủ đề ở đầu thẻ, câu đáp nằm trong ô hội thoại "Đáp lại". */
+  .flashcard.sight-card.is-phrase { justify-content: center; }
+  .phrase-pic { font-size: 56px; line-height: 1; }
+  .sight-card.is-phrase .word-vi { font-size: 16.5px; line-height: 1.45; color: var(--ink-soft); opacity: 1; text-wrap: balance; }
+  .sight-card.is-phrase .sight-reply {
+    width: 100%; margin-top: 8px; padding: 10px 14px 12px; border-radius: 18px; text-align: left;
+    background: color-mix(in srgb, var(--teal) 16%, var(--surface-2));
+  }
+  .sight-card.is-phrase .sight-reply-label {
+    display: block; font-family: 'Quicksand'; font-weight: 800; font-size: 12.5px; letter-spacing: 0.4px;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .sight-card.is-phrase .sight-example { margin-top: 2px; font-size: 20px; line-height: 1.3; }
+  .speak-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .speak-row .speak-btn { font-size: 16.5px; padding: 11px 18px; }
   .sight-word { font-family: 'Baloo 2'; font-weight: 800; font-size: 76px; line-height: 1.1; }
   .sight-example { font-family: 'Baloo 2'; font-weight: 700; font-size: 24px; margin-top: 8px; }
   .sight-example-vi { font-size: 16.5px; color: var(--ink-soft); font-weight: 600; }
