@@ -732,9 +732,9 @@
   // backdrop-filter nên position: fixed bên trong nó sẽ bám theo header chứ không bám màn hình.
   // Mọi thanh chuyển mục (segment-toggle / mode-grid) dùng chung 1 kiểu lưới nút (.mode-chips):
   // ≤3 mục 1 hàng, 4–5 mục 2 cột (mục lẻ cuối kéo hết hàng), 6 mục 3 cột.
-  // Phần tiếng Trung giữ nguyên bố cục cũ.
+  // Thanh tab dưới đáy dùng cho cả phần tiếng Trung; lưới nút chuyển mục chỉ ở phần tiếng Anh.
+  document.body.appendChild(document.getElementById('tabbar'));
   if (!IS_ZH) {
-    document.body.appendChild(document.getElementById('tabbar'));
     document.querySelectorAll('.segment-toggle, .mode-grid').forEach(box => {
       const btns = box.querySelectorAll('.segment-btn, .mode-grid-btn');
       const n = btns.length;

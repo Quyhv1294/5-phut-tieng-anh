@@ -11,6 +11,17 @@
   const A = window.APP;
   if (!A || !A.isZh || typeof ZH_COURSE === 'undefined' || typeof ZH_STEPS === 'undefined' || typeof TOPICS_ZH_WORDS === 'undefined') return;
 
+  // Phông riêng cho giao diện người lớn: Be Vietnam Pro (chữ Việt / Latin) + LXGW WenKai Screen (chữ Hán kiểu
+  // Khải thư — nét rõ, gần chữ viết tay, dễ nhận mặt chữ cho người mới học). Tải theo dải ký tự nên chỉ tải
+  // phần chữ Hán thực sự xuất hiện. Xem style.css "GIAO DIỆN TIẾNG TRUNG".
+  ['https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap',
+    'https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/lxgwwenkaigbscreen.css'].forEach(href => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = href;
+    document.head.appendChild(l);
+  });
+
   const HANZI_WRITER_SRC = 'https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js';
   const PASS_RATIO = 0.6;
   const SKIP_TEST_PASS = 0.8;
@@ -128,7 +139,7 @@
   function Z() {
     const p = A.getProgress();
     p.zh = p.zh || {};
-    ['done', 'best', 'units', 'skip', 'srs'].forEach(k => { if (!p.zh[k]) p.zh[k] = {}; });
+    ['done', 'best', 'units', 'skip', 'srs', 'log'].forEach(k => { if (!p.zh[k]) p.zh[k] = {}; });
     if (!p.zh.goal) p.zh.goal = 1;
     if (!p.zh.today || p.zh.today.date !== todayStr()) p.zh.today = { date: todayStr(), n: 0 };
     return p.zh;
@@ -184,7 +195,9 @@
   }
   const topbar = (backId, fillId) =>
     '<div class="card-topbar"><button class="icon-btn" id="' + backId + '" aria-label="Quay lại">←</button>'
-    + (fillId ? '<div class="progress-track"><div class="progress-fill" id="' + fillId + '"></div></div>' : '') + '</div>';
+    + (fillId ? '<div class="progress-track"><div class="progress-fill" id="' + fillId + '"></div></div><span class="zh-step-count"></span>' : '') + '</div>';
+  // Dòng phím tắt — chỉ hiện trên máy có chuột + bàn phím (xem style.css .zh-kbd-hint).
+  const kbdHint = t => '<p class="zh-kbd-hint">⌨️ ' + t + '</p>';
   function sizeClass(text) {
     const len = [...String(text || '')].length;
     return len <= 2 ? 'zh-big--xl' : len <= 4 ? 'zh-big--l' : len <= 8 ? 'zh-big--m' : 'zh-big--s';
@@ -214,7 +227,8 @@
       '<button class="speak-btn" id="zhCardExSpeak" hidden>🔊 Nghe câu</button>' +
       '<button class="speak-btn zh-slow-btn" id="zhCardExSlow" hidden aria-label="Đọc chậm câu">🐢 Câu chậm</button>' +
       '<button class="speak-btn" id="zhCardReplayHw" hidden>✍️ Xem lại nét</button></div>' +
-    '<div class="nav-row"><button class="nav-btn" id="zhCardPrev">← Trước</button><button class="nav-btn primary" id="zhCardNext">Tiếp →</button></div></div>');
+    '<div class="nav-row"><button class="nav-btn" id="zhCardPrev">← Trước</button><button class="nav-btn primary" id="zhCardNext">Tiếp →</button></div>' +
+    kbdHint('Enter / → tiếp · ← quay lại · Space nghe') + '</div>');
   makeScreen('choice',
     topbar('zhChoiceBack', 'zhChoiceFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt" id="zhChoicePrompt"></div>' +
@@ -223,8 +237,10 @@
     '<div class="zh-btn-row"><button class="speak-btn" id="zhChoiceSpeak" hidden>🔊 Nghe lại</button>' +
     '<button class="speak-btn zh-slow-btn" id="zhChoiceSlow" hidden aria-label="Nghe chậm">🐢 Nghe chậm</button></div>' +
     '<div class="quiz-options zh-quiz-options" id="zhChoiceOptions"></div>' +
-    '<div class="quiz-feedback" id="zhChoiceFeedback"></div><div class="zh-reveal" id="zhChoiceReveal"></div>' +
-    '<button class="nav-btn primary zh-next-btn" id="zhChoiceNext" hidden>Tiếp →</button></div>');
+    '<div class="zh-answer" id="zhChoiceAns" hidden><div class="quiz-feedback" id="zhChoiceFeedback"></div>' +
+      '<div class="zh-answer-key" id="zhChoiceKey"></div><div class="zh-reveal" id="zhChoiceReveal"></div>' +
+      '<button class="nav-btn primary zh-next-btn" id="zhChoiceNext">Tiếp →</button></div>' +
+    kbdHint('1–4 chọn đáp án · Enter đi tiếp · Space nghe lại') + '</div>');
   makeScreen('match',
     topbar('zhMatchBack', 'zhMatchFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt">Nối chữ với nghĩa đúng</div>' +
@@ -234,21 +250,23 @@
     '<div class="quiz-wrap"><div class="quiz-prompt">Sắp xếp thành câu đúng:</div>' +
     '<div class="zh-order-vi" id="zhOrderVi"></div><div class="zh-order-answer" id="zhOrderAnswer"></div>' +
     '<div class="zh-order-tiles" id="zhOrderTiles"></div>' +
-    '<div class="quiz-feedback" id="zhOrderFeedback"></div><div class="zh-reveal" id="zhOrderReveal"></div>' +
-    '<button class="nav-btn primary zh-next-btn" id="zhOrderNext" hidden>Tiếp →</button></div>');
+    '<div class="zh-answer" id="zhOrderAns" hidden><div class="quiz-feedback" id="zhOrderFeedback"></div><div class="zh-reveal" id="zhOrderReveal"></div>' +
+      '<button class="nav-btn primary zh-next-btn" id="zhOrderNext">Tiếp →</button></div>' +
+    kbdHint('Phím số chọn ô · Backspace bỏ ô cuối · Enter đi tiếp') + '</div>');
   makeScreen('write',
     topbar('zhWriteBack', 'zhWriteFill') +
     '<div class="flash-wrap"><div class="zh-write-info" id="zhWriteInfo"></div>' +
     '<div class="zh-write-box" id="zhWriteBox"></div><p class="zh-write-hint" id="zhWriteHint"></p>' +
     '<div class="zh-btn-row"><button class="speak-btn" id="zhWriteDemo">👀 Xem mẫu</button><button class="speak-btn" id="zhWriteRetry">✍️ Viết lại</button></div>' +
-    '<div class="nav-row"><button class="nav-btn primary" id="zhWriteNext" disabled>Tiếp →</button></div></div>');
+    '<div class="nav-row"><button class="nav-btn primary" id="zhWriteNext" disabled>Tiếp →</button></div>' + kbdHint('Enter đi tiếp') + '</div>');
   makeScreen('type',
     topbar('zhTypeBack', 'zhTypeFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt">Gõ pinyin (không dấu) rồi chọn đúng chữ:</div>' +
     '<div class="zh-big" id="zhTypeBig"></div><div class="zh-vi" id="zhTypeVi"></div>' +
     '<input class="zh-type-input" id="zhTypeInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="vd: nihao">' +
     '<div class="zh-candidates" id="zhTypeCands"></div><button class="ghost-btn zh-type-hint" id="zhTypeHint">💡 Gợi ý pinyin</button>' +
-    '<div class="quiz-feedback" id="zhTypeFeedback"></div><div class="zh-reveal" id="zhTypeReveal"></div></div>');
+    '<div class="zh-answer" id="zhTypeAns" hidden><div class="quiz-feedback" id="zhTypeFeedback"></div><div class="zh-reveal" id="zhTypeReveal"></div></div>' +
+    kbdHint('Gõ pinyin · phím số hoặc Enter chọn chữ') + '</div>');
   makeScreen('done',
     '<div class="done-wrap zh-done"><div class="big-star" id="zhDoneEmoji">🌟</div><h2 id="zhDoneTitle"></h2><p id="zhDoneText"></p>' +
     '<div class="zh-done-goal" id="zhDoneGoal"></div>' +
@@ -280,23 +298,57 @@
   const ach = $('screen-achievements');
   if (ach) ach.appendChild(shareBtn);
 
+  // Số từ đến hạn ôn hiện thành huy hiệu đỏ trên tab "Ôn tập" (lý do chính để quay lại mỗi ngày).
+  function updateReviewBadge() {
+    const b = $('tabGames');
+    if (!b) return;
+    let badge = b.querySelector('.tab-badge');
+    const n = dueWords().length;
+    if (!n) { if (badge) badge.remove(); return; }
+    if (!badge) { badge = el('span', 'tab-badge'); b.appendChild(badge); }
+    badge.textContent = n > 99 ? '99+' : String(n);
+    b.setAttribute('aria-label', 'Ôn tập — ' + n + ' từ cần ôn');
+  }
+
   // ---------- Tab HỌC: hành trình ----------
   function goHome() { renderHome(); A.showScreen('zh-home'); }
+  const GOAL_LABEL = { 1: '5 phút', 2: '10 phút', 3: '15 phút' };
+  let goalEditing = false;
   function renderHome() {
     const z = Z();
     const box = $('zhHome');
     box.innerHTML = '';
+    // Tiến độ tính cả phần đã kiểm tra vượt (nhảy cóc): trước đây phần vượt không được tính nên đang ở
+    // Chặng 7 vẫn ghi "0% khoá học".
+    const unitCounted = u => !!z.skip[u.part.id] || unitDone(u);
     const total = ALL_UNITS.reduce((n, u) => n + unitLessons(u).length, 0);
-    const done = ALL_UNITS.reduce((n, u) => n + unitLessons(u).filter(lessonDone).length, 0);
+    const done = ALL_UNITS.reduce((n, u) => n + (unitCounted(u) ? unitLessons(u).length : unitLessons(u).filter(lessonDone).length), 0);
+    const pct = Math.round(done / total * 100);
     const next = nextLesson();
+    updateReviewBadge();
 
-    const hero = el('div', 'zh-hero');
-    hero.appendChild(el('h1', null, 'Tiếng Trung cho người mới bắt đầu'));
-    hero.appendChild(el('p', null, next ? next.unit.part.title + ' · Chặng ' + (ALL_UNITS.indexOf(next.unit) + 1) + ': ' + next.unit.title : 'Bạn đã học xong toàn bộ khoá học!'));
-    const bar = el('div', 'zh-step-bar'); const fill = el('span', 'zh-step-bar-fill'); fill.style.width = (done / total * 100) + '%'; bar.appendChild(fill);
-    hero.appendChild(bar);
-    hero.appendChild(el('small', 'zh-hero-pct', Math.round(done / total * 100) + '% khoá học · ' + learnedWords().length + ' từ đã học'));
-    box.appendChild(hero);
+    // Khối "HÔM NAY": đang ở đâu trong lộ trình + vòng mục tiêu ngày + nút học tiếp + từ cần ôn — gộp 3 thẻ
+    // rời trước đây (tiêu đề khoá học, nút học, mục tiêu ngày) thành 1.
+    const panel = el('div', 'zh-today-panel');
+    const top = el('div', 'zh-tp-top');
+    const where = el('div', 'zh-tp-where');
+    if (next) {
+      where.appendChild(el('small', null, next.unit.part.title));
+      where.appendChild(el('strong', null, 'Chặng ' + (ALL_UNITS.indexOf(next.unit) + 1) + '/' + ALL_UNITS.length + ' · ' + next.unit.title));
+    } else {
+      where.appendChild(el('small', null, 'Tiếng Trung cho người mới bắt đầu'));
+      where.appendChild(el('strong', null, 'Bạn đã học xong toàn bộ khoá học! 🎉'));
+    }
+    top.appendChild(where);
+    const nToday = Math.min(z.today.n, z.goal), goalOk = z.today.n >= z.goal;
+    const ring = el('div', 'zh-ring' + (goalOk ? ' is-done' : ''));
+    ring.style.setProperty('--p', nToday / z.goal);
+    ring.setAttribute('role', 'img');
+    ring.setAttribute('aria-label', 'Hôm nay ' + nToday + '/' + z.goal + ' bài');
+    ring.appendChild(el('strong', null, goalOk ? '✓' : nToday + '/' + z.goal));
+    ring.appendChild(el('small', null, 'hôm nay'));
+    top.appendChild(ring);
+    panel.appendChild(top);
 
     if (next) {
       const cta = el('button', 'zh-continue');
@@ -306,34 +358,47 @@
       t.appendChild(el('small', null, KIND_ICON[next.type] + ' ' + next.title));
       cta.appendChild(t);
       cta.addEventListener('click', () => startLesson(next, goHome));
-      box.appendChild(cta);
+      panel.appendChild(cta);
     }
 
-    // Mục tiêu hôm nay + ôn tập
-    const today = el('div', 'zh-today');
-    const goalLine = el('div', 'zh-today-goal');
-    const ok = z.today.n >= z.goal;
-    goalLine.appendChild(el('strong', null, (ok ? '✅ ' : '🎯 ') + 'Hôm nay: ' + Math.min(z.today.n, z.goal) + '/' + z.goal + ' bài'));
-    const chips = el('span', 'zh-goal-chips');
-    [[1, '5 phút'], [2, '10 phút'], [3, '15 phút']].forEach(g => {
-      const c = el('button', 'zh-chip' + (z.goal === g[0] ? ' is-active' : ''), g[1]);
-      c.addEventListener('click', () => { z.goal = g[0]; A.saveProgress(); renderHome(); });
-      chips.appendChild(c);
-    });
-    goalLine.appendChild(chips);
-    today.appendChild(goalLine);
-    // Hôm qua có học mà hôm nay chưa → nhắc giữ chuỗi ngày liên tiếp.
     const streak = A.getProgress().streak || {};
+    const stats = el('div', 'zh-tp-stats');
+    const bar = el('div', 'zh-step-bar'); const fill = el('span', 'zh-step-bar-fill'); fill.style.width = pct + '%'; bar.appendChild(fill);
+    stats.appendChild(bar);
+    stats.appendChild(el('small', null, pct + '% khoá học · ' + learnedWords().length + ' từ đã học' + (streak.count ? ' · 🔥 ' + streak.count + ' ngày liên tiếp' : '')));
+    panel.appendChild(stats);
+
+    // Hôm qua có học mà hôm nay chưa → nhắc giữ chuỗi ngày liên tiếp.
     const yd = new Date(); yd.setDate(yd.getDate() - 1);
     if (streak.count >= 1 && streak.lastDate === yd.toISOString().slice(0, 10)) {
-      today.appendChild(el('div', 'zh-streak-warn', '🔥 Hôm nay bạn chưa học — học 1 bài để giữ chuỗi ' + streak.count + ' ngày liên tiếp.'));
+      panel.appendChild(el('div', 'zh-streak-warn', '🔥 Học 1 bài hôm nay để giữ chuỗi ' + streak.count + ' ngày.'));
     }
     const due = dueWords().length;
-    const rv = el('button', 'zh-today-review', due ? '🔁 ' + due + ' từ cần ôn hôm nay →' : '🔁 Chưa có từ nào cần ôn hôm nay');
-    rv.disabled = !due;
-    rv.addEventListener('click', openReview);
-    today.appendChild(rv);
-    box.appendChild(today);
+    if (due) {
+      const rv = el('button', 'zh-today-review', '🔁 Ôn ' + due + ' từ đến hạn hôm nay →');
+      rv.addEventListener('click', openReview);
+      panel.appendChild(rv);
+    } else {
+      panel.appendChild(el('div', 'zh-tp-note', '✅ Không có từ nào cần ôn hôm nay'));
+    }
+
+    // Mục tiêu ngày là cài đặt (chọn 1 lần) → thu vào 1 dòng nhỏ, bấm "Đổi" mới hiện 3 lựa chọn.
+    const goalRow = el('div', 'zh-goal-row');
+    const goalBtn = el('button', 'zh-goal-toggle', '🎯 Mục tiêu: ' + z.goal + ' bài/ngày (' + GOAL_LABEL[z.goal] + ') · ' + (goalEditing ? 'Xong' : 'Đổi'));
+    goalBtn.setAttribute('aria-expanded', goalEditing);
+    goalBtn.addEventListener('click', () => { goalEditing = !goalEditing; renderHome(); });
+    goalRow.appendChild(goalBtn);
+    if (goalEditing) {
+      const chips = el('span', 'zh-goal-chips');
+      [1, 2, 3].forEach(g => {
+        const c = el('button', 'zh-chip' + (z.goal === g ? ' is-active' : ''), g + ' bài · ' + GOAL_LABEL[g]);
+        c.addEventListener('click', () => { z.goal = g; goalEditing = false; A.saveProgress(); renderHome(); });
+        chips.appendChild(c);
+      });
+      goalRow.appendChild(chips);
+    }
+    panel.appendChild(goalRow);
+    box.appendChild(panel);
     // Học xong (hoặc nhảy cóc qua) Phần 2 · HSK 1 → mời thi thử ngay trên trang Học.
     const hskPart = ZH_COURSE.find(p => p.id === 'p2');
     if (HAS_EXAM && hskPart && (z.skip[hskPart.id] || hskPart.units.every(unitDone))) box.appendChild(examCard());
@@ -349,19 +414,23 @@
       const doneN = part.units.filter(unitDone).length;
       const partDone = doneN === part.units.length;
       const partLocked = !unitUnlocked(part.units[0]);
-      const card = el('div', 'zh-part' + (isOpen ? ' is-open' : '') + (part === curPart && next ? ' is-current' : '') + (partDone ? ' is-done' : ''));
+      // Phần đã qua bài kiểm tra nhảy cóc: ghi rõ "Đã vượt" thay cho "0/6 chặng" (trước dễ tưởng là chưa học,
+      // và khó hiểu vì sao phần sau lại mở trong khi phần giữa còn khoá).
+      const partSkipped = !!z.skip[part.id] && !partDone;
+      const card = el('div', 'zh-part' + (isOpen ? ' is-open' : '') + (part === curPart && next ? ' is-current' : '') + (partDone ? ' is-done' : '') + (partSkipped ? ' is-skipped' : '') + (partLocked ? ' is-locked' : ''));
       const head = el('button', 'zh-part-head');
       head.setAttribute('aria-expanded', isOpen);
-      head.appendChild(el('span', 'zh-part-num', partDone ? '✓' : partLocked ? '🔒' : String(pi + 1)));
+      head.appendChild(el('span', 'zh-part-num', partDone ? '✓' : partSkipped ? '»' : partLocked ? '🔒' : String(pi + 1)));
       const ht = el('span', 'zh-part-title');
       ht.appendChild(el('strong', null, part.title));
       ht.appendChild(el('small', null, part.desc));
-      const pb = el('span', 'zh-step-bar'); const pf = el('span', 'zh-step-bar-fill'); pf.style.width = (doneN / part.units.length * 100) + '%'; pb.appendChild(pf);
+      if (partLocked && pi > 0) ht.appendChild(el('small', 'zh-lock-why', 'Mở khi học xong ' + ZH_COURSE[pi - 1].title.split(' · ')[0] + ', hoặc làm bài kiểm tra nhảy cóc'));
+      const pb = el('span', 'zh-step-bar'); const pf = el('span', 'zh-step-bar-fill'); pf.style.width = (partSkipped ? 100 : doneN / part.units.length * 100) + '%'; pb.appendChild(pf);
       ht.appendChild(pb);
       head.appendChild(ht);
       const meta = el('span', 'zh-part-meta');
-      meta.appendChild(el('strong', null, doneN + '/' + part.units.length));
-      meta.appendChild(el('small', null, 'chặng'));
+      meta.appendChild(el('strong', null, partSkipped ? 'Đã vượt' : doneN + '/' + part.units.length));
+      meta.appendChild(el('small', null, partSkipped ? '' : 'chặng'));
       head.appendChild(meta);
       head.appendChild(el('span', 'zh-part-chev', '›'));
       head.addEventListener('click', () => {
@@ -386,10 +455,14 @@
           b.appendChild(el('span', 'zh-unit-emoji', unlocked ? u.emoji : '🔒'));
           b.appendChild(el('small', 'zh-unit-num', 'Chặng ' + n));
           b.appendChild(el('strong', 'zh-unit-title', u.title));
-          const ub = el('span', 'zh-step-bar'); const uf = el('span', 'zh-step-bar-fill'); uf.style.width = (dn / ls.length * 100) + '%'; ub.appendChild(uf);
-          b.appendChild(ub);
+          if (unlocked) {
+            const ub = el('span', 'zh-step-bar'); const uf = el('span', 'zh-step-bar-fill'); uf.style.width = (dn / ls.length * 100) + '%'; ub.appendChild(uf);
+            b.appendChild(ub);
+          } else {
+            b.appendChild(el('small', 'zh-unit-why', 'Sau chặng ' + (n - 1)));
+          }
           b.addEventListener('click', () => {
-            if (!unlocked) { A.showToast('Học xong chặng trước (hoặc làm Kiểm tra nhảy cóc) để mở chặng này nhé!', '🔒'); return; }
+            if (!unlocked) { A.showToast('Học xong Chặng ' + (n - 1) + ' (hoặc làm Kiểm tra nhảy cóc) để mở chặng này nhé!', '🔒'); return; }
             openUnit(u);
           });
           grid.appendChild(b);
@@ -454,7 +527,12 @@
     if (wr.writer) wr.writer.cancelQuiz();
     exitSession();
   }));
-  function fillFor(id) { $(id).style.width = (S ? S.i / S.steps.length * 100 : 0) + '%'; }
+  function fillFor(id) {
+    const f = $(id);
+    f.style.width = (S ? S.i / S.steps.length * 100 : 0) + '%';
+    const c = f.closest('.card-topbar').querySelector('.zh-step-count');
+    if (c) c.textContent = S ? (S.i + 1) + '/' + S.steps.length : '';
+  }
   function nextStep() {
     if (!S) return;
     if (S.i >= S.steps.length) return finishSession();
@@ -489,6 +567,11 @@
     if (isCourse && total) z.best[l.key] = Math.max(z.best[l.key] || 0, pct);
     if (pass && l.type === 'test' && l.part) z.skip[l.part.id] = true;
     if (pass) z.today.n += 1;
+    // Nhật ký theo ngày: số bài xong, số câu, số câu đúng (giữ 60 ngày gần nhất).
+    const lg = z.log[todayStr()] || (z.log[todayStr()] = { n: 0, q: 0, c: 0 });
+    if (pass) lg.n++;
+    lg.q += total; lg.c += s.correct;
+    Object.keys(z.log).forEach(d => { if (d < addDays(-60)) delete z.log[d]; });
     if (total && pct === 100) { const p = A.getProgress(); p.perfectCount = (p.perfectCount || 0) + 1; } // huy hiệu "Ngôi sao xuất sắc"
     // Học xong cả chặng: ghi nhận + đánh dấu chủ đề hình ảnh tương ứng (mở mảnh ghép tranh, huy hiệu).
     let unitJustDone = null;
@@ -902,6 +985,12 @@
 
   // ---------- RENDER từng dạng bước ----------
   const RENDER = {};
+  function showAnswer(id, ok) {
+    const c = $(id);
+    c.hidden = false;
+    c.className = 'zh-answer ' + (ok === null ? '' : ok ? 'is-ok' : 'is-no');
+    requestAnimationFrame(() => c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  }
 
   // card
   let cardWriter = null;
@@ -969,10 +1058,13 @@
     $('zhChoiceSlow').hidden = !st.say;
     $('zhChoiceReveal').innerHTML = '';
     const fb = $('zhChoiceFeedback'); fb.textContent = ''; fb.className = 'quiz-feedback';
-    $('zhChoiceNext').hidden = true;
+    $('zhChoiceAns').hidden = true;
+    $('zhChoiceKey').textContent = '';
     const wrap = $('zhChoiceOptions');
     wrap.innerHTML = '';
     wrap.classList.toggle('is-emoji', !!st.emojiOpts);
+    // Đáp án dài (câu, cụm từ) xếp 1 cột cho dễ đọc, không bị bẻ dòng vụn trong ô nhỏ.
+    wrap.classList.toggle('is-long', !st.emojiOpts && st.options.some(o => [...String(optText(o))].length > 12));
     A.shuffle(st.options.map((o, i) => i)).forEach(i => {
       const o = st.options[i];
       const b = el('button', 'quiz-opt' + (st.emojiOpts ? '' : ' text-opt'));
@@ -993,14 +1085,19 @@
     document.querySelectorAll('#zhChoiceOptions .quiz-opt').forEach(b => { b.disabled = true; if (b.dataset.correct) b.classList.add('correct'); });
     $('zhChoicePy').classList.remove('is-hidden');
     const fb = $('zhChoiceFeedback');
-    if (ok) { fb.textContent = pick(['Chính xác! 🎉', 'Giỏi lắm! 🌟', 'Đúng rồi! 👏']); fb.className = 'quiz-feedback ok'; A.sfx('correct'); }
-    else { btn.classList.add('wrong'); fb.textContent = 'Chưa đúng — đáp án đúng được tô xanh.'; fb.className = 'quiz-feedback no'; A.sfx('wrong'); }
+    if (ok) { fb.textContent = pick(['✓ Chính xác!', '✓ Đúng rồi!', '✓ Tốt lắm!']); fb.className = 'quiz-feedback ok'; A.sfx('correct'); }
+    else {
+      btn.classList.add('wrong'); fb.textContent = '✗ Chưa đúng'; fb.className = 'quiz-feedback no'; A.sfx('wrong');
+      if (!st.reveal) $('zhChoiceKey').innerHTML = 'Đáp án đúng: <b>' + esc(optText(st.options[st.answer])) + '</b>'; // có phần giải thích thì đã nêu đáp án
+    }
     // Chỉ tô màu thanh điệu phần chữ Hán + pinyin; nghĩa tiếng Việt để dòng riêng (tránh tô nhầm "có", "là"…).
     if (st.reveal) $('zhChoiceReveal').innerHTML = colorPinyin(st.reveal) + (st.revealVi ? '<div class="zh-reveal-vi">' + esc(st.revealVi) + '</div>' : '');
     $('zhChoiceCtx').classList.add('is-answered'); // hiện bản dịch đoạn văn / câu vừa nghe
     if (st.sayAfter) A.speak(st.sayAfter); // nhập vai: đọc câu đáp đúng của vai mình
-    if (ok) setTimeout(() => { if (S && S.steps[S.i] === st) stepDone(true); }, st.sayAfter ? 2600 : 1000);
-    else { $('zhChoiceNext').hidden = false; $('zhChoiceNext').onclick = () => stepDone(false); } // sai: để người học đọc lại rồi mới đi tiếp
+    showAnswer('zhChoiceAns', ok);
+    $('zhChoiceNext').onclick = () => { if (S && S.steps[S.i] === st) stepDone(ok); };
+    // Đúng: tự sang câu (đủ lâu để đọc phần giải thích); sai: chờ người học bấm Tiếp.
+    if (ok) setTimeout(() => { if (S && S.steps[S.i] === st) stepDone(true); }, st.sayAfter ? 2600 : st.reveal ? 1600 : 1100);
   }
 
   // match: 4 cặp chữ ↔ nghĩa
@@ -1052,7 +1149,7 @@
     $('zhOrderVi').textContent = s.vi;
     $('zhOrderReveal').innerHTML = '';
     const fb = $('zhOrderFeedback'); fb.textContent = ''; fb.className = 'quiz-feedback';
-    $('zhOrderNext').hidden = true;
+    $('zhOrderAns').hidden = true;
     $('zhOrderAnswer').classList.remove('is-correct', 'is-wrong');
     let tiles, guard = 0;
     do { tiles = A.shuffle(s.tokens.map((t, k) => ({ t, k }))); } while (s.tokens.length > 1 && tiles.every((x, k) => x.k === k) && guard++ < 20);
@@ -1081,14 +1178,14 @@
     const ok = ord.picked.map(x => x.t).join('') === s.tokens.join('');
     const full = s.tokens.join('') + (s.end || '。');
     const fb = $('zhOrderFeedback');
-    fb.textContent = ok ? 'Chính xác! 🎉' : 'Chưa đúng — câu đúng là:'; fb.className = 'quiz-feedback ' + (ok ? 'ok' : 'no');
+    fb.textContent = ok ? '✓ Chính xác!' : '✗ Chưa đúng — câu đúng là:'; fb.className = 'quiz-feedback ' + (ok ? 'ok' : 'no');
     A.sfx(ok ? 'correct' : 'wrong');
     $('zhOrderAnswer').classList.add(ok ? 'is-correct' : 'is-wrong');
     $('zhOrderReveal').innerHTML = esc(full) + '<br>' + colorPinyin(s.py);
     A.speak(full);
-    const nb = $('zhOrderNext');
-    nb.hidden = false;
-    nb.onclick = () => stepDone(ok);
+    showAnswer('zhOrderAns', ok);
+    const st = ord.st;
+    $('zhOrderNext').onclick = () => { if (S && S.steps[S.i] === st) stepDone(ok); };
   }
 
   // write (Hanzi Writer)
@@ -1170,6 +1267,7 @@
     setBig($('zhTypeBig'), st.word.zh);
     $('zhTypeVi').textContent = st.word.vi;
     $('zhTypeReveal').innerHTML = '';
+    $('zhTypeAns').hidden = true;
     const fb = $('zhTypeFeedback'); fb.textContent = ''; fb.className = 'quiz-feedback';
     const input = $('zhTypeInput');
     input.value = ''; input.disabled = false;
@@ -1202,7 +1300,8 @@
     if (m.zh === w.zh) {
       ty.locked = true;
       btn.classList.add('correct');
-      fb.textContent = ty.tries === 0 ? 'Chính xác! 🎉' : 'Đúng rồi!'; fb.className = 'quiz-feedback ok'; A.sfx('correct');
+      fb.textContent = ty.tries === 0 ? '✓ Chính xác!' : '✓ Đúng rồi!'; fb.className = 'quiz-feedback ok'; A.sfx('correct');
+      showAnswer('zhTypeAns', true);
       $('zhTypeReveal').innerHTML = esc(w.zh) + ' · ' + colorPinyin(w.py);
       $('zhTypeInput').disabled = true;
       A.speak(w.zh);
@@ -1211,10 +1310,94 @@
     } else {
       ty.tries++;
       btn.classList.add('wrong');
-      fb.textContent = 'Chưa đúng chữ — thử chữ khác hoặc xem gợi ý.'; fb.className = 'quiz-feedback no'; A.sfx('wrong');
+      fb.textContent = '✗ Chưa đúng chữ — thử chữ khác hoặc xem gợi ý.'; fb.className = 'quiz-feedback no'; A.sfx('wrong');
+      showAnswer('zhTypeAns', false);
     }
   }
-  $('zhTypeHint').addEventListener('click', () => { if (!ty) return; ty.tries++; $('zhTypeReveal').innerHTML = 'Gợi ý: ' + colorPinyin(ty.st.word.py) + ' → gõ "' + ty.st.word.key + '"'; });
+  $('zhTypeHint').addEventListener('click', () => { if (!ty) return; ty.tries++; $('zhTypeReveal').innerHTML = 'Gợi ý: ' + colorPinyin(ty.st.word.py) + ' → gõ "' + ty.st.word.key + '"'; if ($('zhTypeAns').hidden) showAnswer('zhTypeAns', null); });
+
+  // ---------- Phím tắt (học trên máy tính) ----------
+  // Số 1–9 chọn đáp án / ô chữ, Enter đi tiếp, Space nghe lại, ← → lật thẻ, Backspace bỏ ô vừa xếp.
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    const scr = document.querySelector('.screen.active');
+    const id = scr && scr.id.indexOf('screen-zh-') === 0 ? scr.id.slice(10) : '';
+    if (!id) return;
+    const click = b => { if (b && !b.disabled && !b.hidden && b.offsetParent !== null) { e.preventDefault(); b.click(); } };
+    const num = /^[1-9]$/.test(e.key) ? Number(e.key) : 0;
+    if (id === 'done') { if (e.key === 'Enter') click($('zhDoneNext').hidden ? $('zhDoneBack') : $('zhDoneNext')); return; }
+    if (!S) return;
+    if (id === 'card') {
+      if (e.key === 'Enter' || e.key === 'ArrowRight') click($('zhCardNext'));
+      else if (e.key === 'ArrowLeft') click($('zhCardPrev'));
+      else if (e.key === ' ') click($('zhCardSpeak'));
+    } else if (id === 'choice') {
+      if (num) click($('zhChoiceOptions').querySelectorAll('.quiz-opt')[num - 1]);
+      else if (e.key === 'Enter') click($('zhChoiceNext'));
+      else if (e.key === ' ') click($('zhChoiceSpeak'));
+    } else if (id === 'order') {
+      if (num) click($('zhOrderTiles').querySelectorAll('.zh-tile')[num - 1]);
+      else if (e.key === 'Backspace') click([...$('zhOrderAnswer').querySelectorAll('.zh-tile')].pop());
+      else if (e.key === 'Enter') click($('zhOrderNext'));
+    } else if (id === 'write') {
+      if (e.key === 'Enter') click($('zhWriteNext'));
+    }
+  });
+
+  // ---------- Dùng chung cho các tab ----------
+  // 1 dòng trong danh sách hành động: biểu tượng · tiêu đề + mô tả · ›. Không có hàm bấm → dòng mờ.
+  function listRow(icon, title, sub, onClick) {
+    const r = el('button', 'zh-list-row');
+    r.append(el('span', 'zh-list-icon', icon));
+    const t = el('span', 'zh-list-text');
+    t.append(el('strong', null, title), el('small', null, sub));
+    r.append(t, el('span', 'zh-part-chev', '›'));
+    if (onClick) r.addEventListener('click', onClick); else r.disabled = true;
+    return r;
+  }
+  const WEEKDAY = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  function dayLabel(i) { const d = new Date(); d.setDate(d.getDate() + i); return i === 0 ? 'Nay' : WEEKDAY[d.getDay()]; }
+  // Mức nhớ theo "hộp" lặp lại ngắt quãng: 0 = mới / vừa sai, 1–2 = đang nhớ, từ 3 (hẹn ôn ≥ 14 ngày) = nhớ lâu.
+  function srsLevels() {
+    const out = [0, 0, 0];
+    Object.values(Z().srs).forEach(e => { out[e.box >= 3 ? 2 : e.box >= 1 ? 1 : 0]++; });
+    return out;
+  }
+  const LEVEL_NAMES = ['Mới học', 'Đang nhớ', 'Nhớ lâu'];
+  function levelPanel() {
+    const lv = srsLevels(), tot = lv[0] + lv[1] + lv[2];
+    const p = el('div', 'zh-panel');
+    p.appendChild(el('div', 'zh-panel-title', 'Mức nhớ · ' + tot + ' từ đã học'));
+    const bar = el('div', 'zh-stack-bar');
+    lv.forEach((n, i) => { if (n) { const s = el('span', 'zh-stack lv' + i); s.style.flexGrow = n; bar.appendChild(s); } });
+    const legend = el('div', 'zh-legend');
+    lv.forEach((n, i) => { const x = el('span'); x.innerHTML = '<i class="lv' + i + '"></i>' + LEVEL_NAMES[i] + ' <b>' + n + '</b>'; legend.appendChild(x); });
+    p.append(bar, legend);
+    return p;
+  }
+  // Số từ đến hạn mỗi ngày trong n ngày tới (từ quá hạn tính vào hôm nay).
+  function dueForecast(n) {
+    const out = Array(n).fill(0), days = out.map((x, i) => addDays(i));
+    days[0] = todayStr();
+    Object.values(Z().srs).forEach(e => { const i = days.findIndex(d => e.due <= d); if (i >= 0) out[i]++; });
+    return out;
+  }
+  // Biểu đồ cột nhỏ: values[i] ứng với nhãn labels[i].
+  function barChart(values, labels, unit) {
+    const max = Math.max(1, ...values);
+    const g = el('div', 'zh-bars');
+    values.forEach((v, i) => {
+      const c = el('div', 'zh-bar-col' + (i === values.length - 1 && unit === 'past' || i === 0 && unit === 'next' ? ' is-today' : ''));
+      const b = el('span', 'zh-bar');
+      b.style.height = Math.max(v ? 8 : 2, v / max * 100) + '%';
+      c.append(el('small', 'zh-bar-n', v ? String(v) : ''), el('span', 'zh-bar-track'), el('small', 'zh-bar-label', labels[i]));
+      c.querySelector('.zh-bar-track').appendChild(b);
+      g.appendChild(c);
+    });
+    return g;
+  }
+  // Bỏ dấu tiếng Việt để tìm "chao" ra "chào".
+  const fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
 
   // ---------- Tab ÔN TẬP ----------
   function openReview() { renderReview(); A.showScreen('zh-review'); }
@@ -1235,26 +1418,52 @@
     const due = dueWords(), hard = hardWords(), learned = learnedWords();
     const hero = el('div', 'zh-hero');
     hero.appendChild(el('h1', null, 'Ôn tập'));
-    hero.appendChild(el('p', null, 'App nhắc ôn đúng lúc bạn sắp quên: từ trả lời đúng sẽ được hẹn ôn lại sau 1 → 3 → 7 → 14 → 30 ngày.'));
+    hero.appendChild(el('p', null, 'Từ trả lời đúng được hẹn ôn lại sau 1 → 3 → 7 → 14 → 30 ngày — đúng lúc bạn sắp quên.'));
     box.appendChild(hero);
-    const stats = el('div', 'zh-stats');
-    [['🔁', due.length, 'cần ôn hôm nay'], ['📌', hard.length, 'từ hay sai'], ['📚', learned.length, 'từ đã học']].forEach(x => {
-      const c = el('div', 'zh-stat'); c.append(el('strong', null, x[0] + ' ' + x[1]), el('small', null, x[2])); stats.appendChild(c);
-    });
-    box.appendChild(stats);
-    const b1 = el('button', 'cta-btn zh-wide-btn', due.length ? '🔁 Ôn tập hôm nay (' + Math.min(due.length, 15) + ' từ)' : '🎉 Hôm nay không còn từ nào cần ôn');
-    b1.disabled = !due.length;
-    b1.addEventListener('click', () => practiceSession('Ôn tập hôm nay', () => reviewSteps(dueWords()), openReview));
-    const b2 = el('button', 'ghost-btn ghost-btn--solid zh-wide-btn', '📌 Luyện từ hay sai');
-    b2.disabled = !hard.length;
-    b2.addEventListener('click', () => practiceSession('Luyện từ hay sai', () => reviewSteps(hardWords()), openReview));
-    const b3 = el('button', 'ghost-btn zh-wide-btn', '🎲 Ôn ngẫu nhiên 10 từ đã học');
-    b3.disabled = learned.length < 4;
-    b3.addEventListener('click', () => practiceSession('Ôn ngẫu nhiên', () => reviewSteps(shuffleArr(learnedWords()).slice(0, 10)), openReview));
-    box.append(b1, b2, b3);
+    const main = el('div', 'zh-panel zh-review-main');
+    box.appendChild(main);
+    // Chưa học từ nào: hướng sang tab Học thay vì hiện các nút bị khoá.
+    if (!learned.length) {
+      main.classList.add('is-empty');
+      main.append(el('div', 'zh-empty-icon', '📭'), el('strong', 'zh-review-big', 'Chưa có từ nào để ôn'),
+        el('p', 'zh-panel-note', 'Mỗi từ bạn học ở tab Học sẽ tự vào đây và được nhắc ôn đúng lúc.'));
+      const go = el('button', 'cta-btn zh-wide-btn', 'Học bài đầu tiên →');
+      go.addEventListener('click', goHome);
+      main.appendChild(go);
+      return;
+    }
+    if (due.length) {
+      const n = Math.min(due.length, 15);
+      main.append(el('small', 'zh-panel-kicker', 'Hôm nay'), el('strong', 'zh-review-big', due.length + ' từ đến hạn ôn'));
+      const chips = el('div', 'zh-due-chips');
+      due.slice(0, 8).forEach(w => chips.appendChild(el('span', 'zh-due-chip', w.zh)));
+      if (due.length > 8) chips.appendChild(el('span', 'zh-due-chip is-more', '+' + (due.length - 8)));
+      main.appendChild(chips);
+      const b1 = el('button', 'cta-btn zh-wide-btn', 'Bắt đầu ôn ' + n + ' từ · ~' + Math.max(2, Math.round(n / 3)) + ' phút');
+      b1.addEventListener('click', () => practiceSession('Ôn tập hôm nay', () => reviewSteps(dueWords()), openReview));
+      main.appendChild(b1);
+      if (due.length > 15) main.appendChild(el('p', 'zh-panel-note', 'Mỗi lượt ôn 15 từ, phần còn lại ôn ở lượt sau.'));
+    } else {
+      const f = dueForecast(31), next = f.findIndex(x => x > 0);
+      main.classList.add('is-empty');
+      main.append(el('div', 'zh-empty-icon', '✅'), el('strong', 'zh-review-big', 'Đã ôn hết từ hôm nay'),
+        el('p', 'zh-panel-note', next > 0 ? 'Lượt ôn tiếp theo: ' + f[next] + ' từ ' + (next === 1 ? 'vào ngày mai' : 'sau ' + next + ' ngày') + '. Muốn luyện thêm thì chọn bên dưới.' : 'Muốn luyện thêm thì chọn bên dưới.'));
+    }
+    const acts = el('div', 'zh-panel zh-list');
+    acts.append(
+      listRow('📌', 'Luyện từ hay sai', hard.length ? hard.length + ' từ bạn từng trả lời sai' : 'Chưa có từ nào sai — tốt lắm!',
+        hard.length ? () => practiceSession('Luyện từ hay sai', () => reviewSteps(hardWords()), openReview) : null),
+      listRow('🎲', 'Ôn ngẫu nhiên', learned.length >= 4 ? '10 từ bất kỳ trong ' + learned.length + ' từ đã học' : 'Cần học ít nhất 4 từ',
+        learned.length >= 4 ? () => practiceSession('Ôn ngẫu nhiên', () => reviewSteps(shuffleArr(learnedWords()).slice(0, 10)), openReview) : null));
+    box.appendChild(acts);
+    box.appendChild(levelPanel());
+    const fc = el('div', 'zh-panel');
+    fc.appendChild(el('div', 'zh-panel-title', 'Lịch ôn 7 ngày tới'));
+    fc.appendChild(barChart(dueForecast(7), [0, 1, 2, 3, 4, 5, 6].map(dayLabel), 'next'));
+    box.appendChild(fc);
     if (hard.length) {
       box.appendChild(el('div', 'section-label', '📌 Từ hay sai'));
-      box.appendChild(wordList(hard));
+      box.appendChild(wordList(hard, w => w.vi + ' · sai ' + Z().srs[w.zh].wrong + ' lần'));
     }
   }
   function wordList(words, marks) {
@@ -1278,43 +1487,50 @@
     box.innerHTML = '';
     const hero = el('div', 'zh-hero');
     hero.appendChild(el('h1', null, 'Luyện tập'));
-    hero.appendChild(el('p', null, 'Luyện tự do từng kỹ năng, chơi bao nhiêu lần cũng được.'));
+    hero.appendChild(el('p', null, 'Luyện riêng từng kỹ năng, làm lại bao nhiêu lần cũng được — không ảnh hưởng tiến độ khoá học.'));
     box.appendChild(hero);
     if (HAS_EXAM) box.appendChild(examCard());
     const learned = learnedWords();
     const pool = learned.length >= 4 ? learned : COURSE_WORDS.slice(0, 30);
     const chars = [...new Set(pool.map(w => [...w.zh]).flat())].filter(c => HAS_HANZI.test(c));
-    const tiles = [
-      ['🎵', 'Luyện thanh điệu', 'Nghe và chọn đúng thanh', () => genSteps('tones', 10)],
-      ['🔤', 'Ghép âm pinyin', 'Nghe và chọn đúng pinyin', () => genSteps('syllables', 10)],
-      ['🎶', 'Nghe chọn vần', 'an hay ang? in hay ing?', () => genSteps('finals', 10)],
-      ['🎚️', 'Thanh điệu trong từ', 'Nghe từ, chọn đúng dấu', () => genSteps('pinyinWord', 10)],
-      ['👂', 'Âm đầu dễ nhầm', 'b/p, zh/z, j/q/x…', () => genSteps('initials', 10)],
-      ['🧩', 'Nối từ', 'Nối chữ với nghĩa', () => [0, 1, 2].map(() => ({ kind: 'match', pairs: shuffleArr(pool).slice(0, 4) }))],
-      ['👀', 'Nhận mặt chữ', 'Nhìn chữ, chọn nghĩa', () => shuffleArr(pool).slice(0, 10).map(w => wordQuestion(w, pool, 0, true))],
-      ['🎧', 'Nghe chọn chữ', 'Luyện nghe từ đã học', () => shuffleArr(pool).slice(0, 10).map(w => wordQuestion(w, pool, 1, false))],
-      ['✍️', 'Tô chữ tự do', 'Chữ trong các từ đã học', () => shuffleArr(chars).slice(0, 6).map(c => ({ kind: 'write', char: c }))],
-      ['⌨️', 'Gõ pinyin', 'Gõ rồi chọn đúng chữ', () => shuffleArr(pool).slice(0, 8).map(w => ({ kind: 'type', word: Object.assign({ key: pinyinKey(w.py) }, w) }))],
-      ['🎧', 'Luyện nghe câu', 'Nghe câu & hội thoại HSK 1', () => listenSteps(HAS_LISTEN ? Object.keys(ZH_LISTEN) : [], 10)],
-      ['📰', 'Đọc hiểu', 'Đọc đoạn văn, trả lời câu hỏi', () => readSteps(HAS_READ ? Object.keys(ZH_READ) : [], 2)],
-      ['🎭', 'Nhập vai', 'Chọn câu đáp trong hội thoại', () => roleSteps(HAS_READ ? Object.keys(ZH_ROLE) : [], 2)],
-      ['🗣️', 'Sắp xếp câu', 'Các câu trong khoá học', () => shuffleArr(allSentences()).slice(0, 6).map(s => ({ kind: 'order', s }))],
-      ['🔢', 'Nghe số', 'Số từ 11 đến 99', () => genSteps('numbers', 10)],
-      ['🕒', 'Nghe giờ', 'Mấy giờ rồi?', () => genSteps('time', 8)],
-      ['💰', 'Nghe giá tiền', 'Bao nhiêu tiền?', () => genSteps('money', 8)],
-      ['🧱', 'Bộ thủ', 'Chữ này có bộ gì?', () => genSteps('radicals', 10)],
+    const groups = [
+      ['Phát âm & thanh điệu', [
+        ['🎵', 'Luyện thanh điệu', 'Nghe và chọn đúng thanh', () => genSteps('tones', 10)],
+        ['🔤', 'Ghép âm pinyin', 'Nghe và chọn đúng pinyin', () => genSteps('syllables', 10)],
+        ['🎶', 'Nghe chọn vần', 'an hay ang? in hay ing?', () => genSteps('finals', 10)],
+        ['🎚️', 'Thanh điệu trong từ', 'Nghe từ, chọn đúng dấu', () => genSteps('pinyinWord', 10)],
+        ['👂', 'Âm đầu dễ nhầm', 'b/p, zh/z, j/q/x…', () => genSteps('initials', 10)],
+      ]],
+      ['Từ vựng & chữ Hán', [
+        ['👀', 'Nhận mặt chữ', 'Nhìn chữ, chọn nghĩa', () => shuffleArr(pool).slice(0, 10).map(w => wordQuestion(w, pool, 0, true))],
+        ['🎧', 'Nghe chọn chữ', 'Nghe từ, chọn đúng chữ', () => shuffleArr(pool).slice(0, 10).map(w => wordQuestion(w, pool, 1, false))],
+        ['🧩', 'Nối từ', 'Nối chữ với nghĩa', () => [0, 1, 2].map(() => ({ kind: 'match', pairs: shuffleArr(pool).slice(0, 4) }))],
+        ['✍️', 'Tô chữ', 'Viết đúng thứ tự nét', () => shuffleArr(chars).slice(0, 6).map(c => ({ kind: 'write', char: c }))],
+        ['⌨️', 'Gõ pinyin', 'Gõ rồi chọn đúng chữ', () => shuffleArr(pool).slice(0, 8).map(w => ({ kind: 'type', word: Object.assign({ key: pinyinKey(w.py) }, w) }))],
+        ['🧱', 'Bộ thủ', 'Chữ này có bộ gì?', () => genSteps('radicals', 10)],
+      ]],
+      ['Nghe & đọc hiểu', [
+        ['🎧', 'Luyện nghe câu', 'Câu & hội thoại HSK 1', () => listenSteps(HAS_LISTEN ? Object.keys(ZH_LISTEN) : [], 10)],
+        ['📰', 'Đọc hiểu', 'Đọc đoạn văn, trả lời câu hỏi', () => readSteps(HAS_READ ? Object.keys(ZH_READ) : [], 2)],
+        ['🎭', 'Nhập vai', 'Chọn câu đáp trong hội thoại', () => roleSteps(HAS_READ ? Object.keys(ZH_ROLE) : [], 2)],
+        ['🗣️', 'Sắp xếp câu', 'Các câu trong khoá học', () => shuffleArr(allSentences()).slice(0, 6).map(s => ({ kind: 'order', s }))],
+      ]],
+      ['Số, giờ & tiền', [
+        ['🔢', 'Nghe số', 'Số từ 11 đến 99', () => genSteps('numbers', 10)],
+        ['🕒', 'Nghe giờ', 'Mấy giờ rồi?', () => genSteps('time', 8)],
+        ['💰', 'Nghe giá tiền', 'Bao nhiêu tiền?', () => genSteps('money', 8)],
+      ]],
     ];
-    const grid = el('div', 'zh-practice-grid');
-    tiles.forEach(t => {
-      const b = el('button', 'zh-practice-tile');
-      b.append(el('span', 'zh-practice-emoji', t[0]), el('strong', null, t[1]), el('small', null, t[2]));
-      b.addEventListener('click', () => {
+    groups.forEach(([label, tiles]) => {
+      box.appendChild(el('div', 'section-label', label));
+      if (label === 'Từ vựng & chữ Hán' && learned.length < 4) box.appendChild(el('p', 'zh-panel-note zh-practice-note', 'Đang dùng 30 từ đầu khoá. Học thêm vài bài để luyện đúng những từ của bạn.'));
+      const list = el('div', 'zh-panel zh-list');
+      tiles.forEach(t => {
         const run = () => runSession({ lesson: { type: 'quiz', title: t[1], practice: true }, steps: t[3](), back: openPractice, rebuild: run });
-        run();
+        list.appendChild(listRow(t[0], t[1], t[2], run));
       });
-      grid.appendChild(b);
+      box.appendChild(list);
     });
-    box.appendChild(grid);
   }
   function allSentences() {
     const out = [];
@@ -1330,10 +1546,17 @@
     box.innerHTML = '';
     const hero = el('div', 'zh-hero');
     hero.appendChild(el('h1', null, 'Thư viện'));
-    hero.appendChild(el('p', null, 'Tra cứu nhanh: bảng pinyin, bộ thủ, ngữ pháp và toàn bộ từ vựng. Chạm vào mục bất kỳ để nghe.'));
+    hero.appendChild(el('p', null, 'Tra cứu pinyin, bộ thủ, ngữ pháp và toàn bộ từ vựng. Chạm vào mục bất kỳ để nghe.'));
     box.appendChild(hero);
-    const seg = el('div', 'zh-lib-tabs');
-    [['pinyin', '🔤 Pinyin'], ['radicals', '🧱 Bộ thủ'], ['grammar', '🧠 Ngữ pháp'], ['words', '📚 Từ vựng']].forEach(m => {
+    // Ô tìm kiếm chung: tìm cùng lúc trong từ vựng, bộ thủ và mẫu ngữ pháp (chữ Hán, pinyin không dấu, nghĩa).
+    const search = el('input', 'zh-type-input zh-lib-search');
+    search.type = 'search';
+    search.placeholder = '🔍 Tìm chữ Hán, pinyin hoặc nghĩa…';
+    search.value = libQuery;
+    const results = el('div', 'zh-lib-results');
+    box.append(search, results);
+    const seg = el('div', 'zh-lib-tabs zh-lib-seg');
+    [['pinyin', 'Pinyin'], ['radicals', 'Bộ thủ'], ['grammar', 'Ngữ pháp'], ['words', 'Từ vựng']].forEach(m => {
       const b = el('button', 'zh-chip' + (libMode === m[0] ? ' is-active' : ''), m[1]);
       b.addEventListener('click', () => { libMode = m[0]; renderLibrary(); });
       seg.appendChild(b);
@@ -1341,13 +1564,24 @@
     box.appendChild(seg);
     const body = el('div', 'zh-lib-body');
     box.appendChild(body);
+    const drawSearch = () => {
+      libQuery = search.value;
+      const q = search.value.trim();
+      seg.hidden = body.hidden = !!q;
+      results.innerHTML = '';
+      if (q) libSearch(q, results);
+    };
+    search.addEventListener('input', drawSearch);
+    drawSearch();
     if (libMode === 'pinyin') {
       body.appendChild(el('div', 'section-label', '4 thanh điệu (màu dùng trong toàn app)'));
       const tones = el('div', 'zh-tone-legend');
-      [['mā', '妈', 'Thanh 1', 'cao, đều', '˥'], ['má', '麻', 'Thanh 2', 'đi lên', '˧˥'], ['mǎ', '马', 'Thanh 3', 'xuống rồi lên', '˨˩˦'], ['mà', '骂', 'Thanh 4', 'rơi mạnh', '˥˩'], ['ma', '吗', 'Thanh nhẹ', 'ngắn, nhẹ', '·']].forEach(t => {
+      [['mā', '妈', 'Thanh 1', 'cao, đều', '55'], ['má', '麻', 'Thanh 2', 'đi lên', '35'], ['mǎ', '马', 'Thanh 3', 'xuống rồi lên', '214'], ['mà', '骂', 'Thanh 4', 'rơi mạnh', '51'], ['ma', '吗', 'Thanh nhẹ', 'ngắn, nhẹ', '']].forEach((t, i) => {
         const b = el('button', 'zh-tone-row');
         const big = el('span', 'zh-tone-py'); big.innerHTML = colorPinyin(t[0]);
-        b.append(big, el('span', 'zh-tone-contour', t[4]), el('span', 'zh-word-vi', t[2] + ' — ' + t[3]));
+        const cv = el('span', 'zh-tone-contour'); cv.innerHTML = toneSvg(t[4], i + 1);
+        const txt = el('span', 'zh-tone-text'); txt.append(el('strong', null, t[2]), el('small', null, t[3]));
+        b.append(big, cv, txt);
         b.addEventListener('click', () => A.speak(t[1]));
         tones.appendChild(b);
       });
@@ -1413,7 +1647,7 @@
       show(first[0], first[1], false);
     } else if (libMode === 'grammar') {
       // Dạng thu gọn: mỗi lần mở 1 chủ điểm.
-      ['g_svo', 'g_shi_you', 'g_neg', 'g_questions', 'g_de_measure'].forEach((id, i) => {
+      LIB_GRAMMAR.forEach((id, i) => {
         const l = STEP_LESSONS[id];
         if (libGrammar === null && i === 0) libGrammar = id;
         const open = libGrammar === id;
@@ -1433,24 +1667,10 @@
         body.appendChild(card);
       });
     } else {
-      // Từ vựng: gom theo phần của khoá (thu gọn được), từ xếp lưới ô; khi gõ tìm thì hiện kết quả liền.
-      const search = el('input', 'zh-type-input zh-lib-search');
-      search.placeholder = 'Tìm chữ, pinyin hoặc nghĩa…';
-      search.value = libQuery;
+      // Từ vựng: gom theo phần của khoá (thu gọn được), từ xếp lưới ô.
       const srs = Z().srs;
       const listBox = el('div');
-      const tiles = words => {
-        const g = el('div', 'zh-wtile-grid');
-        words.forEach(w => {
-          const b = el('button', 'zh-wtile' + (srs[w.zh] ? ' is-learned' : ''));
-          b.appendChild(el('strong', null, w.zh));
-          const p = el('small', 'zh-wtile-py'); p.innerHTML = colorPinyin(w.py || ''); b.appendChild(p);
-          b.appendChild(el('small', 'zh-wtile-vi', w.vi));
-          b.addEventListener('click', () => A.speak(w.zh));
-          g.appendChild(b);
-        });
-        return g;
-      };
+      const tiles = wordTiles;
       // Mỗi chặng 1 nhóm (vài chục từ là cùng), có nhãn phần ngăn cách; từ trùng chỉ tính ở chặng gặp đầu tiên.
       const seen = new Set();
       const groups = [];
@@ -1462,15 +1682,7 @@
       groups.push({ id: 'more', part: 'more', title: 'Từ HSK 1 ngoài lộ trình', words: COURSE_WORDS.filter(w => !seen.has(w.zh)) });
       const partChips = ZH_COURSE.map((p, i) => [p.id, 'Phần ' + (i + 1)]).filter(c => groups.some(g => g.part === c[0] && g.words.length)).concat(groups[groups.length - 1].words.length ? [['more', 'Khác']] : []);
       const draw = () => {
-        const q = search.value.trim().toLowerCase(), qk = pinyinKey(q);
-        libQuery = search.value;
         listBox.innerHTML = '';
-        if (q) {
-          const rows = COURSE_WORDS.filter(w => w.zh.includes(q) || w.vi.toLowerCase().includes(q) || (qk && w.key.startsWith(qk)));
-          listBox.appendChild(el('small', 'zh-lib-count', rows.length ? rows.length + ' kết quả · ✓ = đã học' : 'Không tìm thấy từ nào.'));
-          listBox.appendChild(tiles(rows.slice(0, 120)));
-          return;
-        }
         listBox.appendChild(el('small', 'zh-lib-count', COURSE_WORDS.length + ' từ · ' + COURSE_WORDS.filter(w => srs[w.zh]).length + ' đã học (✓) · chạm để nghe'));
         // Chọn phần → chỉ hiện các chặng của phần đó (thu gọn được).
         if (!libWordPart || !partChips.some(c => c[0] === libWordPart)) libWordPart = partChips[0][0];
@@ -1494,9 +1706,73 @@
           listBox.appendChild(card);
         });
       };
-      search.addEventListener('input', draw);
-      body.append(search, listBox);
+      body.appendChild(listBox);
       draw();
+    }
+  }
+  function wordTiles(words) {
+    const srs = Z().srs;
+    const g = el('div', 'zh-wtile-grid');
+    words.forEach(w => {
+      const b = el('button', 'zh-wtile' + (srs[w.zh] ? ' is-learned' : ''));
+      b.appendChild(el('strong', null, w.zh));
+      const p = el('small', 'zh-wtile-py'); p.innerHTML = colorPinyin(w.py || ''); b.appendChild(p);
+      b.appendChild(el('small', 'zh-wtile-vi', w.vi));
+      b.addEventListener('click', () => A.speak(w.zh));
+      g.appendChild(b);
+    });
+    return g;
+  }
+  // Đường cong thanh điệu (thang 5 bậc của Triệu Nguyên Nhậm: 55, 35, 214, 51); thanh nhẹ = 1 chấm ngắn.
+  function toneSvg(levels, tone) {
+    const W = 56, H = 34, pad = 4, y = l => pad + (5 - l) / 4 * (H - 2 * pad);
+    const c = 'var(--tone' + Math.min(tone, 4) + ')';
+    if (!levels) return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true"><circle cx="' + W / 2 + '" cy="' + y(2) + '" r="4" fill="var(--ink-soft)"/></svg>';
+    const pts = [...levels].map((l, i, a) => (pad + i / (a.length - 1) * (W - 2 * pad)).toFixed(1) + ',' + y(+l).toFixed(1));
+    const grid = [1, 2, 3, 4, 5].map(l => '<line x1="0" x2="' + W + '" y1="' + y(l) + '" y2="' + y(l) + '" stroke="var(--line)" stroke-width="1"/>').join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' + grid +
+      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + c + '" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  const LIB_GRAMMAR = ['g_svo', 'g_shi_you', 'g_neg', 'g_questions', 'g_de_measure'];
+  // Kết quả tìm kiếm chung của Thư viện, chia 3 nhóm.
+  function libSearch(q, out) {
+    const fq = fold(q), qk = pinyinKey(q);
+    const has = s => fold(s).includes(fq);
+    const words = COURSE_WORDS.filter(w => w.zh.includes(q) || has(w.vi) || (qk && w.key.startsWith(qk)));
+    const rads = ZH_RADICALS.filter(r => r.r === q || r.alt === q || has(r.name) || has(r.vi) || (qk && pinyinKey(r.py) === qk));
+    const gram = [];
+    LIB_GRAMMAR.forEach(id => STEP_LESSONS[id].items.forEach(it => {
+      if (it.big.includes(q) || has(it.vi) || (qk.length > 2 && pinyinKey(it.py || '').includes(qk))) gram.push(it);
+    }));
+    const total = words.length + rads.length + gram.length;
+    out.appendChild(el('small', 'zh-lib-count', total ? total + ' kết quả cho “' + q + '” · chạm để nghe' : 'Không tìm thấy “' + q + '”. Thử gõ pinyin không dấu (vd: xiexie) hoặc nghĩa tiếng Việt.'));
+    if (words.length) {
+      out.appendChild(el('div', 'section-label', 'Từ vựng · ' + words.length));
+      out.appendChild(wordTiles(words.slice(0, 120)));
+    }
+    if (rads.length) {
+      out.appendChild(el('div', 'section-label', 'Bộ thủ · ' + rads.length));
+      const g = el('div', 'zh-rad-grid');
+      rads.forEach(r => {
+        const c = el('button', 'zh-rad-cell');
+        c.append(el('strong', null, r.r), el('small', null, r.name));
+        c.addEventListener('click', () => { libMode = 'radicals'; libRadical = r.r; libQuery = ''; renderLibrary(); });
+        g.appendChild(c);
+      });
+      out.appendChild(g);
+    }
+    if (gram.length) {
+      out.appendChild(el('div', 'section-label', 'Mẫu ngữ pháp · ' + gram.length));
+      const card = el('div', 'zh-gram-card is-open');
+      gram.slice(0, 30).forEach(it => {
+        const row = el('button', 'zh-gram-row');
+        row.appendChild(el('span', 'zh-gram-zh', it.big));
+        if (it.py) { const p = el('span', 'zh-gram-py'); p.innerHTML = colorPinyin(it.py); row.appendChild(p); }
+        row.appendChild(el('span', 'zh-gram-vi', it.vi + (it.note ? ' — ' + it.note : '')));
+        if (HAS_HANZI.test(it.big)) row.addEventListener('click', () => A.speak(it.big));
+        card.appendChild(row);
+      });
+      out.appendChild(card);
     }
   }
   let libRadical = null, libGrammar = null, libWordGroup = '', libWordPart = null, libQuery = ''; // libGrammar null = mở chủ điểm đầu
@@ -1818,6 +2094,23 @@
     d.tile3.textContent = learnedWords().length;
     d.tile3Label.textContent = '🔤 Từ đã học';
     d.listLabel.textContent = 'Chi tiết khoá học';
+    // Khối thống kê: 7 ngày qua (bài / độ chính xác) + mức nhớ từ vựng. Dựng lại mỗi lần mở.
+    let st = document.getElementById('zhAdultStats');
+    if (!st) { st = el('div', 'zh-adult-stats'); st.id = 'zhAdultStats'; d.listLabel.parentNode.insertBefore(st, d.listLabel); }
+    st.innerHTML = '';
+    const log = Z().log, days = [-6, -5, -4, -3, -2, -1, 0].map(i => addDays(i));
+    days[6] = todayStr();
+    const rows = days.map(k => log[k] || { n: 0, q: 0, c: 0 });
+    const sum = rows.reduce((a, r) => ({ n: a.n + r.n, q: a.q + r.q, c: a.c + r.c }), { n: 0, q: 0, c: 0 });
+    const week = el('div', 'zh-panel');
+    week.appendChild(el('div', 'zh-panel-title', '7 ngày qua'));
+    const kpis = el('div', 'zh-kpis');
+    [[sum.n, 'bài đã học'], [rows.filter(r => r.q || r.n).length + '/7', 'ngày có học'], [sum.q ? Math.round(sum.c / sum.q * 100) + '%' : '—', 'trả lời đúng']].forEach(k => {
+      const c = el('div', 'zh-kpi'); c.append(el('strong', null, String(k[0])), el('small', null, k[1])); kpis.appendChild(c);
+    });
+    week.append(kpis, sum.n || sum.q ? barChart(rows.map(r => r.n), [-6, -5, -4, -3, -2, -1, 0].map(dayLabel), 'past')
+      : el('p', 'zh-panel-note', 'Chưa có số liệu tuần này — biểu đồ số bài mỗi ngày sẽ hiện từ bài học tiếp theo.'));
+    st.append(week, levelPanel());
     d.list.innerHTML = ZH_COURSE.map(part => {
       const skipped = !!Z().skip[part.id];
       return '<div class="progress-subhead">' + esc(part.title) + (skipped ? ' — đã kiểm tra nhảy cóc ✅' : '') + '</div>' +
