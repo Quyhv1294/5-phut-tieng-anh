@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>5 Phút Tiếng Anh</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="assets/icons/favicon.png">
@@ -99,7 +99,7 @@
 
     <div class="streak-banner" id="streakBanner" hidden>
       <span class="streak-emoji">🔥</span>
-      <span>Bé đã học <strong id="streakCount">0</strong> ngày liên tiếp — giỏi quá!</span>
+      <span><strong id="streakCount">0</strong> ngày liên tiếp — giỏi quá!</span>
       <span class="streak-freeze-badge" id="streakFreezeBadge" hidden>🛡️×<span id="streakFreezeCount">0</span></span>
     </div>
 
@@ -128,7 +128,6 @@
     <div class="home-mode-panel" id="homeModeStoryPanel" hidden>
       <div class="topic-grid" id="storyTopicGrid"></div>
     </div>
-    <div class="promo-slot" id="promoCardMam"></div>
 
     </div>
     <div class="class-content" id="classContentHomeChoi" data-class-content="choi" hidden>
@@ -158,7 +157,6 @@
         <p class="class-intro">Truyện tranh dài hơn lớp Mầm, đọc xong trả lời 3 câu hỏi hiểu truyện.</p>
         <div class="topic-grid" id="storyChoiTopicGrid"></div>
       </div>
-      <div class="promo-slot" id="promoCardChoi"></div>
       <div class="choi-summary" id="choiSummary"></div>
     </div>
     <div class="class-content" id="classContentHomeLa" data-class-content="la" hidden>
@@ -195,23 +193,28 @@
       </div>
       <div class="choi-summary" id="laSummary"></div>
     </div>
-    <div class="class-content" id="classContentReview" data-class-content="mam,choi">
-    <div class="section-label">🔁 Ôn tập</div>
-    <div class="progress-actions">
-      <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
-      <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
-      <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
-    </div>
-    </div>
-
     <!-- Góc ba mẹ: lời chào, kiểm tra trình độ, nhiệm vụ hôm nay — gom lại, thu gọn sẵn (app.js — PARENT CORNER) -->
     <details class="parent-corner" id="parentCorner">
-      <summary><span>👪 Góc ba mẹ</span><small>Hướng dẫn · kiểm tra trình độ · nhiệm vụ hôm nay</small></summary>
+      <summary><span>👪 Góc ba mẹ</span><small>Ôn tập · lên lớp · chia sẻ tiến độ · kiểm tra trình độ</small></summary>
       <div class="parent-corner-body">
         <div class="home-hero">
           <h1>Chào ba mẹ! 👋</h1>
           <p>Chọn một chủ đề bên dưới, học cùng bé 10 từ mới, rồi chơi mini game ôn lại — chỉ mất khoảng 5 phút thôi ạ.</p>
         </div>
+
+        <!-- Ôn tập, điều kiện lên lớp, chia sẻ: việc ba mẹ chọn giúp bé — gom vào đây cho vùng của bé gọn
+             (applyClassScope vẫn ẩn/hiện theo lớp đang chọn qua data-class-content). -->
+        <div id="classContentReview" data-class-content="mam,choi">
+          <div class="section-label">🔁 Ôn tập</div>
+          <div class="progress-actions">
+            <button class="cta-btn" id="smartReviewBtn">🧠 Ôn tập thông minh</button>
+            <button class="ghost-btn" id="difficultReviewBtn">📌 Luyện từ khó</button>
+            <button class="ghost-btn" id="mixedReviewBtn">🔁 Ôn tập tổng hợp</button>
+          </div>
+        </div>
+        <div data-class-content="mam"><div class="promo-slot" id="promoCardMam"></div></div>
+        <div data-class-content="choi"><div class="promo-slot" id="promoCardChoi"></div></div>
+        <button class="ghost-btn parent-share-btn" id="parentShareBtn">📤 Chia sẻ tiến độ của bé</button>
 
         <button class="week-banner placement-banner" id="placementBanner">
           <span class="wb-emoji" id="placementBannerEmoji">🧪</span>
@@ -698,12 +701,13 @@
     </div>
     <div class="flash-wrap">
       <div class="flashcard" id="flashcard">
+        <span class="card-tap-hint" aria-hidden="true">🔊</span>
         <div class="big-emoji" id="cardEmoji">🍎</div>
         <div class="word-en" id="cardWordEn">APPLE</div>
         <div class="word-vi" id="cardWordVi">Quả táo</div>
         <button class="reveal-vi-btn" id="cardRevealViBtn" hidden>👁️ Bé đoán xem nghĩa là gì rồi bấm xem nhé!</button>
       </div>
-      <button class="speak-btn" id="speakBtn">🔊 Nghe phát âm</button>
+      <button class="speak-btn" id="speakBtn" aria-label="Nghe phát âm">🔊 <span class="speak-label">Nghe phát âm</span></button>
       <div class="nav-row">
         <button class="nav-btn" id="prevCardBtn">← Trước</button>
         <button class="nav-btn primary" id="nextCardBtn">Tiếp →</button>
@@ -819,8 +823,13 @@
       <div class="progress-track"><div class="progress-fill" id="quizProgressFill"></div></div>
     </div>
     <div class="quiz-wrap">
-      <div class="quiz-prompt">Đâu là...</div>
-      <div class="quiz-word" id="quizWord">CAT</div>
+      <div class="quiz-head">
+        <img class="quiz-fox" id="quizFox" src="assets/mascot-fox.png" alt="">
+        <div class="quiz-head-text">
+          <div class="quiz-prompt">Đâu là...</div>
+          <div class="quiz-word" id="quizWord">CAT</div>
+        </div>
+      </div>
       <button class="speak-btn quiz-replay-btn" id="quizReplayBtn" aria-label="Nghe lại từ">🔊 Nghe lại</button>
       <div class="quiz-options" id="quizOptions"></div>
       <div class="quiz-feedback" id="quizFeedback"></div>

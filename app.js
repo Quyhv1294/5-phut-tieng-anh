@@ -507,7 +507,7 @@
   };
   let foxCheerAt = 0;
   function foxCheer(kind) {
-    if (IS_ZH || screens.quizparent.classList.contains('active')) return;
+    if (IS_ZH || screens.quizparent.classList.contains('active') || screens.quiz.classList.contains('active')) return;
     const now = Date.now();
     if (now - foxCheerAt < 4000 || (kind === 'correct' && Math.random() > 0.35)) return;
     foxCheerAt = now;
@@ -722,7 +722,27 @@
 
     const isTopLevel = TOP_LEVEL_SCREENS.includes(name);
     document.getElementById('tabbar').hidden = !isTopLevel;
+    // Đang học / chơi (không phải 4 tab chính): thanh tab dưới đáy ẩn → bỏ khoảng đệm dưới trang (style.css).
+    document.body.classList.toggle('in-activity', !isTopLevel);
     if (isTopLevel) setActiveTab(name);
+  }
+
+  // ---------- BỐ CỤC PHẦN TIẾNG ANH ----------
+  // Thanh tab xuống DƯỚI ĐÁY (đúng tầm ngón cái của bé): đưa ra khỏi .app-header — header có
+  // backdrop-filter nên position: fixed bên trong nó sẽ bám theo header chứ không bám màn hình.
+  // Mọi thanh chuyển mục (segment-toggle / mode-grid) dùng chung 1 kiểu lưới nút (.mode-chips):
+  // ≤3 mục 1 hàng, 4–5 mục 2 cột (mục lẻ cuối kéo hết hàng), 6 mục 3 cột.
+  // Phần tiếng Trung giữ nguyên bố cục cũ.
+  if (!IS_ZH) {
+    document.body.appendChild(document.getElementById('tabbar'));
+    document.querySelectorAll('.segment-toggle, .mode-grid').forEach(box => {
+      const btns = box.querySelectorAll('.segment-btn, .mode-grid-btn');
+      const n = btns.length;
+      const cols = n <= 3 ? n : n === 6 ? 3 : 2;
+      box.classList.add('mode-chips');
+      box.style.setProperty('--cols', cols);
+      if (n % cols === 1 && n > 1) btns[n - 1].style.gridColumn = '1 / -1';
+    });
   }
 
   function setActiveTab(name) {
@@ -1284,7 +1304,9 @@
         icons.appendChild(b);
       });
       const n = ms.filter(m => m.check(dm.stats)).length;
-      strip.querySelector('.kid-missions-label').textContent = dm.claimed ? '🎉 Xong cả 3 nhiệm vụ hôm nay!' : 'Nhiệm vụ hôm nay ' + n + '/' + ms.length + ' · xong cả 3 được +' + DAILY_MISSION_BONUS + '⭐';
+      // Ngắn gọn cho bé: số nhiệm vụ đã xong + phần thưởng (chi tiết từng nhiệm vụ ở Góc ba mẹ / chạm vào icon).
+      strip.querySelector('.kid-missions-label').innerHTML = dm.claimed ? '🎉 Xong hết rồi!'
+        : '<b>' + n + '/' + ms.length + '</b> nhiệm vụ<small>+' + DAILY_MISSION_BONUS + '⭐</small>';
     }
   }
 
@@ -1301,9 +1323,10 @@
     yesterday.setDate(yesterday.getDate() - 1);
     const streakAtRisk = !studiedToday && progress.streak.count >= 1 && progress.streak.lastDate === toDateStr(yesterday);
     document.getElementById('reminderEmoji').textContent = streakAtRisk ? '🔥' : '📚';
+    // Câu ngắn 1 dòng (bé 4–5 tuổi chưa đọc được câu dài; ba mẹ đọc nhanh cho bé).
     document.getElementById('reminderText').textContent = streakAtRisk
-      ? 'Hôm nay bé chưa học — học 1 bài để giữ chuỗi ' + progress.streak.count + ' ngày liên tiếp nhé!'
-      : 'Hôm nay bé chưa học bài nào — chọn 1 chủ đề bên dưới để bắt đầu nhé!';
+      ? 'Học 1 bài để giữ chuỗi ' + progress.streak.count + ' ngày nhé!'
+      : 'Hôm nay mình học 1 bài nhé!';
 
     const streakBanner = document.getElementById('streakBanner');
     if (studiedToday && progress.streak.count > 1) {
@@ -2293,7 +2316,7 @@
         b.setAttribute('aria-pressed', id === activeId ? 'true' : 'false');
         b.innerHTML = (id === ownId ? '<span class="cb-own">Lớp của bé</span>' : '')
           + '<span class="cb-emoji">' + lv.emoji + '</span>'
-          + '<span>' + lv.label + '</span><small>' + lv.ageText + '</small>';
+          + '<span>' + (IS_ZH ? lv.label : lv.label.replace(/^Lớp /, '')) + '</span><small>' + lv.ageText + '</small>';
         b.addEventListener('click', () => setActiveClass(id));
         box.appendChild(b);
       });
@@ -2607,7 +2630,8 @@
 
   // ---------- CHILD PROFILE (bắt buộc, 1 hồ sơ / thiết bị) ----------
   const PROFILE_KEY = '5phut_profile_v1';
-  const AVATAR_PRESETS = ['🧒', '👦', '👧', '🐱', '🐶', '🦊', '🐦', '🐟', '😄', '😊'];
+  // Không có 🦊: bạn cáo là nhân vật dẫn đường của app (logo, động viên) — avatar là "bé", tránh lẫn với bạn cáo.
+  const AVATAR_PRESETS = ['🧒', '👦', '👧', '🐱', '🐶', '🐰', '🐦', '🐟', '😄', '😊'];
   let selectedAvatar = AVATAR_PRESETS[0];
 
   function loadProfile() {
@@ -3657,8 +3681,9 @@
       document.getElementById('kidContinueEyebrow').textContent = eyebrow;
       document.getElementById('kidContinueTitle').textContent = title;
     };
+    // Lời chào ngắn (1 dòng): tên dài thì vẫn gọn, không đẩy tên chủ đề xuống.
     if (n) {
-      const what = n.retry ? 'học lại cho giỏi nhé!' : n.fresh ? 'bắt đầu học nhé!' : 'học tiếp nhé!';
+      const what = n.retry ? 'học lại nhé!' : n.fresh ? 'học nào!' : 'học tiếp nào!';
       set(name ? name + ' ơi, ' + what : what.charAt(0).toUpperCase() + what.slice(1), n.topic.label);
     }
     else set((name || 'Bé') + ' học hết rồi, giỏi quá!', '🧠 Ôn tập thông minh');
@@ -3771,8 +3796,22 @@
     btnEl.hidden = !hidden;
   }
 
+  let lastCardKey = '';
   function renderCard() {
     const w = currentTopic.words[cardIndex];
+    // Hiệu ứng trượt theo hướng lật thẻ (tiếp → trượt từ phải, trước → từ trái) + tự đọc từ khi thẻ hiện ra
+    // (bé chưa đọc được chữ — nghe trước, nhìn tranh). Chỉ phần tiếng Anh.
+    const key = currentTopic.id + ':' + cardIndex;
+    if (!IS_ZH && key !== lastCardKey) {
+      const card = document.getElementById('flashcard');
+      const prev = lastCardKey.split(':');
+      const dir = prev[0] === currentTopic.id && +prev[1] > cardIndex ? 'enter-prev' : 'enter-next';
+      card.classList.remove('enter-prev', 'enter-next');
+      void card.offsetWidth;
+      card.classList.add(dir);
+      speak(w.en); // gọi ngay trong lượt chạm của bé (iOS chỉ cho phát tiếng khi gắn với 1 lần chạm)
+    }
+    lastCardKey = key;
     document.getElementById('cardEmoji').textContent = w.emoji;
     setWordText(document.getElementById('cardWordEn'), w);
     document.getElementById('cardWordVi').textContent = w.vi;
@@ -3780,10 +3819,32 @@
     const pct = ((cardIndex) / currentTopic.words.length) * 100;
     document.getElementById('cardProgressFill').style.width = pct + '%';
     document.getElementById('prevCardBtn').disabled = cardIndex === 0;
+    document.getElementById('prevCardBtn').classList.toggle('is-invisible', !IS_ZH && cardIndex === 0);
     document.getElementById('nextCardBtn').textContent = (cardIndex === currentTopic.words.length - 1) ? 'Ôn tập →' : 'Tiếp →';
   }
   document.getElementById('cardRevealViBtn').addEventListener('click', () =>
     setViHidden(document.getElementById('cardWordVi'), document.getElementById('cardRevealViBtn'), false));
+  // Chạm vào thẻ = nghe đọc; vuốt ngang = đổi thẻ (vuốt trái → thẻ tiếp, vuốt phải → thẻ trước).
+  (function () {
+    const card = document.getElementById('flashcard');
+    let x0 = null, y0 = 0, swiped = false;
+    card.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; swiped = false; });
+    card.addEventListener('pointerup', e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0, dy = e.clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      swiped = true;
+      if (dx < 0) document.getElementById('nextCardBtn').click();
+      else if (cardIndex > 0) document.getElementById('prevCardBtn').click();
+    });
+    card.addEventListener('pointercancel', () => { x0 = null; });
+    card.addEventListener('click', e => {
+      if (swiped || e.target.closest('button') || !currentTopic) return;
+      speak(currentTopic.words[cardIndex].en);
+      card.classList.remove('is-tapped'); void card.offsetWidth; card.classList.add('is-tapped');
+    });
+  })();
 
   // ---------- MUTE TOGGLE ----------
   const MUTE_KEY = '5phut_muted_v1';
@@ -4604,10 +4665,13 @@
 
     const wrap = document.getElementById('quizOptions');
     wrap.innerHTML = '';
+    wrap.classList.remove('is-answered');
+    document.getElementById('quizFox').classList.remove('is-happy', 'is-sad');
     options.forEach(opt => {
       const b = document.createElement('button');
       b.className = 'quiz-opt';
       b.textContent = opt.emoji;
+      b.dataset.en = opt.en;
       b.addEventListener('click', () => handleQuizAnswer(b, opt.en === correctWord.en));
       wrap.appendChild(b);
     });
@@ -4624,16 +4688,25 @@
     const fb = document.getElementById('quizFeedback');
     if (!isMixedReview) quizWordStatus[quizCurrentWordIdx] = isCorrect;
     recordWordAnswer(currentTopic.words[quizCurrentWordIdx], isCorrect);
+    const correctWord = currentTopic.words[quizCurrentWordIdx];
+    document.getElementById('quizOptions').classList.add('is-answered');
+    const fox = document.getElementById('quizFox');
+    fox.classList.remove('is-happy', 'is-sad'); void fox.offsetWidth;
     if (isCorrect) {
-      btn.classList.add('correct');
+      btn.classList.add('correct', 'is-hero');
       fb.textContent = 'Chính xác! 🎉';
       fb.className = 'quiz-feedback ok'; sfx('correct');
+      fox.classList.add('is-happy');
       quizCorrectCount++;
     } else {
       btn.classList.add('wrong');
-      fb.textContent = 'Chưa đúng rồi, thử lại lần sau nhé!';
+      // Tô sáng đáp án đúng + đọc lại từ đó để bé học luôn, không chỉ báo "sai".
+      allOpts.forEach(o => { if (o.dataset.en === correctWord.en) o.classList.add('reveal'); });
+      fb.textContent = 'Đáp án đúng đây nè! 👆';
       fb.className = 'quiz-feedback no'; sfx('wrong');
+      fox.classList.add('is-sad');
     }
+    if (!IS_ZH) setTimeout(() => speak(correctWord.en), 350);
     setTimeout(() => {
       quizIndex++;
       if (quizIndex < quizOrder.length) {
@@ -4643,7 +4716,7 @@
       } else {
         showQuizRecap();
       }
-    }, 1000);
+    }, IS_ZH ? 1000 : isCorrect ? 1400 : 2000);
   }
 
   // ---------- QUIZ RECAP (tổng kết đúng/sai + làm lại từ sai) ----------
@@ -6640,6 +6713,8 @@
     ctx.fillText('Bản dùng thử miễn phí từ Fanpage', W / 2, H - 18);
   }
 
+  // Tiếng Anh: "Chia sẻ" là việc của ba mẹ → nút trong Góc ba mẹ (tab Chia sẻ bị ẩn, xem style.css).
+  document.getElementById('parentShareBtn').addEventListener('click', () => document.getElementById('tabShare').click());
   // "Chia sẻ" là 1 nút hành động trong thanh tab (mở overlay), không phải màn hình riêng —
   // không đưa vào TOP_LEVEL_SCREENS/setActiveTab nên tab đang chọn trước đó vẫn giữ nguyên trạng thái active.
   document.getElementById('tabShare').addEventListener('click', () => {

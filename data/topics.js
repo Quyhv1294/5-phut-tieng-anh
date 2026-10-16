@@ -1,5 +1,5 @@
   const TOPICS = [
-    { id: 'family', label: 'Gia đình', emoji: '👨‍👩‍👧‍👦', cls: 't-pink',
+    { id: 'family', label: 'Gia đình', emoji: '🏡', cls: 't-pink',
       words: [
         { en: 'MOM', vi: 'Mẹ', emoji: '👩', example: 'I love my MOM.', exampleVi: 'Con yêu Mẹ.' },
         { en: 'DAD', vi: 'Bố', emoji: '👨', example: 'My DAD is tall.', exampleVi: 'Bố con cao.' },
@@ -12,7 +12,7 @@
         { en: 'HOME', vi: 'Nhà', emoji: '🏠', example: 'I go HOME after school.', exampleVi: 'Con về nhà sau giờ học.' },
         { en: 'HUG', vi: 'Ôm', emoji: '🤗', example: 'I HUG my mom.', exampleVi: 'Con ôm mẹ.' },
       ] },
-    { id: 'animals', label: 'Con vật', emoji: '🐾', cls: 't-blue',
+    { id: 'animals', label: 'Con vật', emoji: '🐶', cls: 't-blue',
       words: [
         { en: 'CAT', vi: 'Con mèo', emoji: '🐱', example: 'The CAT is cute.', exampleVi: 'Con mèo dễ thương.' },
         { en: 'DOG', vi: 'Con chó', emoji: '🐶', example: 'My DOG can run.', exampleVi: 'Con chó của con biết chạy.' },
@@ -90,7 +90,7 @@
         { en: 'FOGGY', vi: 'Sương mù', emoji: '🌫️', example: 'It is FOGGY outside.', exampleVi: 'Bên ngoài có sương mù.' },
         { en: 'THUNDER', vi: 'Sấm', emoji: '⚡', example: 'I hear THUNDER.', exampleVi: 'Con nghe thấy tiếng sấm.' },
       ] },
-    { id: 'food', label: 'Đồ ăn', emoji: '🍽️', cls: 't-gold', unlocksAt: 200,
+    { id: 'food', label: 'Đồ ăn', emoji: '🍚', cls: 't-gold', unlocksAt: 200,
       words: [
         { en: 'RICE', vi: 'Cơm', emoji: '🍚', example: 'I eat RICE.', exampleVi: 'Con ăn cơm.' },
         { en: 'MILK', vi: 'Sữa', emoji: '🥛', example: 'I drink MILK.', exampleVi: 'Con uống sữa.' },
@@ -103,7 +103,7 @@
         { en: 'WATER', vi: 'Nước', emoji: '💧', example: 'I drink WATER.', exampleVi: 'Con uống nước.' },
         { en: 'CHICKEN', vi: 'Thịt gà', emoji: '🍗', example: 'I eat CHICKEN.', exampleVi: 'Con ăn thịt gà.' },
       ] },
-    { id: 'body', label: 'Cơ thể bé', emoji: '🧒', cls: 't-mint', unlocksAt: 350,
+    { id: 'body', label: 'Cơ thể bé', emoji: '🖐️', cls: 't-mint', unlocksAt: 350,
       words: [
         { en: 'EYE', vi: 'Mắt', emoji: '👁️', example: 'This is my EYE.', exampleVi: 'Đây là mắt con.' },
         { en: 'HAND', vi: 'Bàn tay', emoji: '✋', example: 'Wave your HAND.', exampleVi: 'Vẫy tay con.' },

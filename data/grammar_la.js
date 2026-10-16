@@ -92,7 +92,7 @@
         { sentence: 'He ____ to school this morning.', answer: 'walked', others: ['walk'] },
         { sentence: 'We ____ happy at the party.', answer: 'were', others: ['was'] },
       ] },
-    { id: 'grammar_time', label: 'Xem giờ', emoji: '🕒', cls: 't-pink',
+    { id: 'grammar_time', label: 'Xem giờ', emoji: '⏰', cls: 't-pink',
       rule: 'Hỏi giờ bằng "What time is it?". Trả lời bằng "It\'s + số giờ + o\'clock" (đúng giờ) hoặc "It\'s + số giờ + thirty" (rưỡi).',
       examples: [
         { en: 'What time is it?', vi: 'Mấy giờ rồi?' },

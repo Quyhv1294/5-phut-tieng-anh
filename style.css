@@ -2342,3 +2342,141 @@
   @media (prefers-reduced-motion: reduce) { .topic-card.is-next-lock .fog-q { animation: none; } }
   /* Hàng sao ở màn Hoàn thành: 10 sao không còn tràn ra hai mép — xuống dòng khi không đủ chỗ */
   .earned-row { max-width: 100%; flex-wrap: wrap; justify-content: center; overflow-wrap: anywhere; }
+
+  /* ---------- Đợt 1 (bố cục, chỉ phần tiếng Anh) ----------
+     Thanh trên mảnh hơn; thanh tab xuống dưới đáy (app.js đưa #tabbar ra ngoài .app-header), tab "Chia sẻ"
+     chuyển vào Góc ba mẹ; chọn lớp thu thành 1 hàng nút tròn; mọi thanh chuyển mục cùng 1 kiểu lưới nút. */
+  html.lang-en-ui .app-header { padding-top: 12px; }
+  html.lang-en-ui .topbar { margin-bottom: 12px; }
+  html.lang-en-ui .tabbar {
+    position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 60;
+    width: 100%; max-width: 480px; margin: 0; gap: 4px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    border: none; border-top: 2px solid var(--line); border-radius: 22px 22px 0 0;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6);
+    box-shadow: 0 -6px 20px rgba(60, 40, 20, 0.10);
+  }
+  html.lang-en-ui .tab-btn { min-height: 58px; gap: 2px; padding: 6px 2px; border-radius: 16px; font-size: 14.5px; }
+  html.lang-en-ui .tab-btn .tab-icon { font-size: 28px; }
+  html.lang-en-ui .tab-btn.active { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent-ink); }
+  html.lang-en-ui #tabShare { display: none; }
+  html.lang-en-ui body:not(.in-activity) .app { padding-bottom: calc(40px + 78px + env(safe-area-inset-bottom)); }
+
+  /* Chọn lớp: 1 hàng nút tròn gọn (đổi lớp là việc hiếm khi làm), ẩn dòng tuổi. */
+  html.lang-en-ui .class-switch { gap: 6px; margin: 4px 0 14px; }
+  html.lang-en-ui .class-box {
+    flex-direction: row; justify-content: center; gap: 6px; min-height: 48px;
+    padding: 6px 8px; border-width: 2px; border-radius: 999px; font-size: 17px;
+  }
+  html.lang-en-ui .class-box .cb-emoji { font-size: 22px; }
+  html.lang-en-ui .class-box small { display: none; }
+  html.lang-en-ui .class-box .cb-own { top: -11px; font-size: 10.5px; }
+
+  /* Thanh chuyển mục thống nhất: lưới nút cùng cỡ, 1 dòng chữ, mục đang chọn viền cam. */
+  html.lang-en-ui .mode-chips {
+    display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 8px;
+    background: none; padding: 0; margin: 0 0 16px; border-radius: 0;
+  }
+  html.lang-en-ui .mode-chips .segment-thumb { display: none; }
+  html.lang-en-ui .mode-chips .segment-btn, html.lang-en-ui .mode-chips .mode-grid-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 50px;
+    padding: 8px 10px; border: 2px solid var(--line); border-radius: 16px;
+    background: var(--surface); color: var(--ink-soft);
+    font-family: 'Baloo 2'; font-weight: 700; font-size: 16.5px; line-height: 1.15;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  html.lang-en-ui .mode-chips .segment-btn.active, html.lang-en-ui .mode-chips .mode-grid-btn.active {
+    border-color: var(--accent); color: var(--accent-ink);
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  }
+  html.lang-en-ui .mode-chips .segment-btn:active, html.lang-en-ui .mode-chips .mode-grid-btn:active { transform: scale(0.97); }
+
+  /* Góc ba mẹ: ôn tập, lên lớp, chia sẻ nằm trong này. */
+  .parent-corner-body .promo-slot:not(:empty) { margin-top: 12px; }
+  .parent-share-btn { width: 100%; margin: 12px 0 4px; }
+
+  /* ---------- Đợt 2 (đồng bộ thị giác, chỉ phần tiếng Anh) ----------
+     Mọi lưới chủ đề (Chồi, Lá, Bảng chữ cái, Ngữ âm, Truyện, Trò chơi, Câu…) dùng chung kiểu ô của lớp Mầm:
+     3 cột, hình to ở giữa, tên bên dưới — trước đây là thẻ 2 cột cao, hình nhỏ ở góc, phần lớn thẻ trống. */
+  html.lang-en-ui .topic-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  html.lang-en-ui .topic-grid > .topic-card {
+    align-items: center; justify-content: center; text-align: center; gap: 4px;
+    min-height: 124px; padding: 22px 6px 12px; border-radius: 20px;
+  }
+  html.lang-en-ui .topic-grid > .topic-card .emoji { font-size: 40px; line-height: 1.1; }
+  html.lang-en-ui .topic-grid > .topic-card .label { font-size: 15px; line-height: 1.2; overflow-wrap: anywhere; }
+  html.lang-en-ui .topic-grid > .topic-card .count { font-size: 12.5px; line-height: 1.2; }
+  html.lang-en-ui .topic-grid > .topic-card .done-badge,
+  html.lang-en-ui .topic-grid > .topic-card .lock-badge { top: 5px; right: 6px; padding: 1px 6px; font-size: 11px; line-height: 1.5; }
+  html.lang-en-ui .topic-grid > .topic-card br { display: none; }
+  html.lang-en-ui .topic-grid > .topic-card .label + .count, html.lang-en-ui .topic-grid > .topic-card .count { display: block; }
+
+  /* Dải nhắc học / chuỗi ngày: 1 dòng gọn, chữ đậm màu dễ đọc (trước là chữ xanh trên nền xanh, 2 dòng). */
+  html.lang-en-ui .reminder-banner, html.lang-en-ui .streak-banner {
+    padding: 10px 14px; margin-bottom: 14px; font-size: 16px; line-height: 1.3; color: #2E2419; box-shadow: none;
+  }
+  html.lang-en-ui .reminder-banner { background: color-mix(in srgb, var(--blue) 45%, var(--surface)); }
+  html.lang-en-ui .reminder-banner .reminder-emoji, html.lang-en-ui .streak-banner .streak-emoji { font-size: 24px; }
+
+  /* Nhiệm vụ hôm nay: số to + phần thưởng nhỏ, không còn câu dài. */
+  html.lang-en-ui .kid-missions-label { font-size: 15px; color: var(--ink); }
+  html.lang-en-ui .kid-missions-label b { font-family: 'Baloo 2'; font-size: 22px; margin-right: 4px; }
+  html.lang-en-ui .kid-missions-label small { display: block; font-size: 13px; color: var(--ink-soft); }
+
+  /* Tab Trò chơi / Câu: bỏ đoạn giới thiệu dài (bé không đọc được) — vào thẳng chọn trò và chủ đề. */
+  html.lang-en-ui #screen-games .home-hero, html.lang-en-ui #screen-sentences .home-hero { display: none; }
+
+  /* Màn học / chơi: hình nền minh hoạ mờ hẳn đi, thẻ nền trắng đặc → tranh và chữ tách khỏi nền. */
+  html.lang-en-ui body.in-activity { --bg-overlay: color-mix(in srgb, var(--bg) 90%, transparent); }
+  html.lang-en-ui .flashcard:not([class*="t-"]) { background: var(--surface); }
+
+  /* ---------- Đợt 3 (màn học sinh động, chỉ phần tiếng Anh) ---------- */
+  /* Thẻ học: tranh to (nội dung chính), chạm thẻ để nghe (biểu tượng 🔊 nhỏ ở góc gợi ý), nút loa tròn to. */
+  html.lang-en-ui #flashcard { position: relative; cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  html.lang-en-ui #flashcard .big-emoji { font-size: 150px; }
+  .card-tap-hint { display: none; }
+  html.lang-en-ui .card-tap-hint {
+    display: flex; align-items: center; justify-content: center; position: absolute; top: 14px; right: 14px;
+    width: 40px; height: 40px; border-radius: 50%; font-size: 22px;
+    background: color-mix(in srgb, var(--teal) 16%, var(--surface));
+  }
+  html.lang-en-ui #speakBtn { width: 76px; height: 76px; padding: 0; justify-content: center; border-radius: 50%; font-size: 36px; }
+  html.lang-en-ui #speakBtn .speak-label { display: none; }
+  .nav-btn.is-invisible { visibility: hidden; }
+
+  /* Bài đố: bạn cáo cạnh câu hỏi, ô tranh to hơn. */
+  .quiz-head { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .quiz-fox { display: none; }
+  html.lang-en-ui .quiz-fox { display: block; width: 72px; height: 72px; object-fit: contain; flex: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15)); }
+  html.lang-en-ui .quiz-head-text { text-align: left; }
+  html.lang-en-ui #screen-quiz .quiz-wrap { gap: 16px; }
+  html.lang-en-ui #quizOptions { max-width: 420px; gap: 14px; }
+  html.lang-en-ui #quizOptions .quiz-opt {
+    display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 0.82;
+    padding: 6px; border-radius: 24px; font-size: 76px; transition: opacity .25s ease, transform .25s ease;
+  }
+  html.lang-en-ui #quizOptions.is-answered .quiz-opt:not(.correct):not(.reveal):not(.wrong) { opacity: 0.35; }
+  html.lang-en-ui #quizOptions .quiz-opt.reveal {
+    border-color: var(--teal); background: color-mix(in srgb, var(--teal) 20%, var(--surface));
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 35%, transparent);
+  }
+  html.lang-en-ui #quizOptions .quiz-opt.is-hero { box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 35%, transparent), var(--shadow); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html.lang-en-ui #flashcard.enter-next { animation: card-in-next .32s ease-out; }
+    html.lang-en-ui #flashcard.enter-prev { animation: card-in-prev .32s ease-out; }
+    html.lang-en-ui #flashcard.is-tapped .big-emoji { animation: fx-pop .38s ease-out; }
+    html.lang-en-ui .card-tap-hint { animation: tap-hint 1.6s ease-in-out 2; }
+    html.lang-en-ui #quizOptions .quiz-opt.is-hero { animation: quiz-hero .5s ease-out forwards; }
+    html.lang-en-ui #quizOptions .quiz-opt.reveal { animation: quiz-reveal .9s ease-in-out 2; }
+    .quiz-fox.is-happy { animation: fox-hop .7s ease-out; }
+    .quiz-fox.is-sad { animation: fox-tilt .8s ease-in-out; }
+  }
+  @keyframes card-in-next { from { transform: translateX(40px) rotate(2deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes card-in-prev { from { transform: translateX(-40px) rotate(-2deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes tap-hint { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+  @keyframes quiz-hero { 0% { transform: scale(1); } 45% { transform: scale(1.12); } 100% { transform: scale(1.06); } }
+  @keyframes quiz-reveal { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+  @keyframes fox-hop { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-18px) rotate(-6deg); } 55% { transform: translateY(0) rotate(4deg); } 75% { transform: translateY(-6px); } }
+  @keyframes fox-tilt { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-14deg); } 65% { transform: rotate(10deg); } }
