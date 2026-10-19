@@ -577,6 +577,18 @@
   </section>
 
   <!-- ============ ACCOUNT SCREEN ============ -->
+  <!-- ============ MÀN CHÀO: chọn khoá học (lần đầu mở app, chưa có hồ sơ) — chữ do app.js renderWelcome() điền ============ -->
+  <section class="screen" id="screen-welcome">
+    <div class="welcome-wrap">
+      <img class="welcome-logo" src="assets/icons/icon-192.png" alt="" width="84" height="84">
+      <p class="welcome-brand" id="welcomeBrand"></p>
+      <h1 class="welcome-title" id="welcomeTitle"></h1>
+      <p class="welcome-sub" id="welcomeSub"></p>
+      <div class="welcome-choices" id="welcomeChoices"></div>
+      <button type="button" class="account-link-btn welcome-login" id="welcomeLoginBtn"></button>
+    </div>
+  </section>
+
   <section class="screen" id="screen-account">
     <div class="card-topbar">
       <button class="icon-btn" id="backFromAccount" aria-label="Quay lại">←</button>
@@ -584,9 +596,9 @@
     <div class="account-wrap">
       <div id="accountLoggedOut">
         <div class="account-hero">
-          <div class="account-hero-emoji">📧</div>
-          <h2>Xác thực email</h2>
-          <p data-zh="Xác thực email để bắt đầu học — bạn sẽ tạo hồ sơ ngay sau khi xác thực xong. Việc này giúp chúng tôi liên hệ hỗ trợ khi cần.">Xác thực email để bắt đầu học — bé sẽ được tạo hồ sơ ngay sau khi xác thực xong. Việc này giúp chúng tôi liên hệ hỗ trợ khi cần.</p>
+          <div class="account-hero-emoji">☁️</div>
+          <h2>Lưu tiến độ bằng email</h2>
+          <p data-zh="Nhập email để lưu tiến độ: không mất khi đổi máy, học tiếp được trên máy khác và nhận chứng nhận. Email đã từng lưu thì app tự khôi phục tiến độ cũ.">Nhập email của ba mẹ để lưu tiến độ của bé: không mất khi đổi máy, học tiếp được trên máy khác và nhận chứng nhận. Email đã từng lưu thì app tự khôi phục tiến độ cũ.</p>
         </div>
 
         <form class="otp-form" id="emailEntryForm">
@@ -666,13 +678,13 @@
   <!-- ============ CREATE/EDIT PROFILE SCREEN ============ -->
   <section class="screen" id="screen-profile-create">
     <div class="card-topbar">
-      <button class="icon-btn" id="backFromProfileCreate" aria-label="Quay lại" hidden>←</button>
+      <button class="icon-btn" id="backFromProfileCreate" aria-label="Quay lại">←</button>
     </div>
     <div class="account-wrap">
       <div class="account-hero">
         <div class="account-hero-emoji" data-zh="🙂">🧒</div>
         <h2 id="profileCreateTitle">Tạo hồ sơ cho bé</h2>
-        <p data-zh="Thông tin này giúp app cá nhân hoá trải nghiệm học và liên hệ hỗ trợ khi cần. Được lưu theo email để dùng lại được trên thiết bị khác.">Thông tin này giúp app cá nhân hoá trải nghiệm học và giúp ba mẹ liên hệ khi cần. Được lưu theo email để dùng lại được trên thiết bị khác.</p>
+        <p id="profileCreateIntro"></p>
       </div>
       <form class="otp-form" id="profileForm">
         <label for="profileNameInput" data-zh="Tên của bạn">Tên bé</label>
@@ -684,8 +696,8 @@
         <label>Chọn hình đại diện</label>
         <div class="avatar-grid" id="avatarGrid"></div>
 
-        <label for="profilePhoneInput" data-zh="Số điện thoại">Số điện thoại ba/mẹ</label>
-        <input type="tel" id="profilePhoneInput" inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxx" required>
+        <label for="profilePhoneInput" id="profilePhoneLabel" data-zh="Số điện thoại">Số điện thoại ba/mẹ</label>
+        <input type="tel" id="profilePhoneInput" inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxx">
 
         <button type="submit" class="account-primary-btn" id="profileSaveBtn">Lưu hồ sơ</button>
         <p class="account-error" id="profileFormError" role="alert" hidden></p>
@@ -1398,6 +1410,17 @@
   </div>
 </div>
 
+<!-- Mời lưu tiến độ bằng email (đang học thử) — xem promptSaveProgress trong app.js. -->
+<div class="confirm-overlay" id="saveProgressOverlay" hidden>
+  <div class="confirm-card save-card" role="dialog" aria-modal="true" aria-labelledby="saveProgressTitle">
+    <div class="save-card-emoji">☁️</div>
+    <h3 id="saveProgressTitle"></h3>
+    <ul class="save-card-list" id="saveProgressList"></ul>
+    <button class="account-primary-btn" id="saveProgressYes">Lưu bằng email · 30 giây</button>
+    <button class="ghost-btn save-card-later" id="saveProgressLater">Để sau</button>
+  </div>
+</div>
+
 <div class="confirm-overlay" id="confirmOverlay" hidden>
   <div class="confirm-card">
     <p class="confirm-message" id="confirmMessage"></p>
@@ -1429,7 +1452,7 @@
 <div class="share-overlay" id="certificateOverlay" hidden>
   <div class="share-card">
     <button class="icon-btn share-close" id="certificateCloseBtn" aria-label="Đóng">✕</button>
-    <canvas id="certificateCanvas" width="700" height="560"></canvas>
+    <canvas id="certificateCanvas" width="700" height="620"></canvas>
     <div class="share-actions">
       <button class="cta-btn" id="certificateDownloadBtn">🖨️ Lưu / In chứng nhận</button>
     </div>
@@ -1471,6 +1494,7 @@
 <script src="data/emoji-icons.js"></script>
 <script src="data/sheets-config.js"></script>
 <script src="data/tts-en.js"></script>
+  <script src="data/tts-zh.js"></script>
 <script src="app.js"></script>
 <script src="zh-course.js"></script>
 </body>

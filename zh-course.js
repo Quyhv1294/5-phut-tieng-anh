@@ -520,6 +520,9 @@
   }
   function runSession(opts) {
     S = Object.assign({ i: 0, correct: 0, total: opts.steps.filter(s => s.kind !== 'card').length }, opts);
+    // Tải trước giọng đọc thu sẵn của cả bài (nghe ngay khi bấm, và lưu lại để học được lúc mất mạng).
+    if (A.ttsPrefetch) A.ttsPrefetch([...new Set(S.steps.flatMap(st => [st.say, st.sayAfter, st.char, st.word && st.word.zh,
+      st.item && (st.item.say || st.item.big), st.item && st.item.ex].concat((st.pairs || []).map(w => w.zh))).filter(Boolean))]);
     nextStep();
   }
   function exitSession() { const back = S && S.back; S = null; (back || goHome)(); }

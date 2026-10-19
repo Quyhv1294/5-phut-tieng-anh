@@ -1,9 +1,10 @@
-// Tạo sẵn file giọng đọc tiếng Anh (Gemini TTS — Google AI Studio) cho mọi từ / câu tiếng Anh trong data/.
+// Tạo sẵn file giọng đọc (Gemini TTS — Google AI Studio) cho mọi từ / câu tiếng Anh, hoặc tiếng Trung, trong data/.
 // Xem hướng dẫn ở tools/tts/README.md. Chạy từ thư mục gốc của app:
 //   node tools/tts/generate.mjs --check     → chỉ đếm, không gọi Gemini (không cần khoá)
 //   node tools/tts/generate.mjs --sample    → đọc thử bằng vài giọng (tools/tts/samples/)
 //   node tools/tts/generate.mjs             → tạo file còn thiếu (hết lượt miễn phí trong ngày thì tự dừng)
 //   node tools/tts/generate.mjs --prune     → như trên + xoá file / thư mục giọng không còn dùng
+//   thêm --lang zh vào các lệnh trên        → làm cho tiếng Trung (mặc định: tiếng Anh)
 // Khoá API: biến môi trường GEMINI_API_KEY, hoặc file tools/tts/gemini-api-key.txt (đã .gitignore).
 //
 // File đặt tên theo mã băm của câu (sau khi chuẩn hoá) → chạy lại chỉ tạo câu MỚI hoặc câu ĐÃ SỬA.
@@ -18,28 +19,44 @@ import { Mp3Encoder } from '@breezystack/lamejs';
 // ---------- CẤU HÌNH GIỌNG ----------
 // Mô hình đọc của Gemini: https://ai.google.dev/gemini-api/docs/speech-generation (tên mô hình có thể
 // đổi theo thời gian — sai tên thì công cụ tự liệt kê các mô hình TTS đang có để chọn).
-const MODEL = 'gemini-3.1-flash-tts-preview';
-const VOICE = 'Kore'; // giọng nữ rõ ràng (ba mẹ đã nghe thử và chọn); nghe thử các giọng khác bằng --sample
-// Lời dặn cách đọc (Gemini đọc theo lời dặn này). Sửa lời dặn thì tăng STYLE_VERSION để tạo lại toàn bộ.
-const STYLE = 'Read aloud slowly and very clearly, in a cheerful, warm and friendly American English voice for young children';
-// v2: chuyển từ gemini-2.5-flash-preview-tts (chỉ 100 lượt / ngày) sang gemini-3.1-flash-tts-preview.
-// KHÔNG dùng gemini-3.8-flash-tts: mô hình này đọc to luôn cả lời dặn STYLE.
-const STYLE_VERSION = 'v2';
+// Hạn mức lượt / ngày tính RIÊNG cho từng mô hình → tiếng Trung dùng mô hình khác tiếng Anh để 2 phần chạy song song.
+// Sửa lời dặn (STYLE) thì tăng STYLE_VERSION để tạo lại toàn bộ.
+const LANG = (process.argv.includes('--lang') ? process.argv[process.argv.indexOf('--lang') + 1] : 'en') === 'zh' ? 'zh' : 'en';
+const PROFILES = {
+  en: {
+    // v2: chuyển từ gemini-2.5-flash-preview-tts sang gemini-3.1-flash-tts-preview.
+    // KHÔNG dùng gemini-3.8-flash-tts: mô hình này đọc to luôn cả lời dặn STYLE.
+    MODEL: 'gemini-3.1-flash-tts-preview',
+    VOICE: 'Kore', // giọng nữ rõ ràng (ba mẹ đã nghe thử và chọn); nghe thử các giọng khác bằng --sample
+    STYLE: 'Read aloud slowly and very clearly, in a cheerful, warm and friendly American English voice for young children',
+    STYLE_VERSION: 'v2',
+    SAMPLE_TEXT: 'Hello! I love my MOM. The BABY is sleeping.',
+  },
+  zh: {
+    MODEL: 'gemini-2.5-flash-preview-tts',
+    VOICE: 'Kore',
+    STYLE: 'Read aloud slowly and very clearly in standard Mandarin Chinese (Putonghua), like a patient teacher for adult beginners, with every tone pronounced accurately',
+    STYLE_VERSION: 'v1',
+    SAMPLE_TEXT: '你好！我叫小明，很高兴认识你。',
+  },
+};
+const { MODEL, VOICE, STYLE, STYLE_VERSION, SAMPLE_TEXT } = PROFILES[LANG];
+const LANG_NAME = LANG === 'zh' ? 'tiếng Trung' : 'tiếng Anh';
 const CONCURRENCY = 3; // số câu gọi cùng lúc
 const SAMPLE_VOICES = ['Leda', 'Kore', 'Aoede', 'Sulafat'];
-const SAMPLE_TEXT = 'Hello! I love my MOM. The BABY is sleeping.';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const DATA = path.join(ROOT, 'data');
 const DIR_NAME = 'gemini-' + VOICE.toLowerCase() + '-' + STYLE_VERSION;
-const EN_DIR = path.join(ROOT, 'assets/tts/en');
+const EN_DIR = path.join(ROOT, 'assets/tts', LANG); // thư mục của ngôn ngữ đang làm (tên giữ từ bản chỉ có tiếng Anh)
 const OUT_DIR = path.join(EN_DIR, DIR_NAME);
-const MANIFEST = path.join(DATA, 'tts-en.js');
-const LIST_FILE = path.join(ROOT, 'tools/tts/clips-en.json');
+const MANIFEST = path.join(DATA, 'tts-' + LANG + '.js');
+const MANIFEST_VAR = 'TTS_' + LANG.toUpperCase();
+const LIST_FILE = path.join(ROOT, 'tools/tts/clips-' + LANG + '.json');
 const KEY_FILE = path.join(ROOT, 'tools/tts/gemini-api-key.txt');
 const API = 'https://generativelanguage.googleapis.com/v1beta/';
 // File dữ liệu KHÔNG phải nội dung tiếng Anh cần đọc.
-const SKIP_DATA = /^(zh_|topics_zh|emoji-icons|sheets-config|audio-map|classes|tts-en)/;
+const SKIP_DATA = /^(zh_|topics_zh|emoji-icons|sheets-config|audio-map|classes|tts-)/;
 // Câu tiếng Anh nằm ở các trường này. Lọc bỏ chuỗi có dấu tiếng Việt (VD trường q của truyện là câu hỏi tiếng Việt).
 const EN_KEYS = new Set(['en', 'example', 'q', 'a']);
 const VI_CHARS = /[À-ỹđĐ]/;
@@ -96,9 +113,61 @@ function collectTexts() {
   return texts;
 }
 
+// ---------- GOM CÂU TIẾNG TRUNG ----------
+// Mọi chuỗi có chữ Hán trong dữ liệu khoá tiếng Trung, kèm pinyin nếu dữ liệu có (để dặn Gemini đọc đúng âm của
+// chữ đa âm — VD 行 háng / xíng). Thứ tự file = thứ tự ưu tiên khi bị giới hạn lượt mỗi ngày: bảng pinyin + 4
+// thanh điệu (zh_roadmap.js) trước, rồi lộ trình, từ vựng, nghe, đọc, đề thi thử.
+const ZH_FILES = ['zh_roadmap.js', 'zh_course.js', 'topics_zh.js', 'zh_hsk1_new.js', 'zh_listening.js', 'zh_reading.js', 'zh_hsk1_exam.js'];
+const HAN = /[\u3400-\u9fff]/;
+const PY_MARK = /[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]/;
+function collectZhTexts() {
+  const ctx = vm.createContext({ window: {}, console });
+  const texts = new Map();
+  const add = (text, py, from) => {
+    // Bỏ chuỗi lẫn tiếng Việt / pinyin / chữ số (là ghi chú giải thích, không phải câu app đọc to).
+    if (typeof text !== 'string' || !HAN.test(text) || VI_CHARS.test(text) || PY_MARK.test(text) || /[0-9=+]/.test(text)) return;
+    if (/[a-z]{2,}/i.test(text.replace(/[A-Z][a-z]+/g, ''))) return; // tên riêng viết hoa (Lan, Anna) thì giữ
+    const k = ttsKey(text);
+    if (!texts.has(k)) texts.set(k, { text: text.trim(), from, py: py || '' });
+    else if (py && !texts.get(k).py) texts.get(k).py = py;
+  };
+  for (const f of ZH_FILES) {
+    if (!fs.existsSync(path.join(DATA, f))) continue;
+    const src = fs.readFileSync(path.join(DATA, f), 'utf8');
+    vm.runInContext(src, ctx, { filename: f });
+    for (const m of src.matchAll(/^\s*(?:const|let|var) ([A-Z][A-Z0-9_]*)\s*=/gm)) {
+      let v;
+      try { v = vm.runInContext(m[1], ctx); } catch (e) { continue; }
+      const walk = o => {
+        if (Array.isArray(o)) {
+          // Dạng mảng [chữ Hán, pinyin, nghĩa…] (bảng thanh điệu, âm tiết, chữ ví dụ của bộ thủ…).
+          if (typeof o[0] === 'string' && HAN.test(o[0]) && typeof o[1] === 'string' && PY_MARK.test(o[1])) add(o[0], o[1], f);
+          return o.forEach(walk);
+        }
+        if (!o || typeof o !== 'object') return add(o, '', f);
+        for (const [k, x] of Object.entries(o)) {
+          if (typeof x === 'string') add(x, k === 'zh' || k === 'big' || k === 'say' ? o.py : k === 'ex' ? (o.exPy || '') : '', f);
+          else walk(x);
+        }
+      };
+      walk(v);
+    }
+  }
+  return texts;
+}
+
 // Chữ IN HOA trong data là để nhấn mạnh từ cho bé (VD "I love my MOM.") — hạ về chữ thường để không bị
 // đánh vần như chữ viết tắt. 1 chữ cái đứng riêng ("A") thì dặn đọc tên chữ cái.
-function toPrompt(text) {
+// variant: cách dặn dự phòng khi mô hình không chịu trả âm thanh (thử lần lượt 0 → 2).
+function toPrompt(text, py, variant) {
+  // Tiếng Trung: từ ngắn có pinyin thì dặn đọc đúng âm đó (chữ đa âm, từ đơn lẻ dễ bị đọc sai thanh).
+  // Chữ đơn lẻ đôi khi bị mô hình hiểu thành câu hỏi cần trả lời bằng chữ → dặn ngắn gọn hơn, cuối cùng chỉ gửi đúng câu.
+  if (LANG === 'zh') {
+    const hint = py && [...text].length <= 4;
+    if (variant === 1) return hint ? 'Read aloud in Mandarin (' + py + '): ' + text : 'Read aloud in Mandarin: ' + text;
+    if (variant >= 2) return text;
+    return hint ? STYLE + '. Say only this word, pronounced exactly as "' + py + '": ' + text : STYLE + ': ' + text;
+  }
   if (/^[a-z]$/i.test(text)) return STYLE + '. Say only the name of this English letter, nothing else: ' + text.toUpperCase();
   return STYLE + ': ' + text.replace(/\b[A-Z]{2,}\b/g, w => w.toLowerCase());
 }
@@ -121,14 +190,16 @@ async function listTtsModels(key) {
 
 // Gọi Gemini → PCM 16-bit mono. Bị giới hạn lượt theo PHÚT thì chờ đúng thời gian Gemini báo rồi thử lại;
 // hết lượt theo NGÀY thì dừng hẳn (StopError) — hôm sau chạy lại lệnh sẽ làm tiếp.
-async function synthesize(key, text, voice) {
-  const body = {
-    contents: [{ parts: [{ text: toPrompt(text) }] }],
+async function synthesize(key, text, voice, py) {
+  let variant = 0;
+  const makeBody = () => ({
+    contents: [{ parts: [{ text: toPrompt(text, py, variant) }] }],
     generationConfig: {
       responseModalities: ['AUDIO'],
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
     },
-  };
+  });
+  let body = makeBody();
   for (let attempt = 1; ; attempt++) {
     const res = await fetch(API + 'models/' + MODEL + ':generateContent', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body),
@@ -139,6 +210,7 @@ async function synthesize(key, text, voice) {
     if (res.ok) {
       const part = (j.candidates?.[0]?.content?.parts || []).find(p => p.inlineData && p.inlineData.data);
       if (!part) {
+        if (LANG === 'zh' && variant < 2) { variant++; body = makeBody(); continue; }
         if (attempt < 3) continue;
         throw new Error('Gemini không trả về âm thanh (' + (j.candidates?.[0]?.finishReason || 'không rõ') + ')');
       }
@@ -169,6 +241,12 @@ async function synthesize(key, text, voice) {
       throw new StopError('Không tìm thấy mô hình "' + MODEL + '". Các mô hình đọc (TTS) đang có: ' +
         (models.join(', ') || '(không lấy được danh sách)') + ' → sửa MODEL ở đầu generate.mjs.');
     }
+    // Mô hình "định viết chữ" thay vì đọc (hay gặp với chữ đơn lẻ): đổi cách dặn rồi thử lại; vẫn không được thì
+    // chỉ bỏ qua câu này (lỗi thường), không dừng cả lượt như khi khoá bị từ chối.
+    if (res.status === 400 && /only be used for TTS|generate text/i.test((j && j.error && j.error.message) || raw)) {
+      if (variant < 2) { variant++; body = makeBody(); continue; }
+      throw new Error('Gemini không chịu đọc câu này (đã thử ' + (variant + 1) + ' cách dặn)');
+    }
     if (res.status === 400 || res.status === 401 || res.status === 403) {
       throw new StopError('Khoá API bị từ chối (' + res.status + '): ' + ((j && j.error && j.error.message) || raw.slice(0, 300)));
     }
@@ -195,9 +273,9 @@ function toMp3({ pcm, rate }) {
 
 function writeManifest(items, have) {
   const ready = items.filter(it => have.has(it.hash));
-  const out = '// TỰ SINH bởi tools/tts/generate.mjs — KHÔNG sửa tay. Danh sách câu tiếng Anh đã có file giọng đọc\n' +
-    '// (assets/tts/en/<dir>/<mã>.mp3); câu nào không có ở đây thì app dùng giọng đọc của máy.\n' +
-    'const TTS_EN = { dir: ' + JSON.stringify(DIR_NAME) + ', voice: ' + JSON.stringify('Gemini ' + VOICE) + ',\n' +
+  const out = '// TỰ SINH bởi tools/tts/generate.mjs — KHÔNG sửa tay. Danh sách câu ' + LANG_NAME + ' đã có file giọng đọc\n' +
+    '// (assets/tts/' + LANG + '/<dir>/<mã>.mp3); câu nào không có ở đây thì app dùng giọng đọc của máy.\n' +
+    'const ' + MANIFEST_VAR + ' = { dir: ' + JSON.stringify(DIR_NAME) + ', voice: ' + JSON.stringify('Gemini ' + VOICE) + ',\n' +
     '  clips: ' + JSON.stringify(ready.map(it => it.hash).sort().join(' ')) + ' };\n';
   fs.writeFileSync(MANIFEST, out);
   fs.writeFileSync(LIST_FILE, JSON.stringify(Object.fromEntries(ready.map(it => [it.hash, it.text])), null, 1) + '\n');
@@ -206,13 +284,13 @@ function writeManifest(items, have) {
 
 async function main() {
   const args = new Set(process.argv.slice(2));
-  const texts = collectTexts();
+  const texts = LANG === 'zh' ? collectZhTexts() : collectTexts();
   const items = [...texts].map(([k, v]) => ({ hash: cyrb53(k), ...v }));
   const have = new Set(fs.existsSync(OUT_DIR) ? fs.readdirSync(OUT_DIR).filter(f => f.endsWith('.mp3')).map(f => f.slice(0, -4)) : []);
   const missing = items.filter(it => !have.has(it.hash));
 
-  console.log('Mô hình: ' + MODEL + ' · giọng ' + VOICE + ' · thư mục assets/tts/en/' + DIR_NAME);
-  console.log('Tổng số câu tiếng Anh: ' + items.length + ' · đã có file: ' + (items.length - missing.length) + ' · còn thiếu: ' + missing.length);
+  console.log('Mô hình: ' + MODEL + ' · giọng ' + VOICE + ' · thư mục assets/tts/' + LANG + '/' + DIR_NAME);
+  console.log('Tổng số câu ' + LANG_NAME + ': ' + items.length + ' · đã có file: ' + (items.length - missing.length) + ' · còn thiếu: ' + missing.length);
 
   if (args.has('--check')) {
     const byFile = {};
@@ -230,10 +308,12 @@ async function main() {
   if (args.has('--sample')) {
     const dir = path.join(ROOT, 'tools/tts/samples');
     fs.mkdirSync(dir, { recursive: true });
-    const jobs = SAMPLE_VOICES.map(v => [v, SAMPLE_TEXT, v + '.mp3']).concat([[VOICE, 'MOM', VOICE + '-word-MOM.mp3'], [VOICE, 'A', VOICE + '-letter-A.mp3']]);
+    const jobs = LANG === 'zh'
+      ? SAMPLE_VOICES.map(v => [v, SAMPLE_TEXT, 'zh-' + v + '.mp3']).concat([[VOICE, '妈', 'zh-' + VOICE + '-ma1.mp3', 'mā'], [VOICE, '马', 'zh-' + VOICE + '-ma3.mp3', 'mǎ'], [VOICE, '银行', 'zh-' + VOICE + '-yinhang.mp3', 'yínháng']])
+      : SAMPLE_VOICES.map(v => [v, SAMPLE_TEXT, v + '.mp3']).concat([[VOICE, 'MOM', VOICE + '-word-MOM.mp3'], [VOICE, 'A', VOICE + '-letter-A.mp3']]);
     try {
-      for (const [v, text, file] of jobs) {
-        fs.writeFileSync(path.join(dir, file), toMp3(await synthesize(key, text, v)));
+      for (const [v, text, file, py] of jobs) {
+        fs.writeFileSync(path.join(dir, file), toMp3(await synthesize(key, text, v, py)));
         console.log('  ✓ tools/tts/samples/' + file);
       }
       console.log('Nghe thử rồi đổi VOICE ở đầu generate.mjs nếu muốn giọng khác.');
@@ -251,7 +331,7 @@ async function main() {
     while (queue.length && !stop) {
       const it = queue.shift();
       try {
-        fs.writeFileSync(path.join(OUT_DIR, it.hash + '.mp3'), toMp3(await synthesize(key, it.text, VOICE)));
+        fs.writeFileSync(path.join(OUT_DIR, it.hash + '.mp3'), toMp3(await synthesize(key, it.text, VOICE, it.py)));
         have.add(it.hash);
         done++;
         if (done % 10 === 0) writeManifest(items, have);
@@ -276,14 +356,14 @@ async function main() {
   }
 
   const ready = writeManifest(items, have);
-  console.log('\nLần này tạo mới ' + done + ' câu' + (failed ? ', lỗi ' + failed : '') + '. Đã có giọng đọc: ' + ready + '/' + items.length + ' câu (data/tts-en.js đã cập nhật).');
+  console.log('\nLần này tạo mới ' + done + ' câu' + (failed ? ', lỗi ' + failed : '') + '. Đã có giọng đọc: ' + ready + '/' + items.length + ' câu (data/tts-' + LANG + '.js đã cập nhật).');
   if (stop) {
     console.log(stop.message);
     if (ready < items.length) console.log('→ Chạy lại lệnh này vào ngày mai (hoặc sau ít phút) để làm tiếp — câu đã có file sẽ được bỏ qua.');
     process.exit(stop.message.startsWith('Đã hết lượt') ? 2 : 1); // 2 = chưa xong, mai chạy tiếp (run-daily.cmd)
   }
-  if (ready === items.length) console.log('TẤT CẢ ĐÃ XONG: mọi câu tiếng Anh đều có giọng đọc.');
-  if (done) console.log('Nhớ tăng CACHE_VERSION trong sw.js rồi commit assets/tts/en/, data/tts-en.js và tools/tts/clips-en.json.');
+  if (ready === items.length) console.log('TẤT CẢ ĐÃ XONG: mọi câu ' + LANG_NAME + ' đều có giọng đọc.');
+  if (done) console.log('Nhớ tăng CACHE_VERSION trong sw.js rồi commit assets/tts/' + LANG + '/, data/tts-' + LANG + '.js và tools/tts/clips-' + LANG + '.json.');
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

@@ -73,6 +73,37 @@
   // `py` = pinyin (chỉ tiếng Trung có). Phần chỉ dành cho tiếng Anh (chữ cái, ngữ âm, lớp Chồi/Lá...)
   // được ẩn bằng class .lang-zh trên <html> (xem style.css).
   const LEARN_LANG_KEY = '5phut_learn_lang_v1';
+  // Link quảng cáo riêng từng khoá có ?lang=zh / ?lang=en → mở thẳng khoá đó, bỏ qua màn chọn khoá. Xoá
+  // tham số khỏi thanh địa chỉ ngay, để lần tải lại sau (VD đổi ngôn ngữ trong Cài đặt) không bị ép ngược lại.
+  const LANG_CHOSEN_KEY = '5phut_lang_chosen_v1'; // sessionStorage: đã chọn khoá ở màn chào trong phiên này
+  // Mã nguồn ?src=fb-reel / zalo / group / share / cert… (hoặc utm_source): ghi nhận NGUỒN ĐẦU TIÊN đưa người
+  // dùng tới (không ghi đè về sau), gửi kèm lượt mở đầu tiên (logFirstVisit) và hồ sơ khi lưu bằng email.
+  // Máy đã có hồ sơ từ trước khi có tính năng này → ghi "co-san" để không lẫn vào số người mới.
+  const SRC_KEY = '5phut_src_v1';
+  let LANG_FROM_LINK = false;
+  try {
+    const qs = new URLSearchParams(location.search), lp = qs.get('lang');
+    const src = String(qs.get('src') || qs.get('utm_source') || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 40);
+    if (!localStorage.getItem(SRC_KEY)) {
+      localStorage.setItem(SRC_KEY, localStorage.getItem('5phut_profile_v1') ? 'co-san' : (src || 'truc-tiep'));
+    }
+    if (lp === 'zh' || lp === 'en') {
+      localStorage.setItem(LEARN_LANG_KEY, lp);
+      LANG_FROM_LINK = true;
+    }
+    if (lp || qs.has('src') || qs.has('utm_source')) {
+      ['lang', 'src', 'utm_source', 'utm_medium', 'utm_campaign', 'fbclid'].forEach(k => qs.delete(k));
+      history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs : '') + location.hash);
+    }
+  } catch (e) {}
+  function trafficSource() { try { return localStorage.getItem(SRC_KEY) || ''; } catch (e) { return ''; } }
+  // Đã chọn khoá (qua link hoặc ở màn chào) → chưa có hồ sơ thì vào thẳng form hồ sơ (xem enforceGate).
+  let langChosen = LANG_FROM_LINK;
+  try { langChosen = langChosen || sessionStorage.getItem(LANG_CHOSEN_KEY) === '1'; } catch (e) {}
+  function setLangChosen(v) {
+    langChosen = v;
+    try { if (v) sessionStorage.setItem(LANG_CHOSEN_KEY, '1'); else sessionStorage.removeItem(LANG_CHOSEN_KEY); } catch (e) {}
+  }
   let LEARN_LANG = 'en';
   try { if (localStorage.getItem(LEARN_LANG_KEY) === 'zh' && typeof TOPICS_ZH_WORDS !== 'undefined') LEARN_LANG = 'zh'; } catch (e) {}
   const IS_ZH = LEARN_LANG === 'zh';
@@ -673,6 +704,7 @@
     achievements: document.getElementById('screen-achievements'),
     settings: document.getElementById('screen-settings'),
     account: document.getElementById('screen-account'),
+    welcome: document.getElementById('screen-welcome'),
     donate: document.getElementById('screen-donate'),
     feedback: document.getElementById('screen-feedback'),
     placement: document.getElementById('screen-placement'),
@@ -699,6 +731,7 @@
     laWrite: document.getElementById('screen-la-write'),
   };
   const TOP_LEVEL_SCREENS = ['home', 'games', 'sentences', 'achievements'];
+  let pendingSavePrompt = false; // xem noteGuestLessonDone
   // Màn nào ứng với nút nào trên thanh tab (module tiếng Trung đăng ký thêm màn của mình qua APP.registerScreen).
   const TAB_FOR_SCREEN = { home: 'tabHome', games: 'tabGames', sentences: 'tabSentences', achievements: 'tabAchievements' };
 
@@ -717,6 +750,12 @@
     screens[name].classList.add('active');
     // Dải mời cài app chỉ hiện ở trang chủ (tab Học) — không chen vào lúc đang học bài / làm bài.
     document.body.classList.toggle('on-home', name === 'home' || name === 'zh-home');
+    document.body.classList.toggle('on-welcome', name === 'welcome');
+    // Lời mời lưu tiến độ (sau khi học xong 1 bài lúc đang học thử) hiện khi về trang chủ, không chen vào màn ăn mừng.
+    if ((name === 'home' || name === 'zh-home') && pendingSavePrompt) {
+      pendingSavePrompt = false;
+      setTimeout(() => promptSaveProgress('done'), 500);
+    }
     if (name === 'home' || name === 'zh-home') comboCount = 0;
     window.scrollTo(0, 0);
 
@@ -1208,6 +1247,7 @@
     }
     progress.streak.best = Math.max(progress.streak.best || 0, progress.streak.count);
     saveProgress(progress);
+    noteGuestLessonDone();
     if (usedFreeze) showToast('🛡️ ' + (IS_ZH ? 'Bạn' : 'Bé') + ' lỡ mất 1 ngày nhưng đã dùng khiên để giữ chuỗi ' + progress.streak.count + ' ngày!', '🛡️');
     bumpDailyMission('sessions');
   }
@@ -1941,28 +1981,46 @@
   // hoạt động), hỏi Google Sheet xem email này đã có hồ sơ + tiến độ lưu sẵn chưa. Có thì tự
   // động khôi phục để dùng lại y như thiết bị cũ; đồng thời lệnh gọi này khiến thiết bị hiện tại
   // trở thành thiết bị "đang hoạt động" của email đó (xem handleGetUserData ở Apps Script).
+  // Đang học thử (đã có hồ sơ + tiến độ trên máy) mà email đã từng lưu dữ liệu → hỏi giữ bản nào.
   function fetchCloudDataAndProceed() {
     if (!backendConfigured()) { hideLoading(); if (enforceGate()) bootAfterGate(); return; }
     const url = SHEETS_CONFIG.webAppUrl + '?action=getUserData&email=' + encodeURIComponent(verifiedEmail) + '&deviceId=' + encodeURIComponent(deviceId);
+    const done = () => { if (enforceGate()) bootAfterGate(); };
     fetch(url).then(r => r.json()).then(data => {
       noteZhSync(data);
-      if (data.ok && data.found) {
-        if (data.profile) { profile = data.profile; saveProfileLocal(profile); }
-        // Khôi phục tiến độ của CẢ 2 ngôn ngữ: ngôn ngữ đang học thì nạp ngay, ngôn ngữ còn lại thì
-        // cất vào khoá localStorage riêng của nó (loadProgress chuẩn hoá khi đổi sang ngôn ngữ đó).
-        const cur = IS_ZH ? data.progressZh : data.progress;
-        const other = IS_ZH ? data.progress : data.progressZh;
-        if (cur) { progress = normalizeProgress(cur); saveProgress(progress); renderTotalStars(); }
-        if (other) { try { localStorage.setItem(IS_ZH ? '5phut_progress_v1' : '5phut_progress_v1_zh', JSON.stringify(other)); } catch (e) {} }
-        showToast('Đã khôi phục hồ sơ & tiến độ học trước đó!', '☁️');
-      } else if (data.ok && !data.found) {
-        // Email mới, cloud xác nhận chưa từng có dữ liệu: đảm bảo máy này đang sạch (phòng khi
-        // trước đó vừa dùng cho 1 bé/email khác) để bé mới bắt đầu từ đầu, không bị lẫn dữ liệu.
-        resetLocalChildData();
-      }
       hideLoading();
-      if (enforceGate()) bootAfterGate();
-    }).catch(() => { hideLoading(); if (enforceGate()) bootAfterGate(); });
+      if (data.ok && data.found && profile) {
+        const who = data.profile && data.profile.name ? ' "' + data.profile.name + '"' : '';
+        showConfirmDialog('Email này đã có hồ sơ' + who + ' lưu từ trước. Khôi phục bản đã lưu? (Tiến độ đang học trên máy này sẽ được thay bằng bản đã lưu.)',
+          { okLabel: 'Khôi phục', cancelLabel: 'Giữ bản trên máy' })
+          .then(ok => { if (ok) restoreCloudData(data); else pushLocalToCloud(); done(); });
+        return;
+      }
+      if (data.ok && data.found) restoreCloudData(data);
+      else if (data.ok && !data.found) {
+        // Email mới: tiến độ học thử trên máy này là của chính người vừa xác thực → đẩy lên lưu.
+        // Chưa có hồ sơ trên máy (hiếm: xác thực trước khi học) thì dọn máy cho sạch như trước.
+        if (profile) pushLocalToCloud(); else resetLocalChildData();
+      }
+      done();
+    }).catch(() => { hideLoading(); done(); });
+  }
+  function restoreCloudData(data) {
+    if (data.profile) { profile = data.profile; saveProfileLocal(profile); }
+    // Khôi phục tiến độ của CẢ 2 ngôn ngữ: ngôn ngữ đang học thì nạp ngay, ngôn ngữ còn lại thì
+    // cất vào khoá localStorage riêng của nó (loadProgress chuẩn hoá khi đổi sang ngôn ngữ đó).
+    const cur = IS_ZH ? data.progressZh : data.progress;
+    const other = IS_ZH ? data.progress : data.progressZh;
+    if (cur) { progress = normalizeProgress(cur); saveProgress(progress); renderTotalStars(); }
+    if (other) { try { localStorage.setItem(IS_ZH ? '5phut_progress_v1' : '5phut_progress_v1_zh', JSON.stringify(other)); } catch (e) {} }
+    showToast('Đã khôi phục hồ sơ & tiến độ học trước đó!', '☁️');
+  }
+  function pushLocalToCloud() {
+    if (!profile) return;
+    logProfileToSheet(profile);
+    profileResyncedForSession = true;
+    syncProgressToCloud(progress);
+    showToast('Đã lưu tiến độ theo email!', '☁️');
   }
 
   // Đẩy tiến độ mới nhất lên Google Sheet (chỉ khi đã xác thực email — chưa xác thực thì tiến độ
@@ -2023,6 +2081,7 @@
 
   function signOutEmail() {
     verifiedEmail = null;
+    setLangChosen(false);
     try { localStorage.removeItem(VERIFIED_EMAIL_KEY); } catch (e) {}
     resetLocalChildData();
     resetEmailForms();
@@ -2679,9 +2738,17 @@
   // Tiếng Anh dành cho bé (3–12 tuổi); khoá tiếng Trung không phân biệt người lớn / trẻ nhỏ.
   const PROFILE_AGE_MAX = IS_ZH ? 99 : 12;
   function renderProfileCreateScreen() {
-    document.getElementById('profileCreateTitle').textContent = IS_ZH
-      ? (profile ? 'Sửa hồ sơ' : 'Tạo hồ sơ học')
-      : (profile ? 'Sửa hồ sơ của bé' : 'Tạo hồ sơ cho bé');
+    const askPhone = !!verifiedEmail;
+    document.getElementById('profileCreateTitle').textContent = needsPhone() ? 'Thêm số điện thoại'
+      : IS_ZH ? (profile ? 'Sửa hồ sơ' : 'Bắt đầu học') : (profile ? 'Sửa hồ sơ của bé' : 'Bé tên là gì?');
+    document.getElementById('profileCreateIntro').textContent = needsPhone()
+      ? (IS_ZH ? 'Bước cuối để lưu tiến độ: thêm số điện thoại để chúng tôi hỗ trợ khi cần.' : 'Bước cuối để lưu tiến độ của bé: thêm số điện thoại của ba mẹ để chúng tôi hỗ trợ khi cần.')
+      : profile ? (IS_ZH ? 'Sửa thông tin hồ sơ học của bạn.' : 'Sửa thông tin hồ sơ của bé.')
+      : (IS_ZH ? 'Chỉ cần tên và tuổi để bắt đầu học thử — không cần email.' : 'Chỉ cần tên và tuổi của bé để bắt đầu học — không cần email.');
+    document.getElementById('profileSaveBtn').textContent = needsPhone() ? 'Lưu tiến độ' : profile ? 'Lưu hồ sơ' : 'Bắt đầu học →';
+    document.getElementById('profilePhoneLabel').hidden = !askPhone;
+    document.getElementById('profilePhoneInput').hidden = !askPhone;
+    document.getElementById('profilePhoneInput').required = askPhone;
     document.getElementById('profileAgeInput').max = PROFILE_AGE_MAX;
     document.getElementById('profileNameInput').value = profile ? profile.name : '';
     document.getElementById('profileAgeInput').value = profile ? profile.age : '';
@@ -2692,13 +2759,14 @@
   }
 
   function logProfileToSheet(p) {
-    if (!backendConfigured()) return;
+    if (!backendConfigured() || !verifiedEmail) return; // học thử: hồ sơ chỉ lưu trên máy, gửi lên khi lưu bằng email
     const url = SHEETS_CONFIG.webAppUrl + '?action=saveProfile'
       + '&email=' + encodeURIComponent(verifiedEmail || '')
       + '&name=' + encodeURIComponent(p.name)
       + '&age=' + encodeURIComponent(p.age)
       + '&avatar=' + encodeURIComponent(p.avatar)
       + '&phone=' + encodeURIComponent(p.parentPhone)
+      + '&src=' + encodeURIComponent(trafficSource())
       + '&deviceId=' + encodeURIComponent(deviceId);
     fetch(url).catch(() => {});
   }
@@ -2711,12 +2779,13 @@
 
     if (!name) { showProfileFormError(IS_ZH ? 'Vui lòng nhập tên.' : 'Vui lòng nhập tên bé.'); return; }
     if (!age || age < 3 || age > PROFILE_AGE_MAX) { showProfileFormError((IS_ZH ? 'Tuổi phải từ 3 đến ' : 'Tuổi của bé phải từ 3 đến ') + PROFILE_AGE_MAX + '.'); return; }
-    if (!isValidVnPhone(phone)) { showProfileFormError('Số điện thoại chưa đúng định dạng (VD: 0912345678).'); return; }
+    if (verifiedEmail && !isValidVnPhone(phone)) { showProfileFormError('Số điện thoại chưa đúng định dạng (VD: 0912345678).'); return; }
 
     const wasEditing = !!profile;
-    profile = { name: name, age: age, avatar: selectedAvatar, parentPhone: phone };
+    profile = { name: name, age: age, avatar: selectedAvatar, parentPhone: verifiedEmail ? phone : ((profile && profile.parentPhone) || '') };
     saveProfileLocal(profile);
     logProfileToSheet(profile);
+    if (verifiedEmail) syncProgressToCloud(progress);
     if (!wasEditing) showToast('Tạo hồ sơ thành công!', '🎉');
     if (!enforceGate()) return;
     // Hồ sơ vừa tạo mới và bé chưa được xếp lớp → dẫn thẳng vào bài kiểm tra trình độ; bootAfterGate
@@ -2729,25 +2798,91 @@
     renderProfileCreateScreen();
     showScreen('profileCreate');
   });
-  document.getElementById('backFromProfileCreate').addEventListener('click', () => { if (enforceGate()) goHome(); });
+  // Chưa có hồ sơ → quay về màn chọn khoá học (đổi khoá khác được).
+  document.getElementById('backFromProfileCreate').addEventListener('click', () => { if (!profile) setLangChosen(false); if (enforceGate()) goHome(); });
 
-  // ---------- ACCESS GATE (email xác thực + hồ sơ bé là bắt buộc) ----------
+  // ---------- CỔNG VÀO APP ----------
+  // Học thử trước, xin email sau: chỉ cần hồ sơ (tên + tuổi) lưu trên máy là vào học được. Email dùng để
+  // lưu tiến độ lên Google Sheet (mời ở promptSaveProgress); đã xác thực email thì cần đủ số điện thoại.
+  // Chưa có hồ sơ: màn chào chọn khoá học (Tiếng Anh cho bé / Tiếng Trung cho người mới) → form hồ sơ.
+  function needsPhone() { return !!verifiedEmail && !!profile && !profile.parentPhone; }
   function enforceGate() {
-    document.getElementById('backFromAccount').hidden = !(verifiedEmail && profile);
-    document.getElementById('backFromProfileCreate').hidden = !(verifiedEmail && profile);
     renderAccountScreen();
-
-    if (!verifiedEmail) {
-      showScreen('account');
+    if (!profile) {
+      if (!langChosen && !verifiedEmail) { renderWelcome(); showScreen('welcome'); }
+      else { renderProfileCreateScreen(); showScreen('profileCreate'); }
       return false;
     }
-    if (!profile) {
+    if (needsPhone()) {
       renderProfileCreateScreen();
       showScreen('profileCreate');
       return false;
     }
     return true;
   }
+
+  // ---------- MÀN CHÀO: chọn khoá học ----------
+  // Chữ điền bằng JS (không ghi sẵn trong index.html) vì localizeLangText đổi mọi chữ "Tiếng Anh" → "Tiếng Trung"
+  // khi đang ở khoá tiếng Trung.
+  const WELCOME_CHOICES = [
+    { id: 'en', title: 'Tiếng Anh cho bé', desc: '3–12 tuổi · flashcard, trò chơi, truyện tranh' },
+    { id: 'zh', title: 'Tiếng Trung cho người mới', desc: 'Người lớn · pinyin, chữ Hán, HSK 1' },
+  ];
+  function renderWelcome() {
+    document.getElementById('welcomeBrand').textContent = '5 Phút Tiếng Anh Mỗi Ngày';
+    document.getElementById('welcomeTitle').textContent = 'Bạn muốn học gì?';
+    document.getElementById('welcomeSub').textContent = 'Mỗi ngày 5 phút · miễn phí · học thử ngay, không cần đăng ký.';
+    document.getElementById('welcomeLoginBtn').textContent = 'Đã lưu tiến độ bằng email? Đăng nhập';
+    const box = document.getElementById('welcomeChoices');
+    box.innerHTML = '';
+    WELCOME_CHOICES.forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'welcome-choice welcome-choice--' + c.id;
+      b.innerHTML = '<span class="lang-flag-img lang-flag-img--big">' + flagSvg(c.id) + '</span>'
+        + '<span class="welcome-choice-text"><strong>' + c.title + '</strong><small>' + c.desc + '</small></span>'
+        + '<span class="welcome-chev" aria-hidden="true">›</span>';
+      b.addEventListener('click', () => {
+        try { localStorage.setItem(LEARN_LANG_KEY, c.id); } catch (e) {}
+        setLangChosen(true);
+        if (c.id !== LEARN_LANG) { location.reload(); return; } // khoá học được chọn lúc tải trang
+        enforceGate();
+      });
+      box.appendChild(b);
+    });
+  }
+  document.getElementById('welcomeLoginBtn').addEventListener('click', () => { resetEmailForms(); showScreen('account'); });
+
+  // ---------- HỌC THỬ → MỜI LƯU TIẾN ĐỘ BẰNG EMAIL ----------
+  // Mời sau bài học xong đầu tiên, sau đó tối đa 1 lần/ngày (từ bài thứ 3); bấm "Xem chứng nhận" khi chưa
+  // lưu cũng mời. Lời mời hiện khi về trang chủ (xem showScreen), không chen vào màn ăn mừng.
+  const SAVE_PROMPT_KEY = '5phut_save_prompt_v1';
+  function noteGuestLessonDone() {
+    if (verifiedEmail || !backendConfigured()) return;
+    let st = { n: 0, last: '' };
+    try { st = JSON.parse(localStorage.getItem(SAVE_PROMPT_KEY)) || st; } catch (e) {}
+    st.n = (st.n || 0) + 1;
+    const today = toDateStr(new Date());
+    if (st.n === 1 || (st.n >= 3 && st.last !== today)) { st.last = today; pendingSavePrompt = true; }
+    try { localStorage.setItem(SAVE_PROMPT_KEY, JSON.stringify(st)); } catch (e) {}
+  }
+  function promptSaveProgress(reason) {
+    if (verifiedEmail || !backendConfigured()) return;
+    document.getElementById('saveProgressTitle').textContent = reason === 'cert'
+      ? 'Lưu tiến độ để nhận chứng nhận'
+      : (IS_ZH ? 'Lưu tiến độ học của bạn' : 'Lưu tiến độ của bé');
+    document.getElementById('saveProgressList').innerHTML = [
+      ['☁️', 'Không mất tiến độ khi đổi máy hay xoá trình duyệt'],
+      ['📱', 'Học tiếp trên điện thoại, máy tính khác'],
+      ['🎓', IS_ZH ? 'Nhận chứng nhận thành tích' : 'Nhận chứng nhận thành tích của bé'],
+    ].map(x => '<li><span>' + x[0] + '</span>' + x[1] + '</li>').join('');
+    document.getElementById('saveProgressOverlay').hidden = false;
+  }
+  document.getElementById('saveProgressYes').addEventListener('click', () => {
+    document.getElementById('saveProgressOverlay').hidden = true;
+    resetEmailForms();
+    showScreen('account');
+  });
+  document.getElementById('saveProgressLater').addEventListener('click', () => { document.getElementById('saveProgressOverlay').hidden = true; });
 
   // ---------- ONBOARDING TOUR ----------
   const ONBOARDING_KEY = '5phut_onboarding_seen_v1';
@@ -4094,12 +4229,13 @@
       window.speechSynthesis.speak(u);
     } catch (e) {}
   }
-  // ---------- GIỌNG ĐỌC THU SẴN (Google Cloud TTS, chỉ tiếng Anh) ----------
-  // tools/tts/generate.mjs tạo sẵn mp3 cho mọi từ / câu tiếng Anh trong data/ và ghi danh sách vào
-  // data/tts-en.js → mọi máy nghe cùng 1 giọng chuẩn. Câu chưa có file, hoặc file không tải được (mất mạng
+  // ---------- GIỌNG ĐỌC THU SẴN (Gemini TTS) ----------
+  // tools/tts/generate.mjs tạo sẵn mp3 cho mọi từ / câu tiếng Anh (data/tts-en.js) và tiếng Trung (data/tts-zh.js,
+  // ưu tiên bảng pinyin + 4 thanh điệu) → mọi máy nghe cùng 1 giọng chuẩn, kể cả máy chưa cài giọng tiếng Trung. Câu chưa có file, hoặc file không tải được (mất mạng
   // mà chưa lưu vào bộ nhớ đệm), thì đọc bằng giọng của máy như cũ. Tên file = mã băm của câu đã chuẩn hoá —
   // ttsKey + cyrb53 phải GIỐNG HỆT bản trong generate.mjs.
-  const TTS_CLIPS = !IS_ZH && typeof TTS_EN !== 'undefined' && TTS_EN.clips ? new Set(TTS_EN.clips.split(' ')) : new Set();
+  const TTS_SRC = IS_ZH ? (typeof TTS_ZH !== 'undefined' ? TTS_ZH : null) : (typeof TTS_EN !== 'undefined' ? TTS_EN : null);
+  const TTS_CLIPS = TTS_SRC && TTS_SRC.clips ? new Set(TTS_SRC.clips.split(' ')) : new Set();
   function ttsKey(text) { return String(text).trim().replace(/\s+/g, ' ').toLowerCase(); }
   function cyrb53(str) {
     let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
@@ -4115,7 +4251,7 @@
   function ttsClipUrl(text) {
     if (!TTS_CLIPS.size || !text) return null;
     const h = cyrb53(ttsKey(text));
-    return TTS_CLIPS.has(h) ? 'assets/tts/en/' + TTS_EN.dir + '/' + h + '.mp3' : null;
+    return TTS_CLIPS.has(h) ? 'assets/tts/' + LEARN_LANG + '/' + TTS_SRC.dir + '/' + h + '.mp3' : null;
   }
   // Tải trước file của 1 chủ đề khi bé mở chủ đề đó → bấm nghe không phải chờ, và service worker lưu lại
   // để lần sau học được cả khi mất mạng.
@@ -4157,7 +4293,7 @@
       stopClip();
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       const lead = opts && opts.leadVi ? viUtterance(opts.leadVi) : null;
-      const clip = IS_ZH ? null : ttsClipUrl(text);
+      const clip = ttsClipUrl(text);
       if (clip) playClip(clip, text, opts, lead);
       else speakDevice(text, opts, lead);
     } catch (e) {}
@@ -6635,9 +6771,30 @@
   }
 
   // ---------- SHARE PROGRESS CARD ----------
+  // Chân ảnh chia sẻ / chứng nhận: tên Fanpage + link app + mã QR (ảnh trong assets/qr/, cùng nguồn nên không
+  // làm "bẩn" canvas). Mã QR trỏ về app kèm ?lang=…&src=share|cert để đếm được người tới từ ảnh.
+  const APP_URL = 'https://quyhv1294.github.io/5-phut-tieng-anh/';
+  const APP_URL_SHORT = 'quyhv1294.github.io/5-phut-tieng-anh';
+  const FANPAGE_NAME = '5 Phút Tiếng Anh Mỗi Ngày';
+  const qrCache = {};
+  function loadQr(kind) {
+    const src = 'assets/qr/' + kind + '-' + LEARN_LANG + '.png';
+    if (!qrCache[src]) qrCache[src] = new Promise(res => { const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null); img.src = src; });
+    return qrCache[src];
+  }
+  function drawWhenReady(kind, draw) {
+    const fonts = document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => {}) : Promise.resolve();
+    Promise.all([fonts, loadQr(kind)]).then(r => draw(r[1])).catch(() => draw(null));
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
   // Vẽ 1 ảnh tổng kết tiến độ bằng Canvas (không dùng ảnh ngoài để tránh lỗi bảo mật
   // "tainted canvas" khi lưu/chia sẻ ảnh) để phụ huynh lưu lại hoặc chia sẻ lên Facebook.
-  function drawShareCard() {
+  function drawShareCard(qr) {
     const canvas = document.getElementById('shareCanvas');
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
@@ -6706,11 +6863,24 @@
       ctx.fillText('Chưa có huy hiệu nào — cố lên nhé!', W / 2, 596);
     }
 
-    ctx.font = '700 18px "Baloo 2", sans-serif';
+    // Chân ảnh: khung trắng, bên trái tên Fanpage + link, bên phải mã QR.
+    const fx = 30, fy = H - 128, fw = W - 60, fh = 110, qs = 90;
+    ctx.fillStyle = '#FFFFFF';
+    roundRect(ctx, fx, fy, fw, fh, 18); ctx.fill();
+    ctx.strokeStyle = '#EBDCC3'; ctx.lineWidth = 2; ctx.stroke();
+    if (qr) ctx.drawImage(qr, fx + fw - 12 - qs, fy + (fh - qs) / 2, qs, qs);
+    ctx.textAlign = 'left';
+    const tx = fx + 22;
     ctx.fillStyle = '#8A7B68';
-    ctx.fillText('5 Phút ' + LANG.name + ' Mỗi Ngày', W / 2, H - 42);
     ctx.font = '700 15px Quicksand, sans-serif';
-    ctx.fillText('Bản dùng thử miễn phí từ Fanpage', W / 2, H - 18);
+    ctx.fillText(qr ? 'Học thử miễn phí — quét mã bên cạnh' : 'Học thử miễn phí tại', tx, fy + 30);
+    ctx.fillStyle = '#A6431E';
+    ctx.font = '700 21px "Baloo 2", sans-serif';
+    ctx.fillText('Fanpage ' + FANPAGE_NAME, tx, fy + 62);
+    ctx.fillStyle = '#4A3F35';
+    ctx.font = '700 15px Quicksand, sans-serif';
+    ctx.fillText(APP_URL_SHORT, tx, fy + 88);
+    ctx.textAlign = 'center';
   }
 
   // Tiếng Anh: "Chia sẻ" là việc của ba mẹ → nút trong Góc ba mẹ (tab Chia sẻ bị ẩn, xem style.css).
@@ -6719,7 +6889,7 @@
   // không đưa vào TOP_LEVEL_SCREENS/setActiveTab nên tab đang chọn trước đó vẫn giữ nguyên trạng thái active.
   document.getElementById('tabShare').addEventListener('click', () => {
     document.getElementById('shareOverlay').hidden = false;
-    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(drawShareCard).catch(drawShareCard);
+    drawWhenReady('share', drawShareCard);
   });
   document.getElementById('shareCloseBtn').addEventListener('click', () => {
     document.getElementById('shareOverlay').hidden = true;
@@ -6745,7 +6915,7 @@
       canvas.toBlob(async blob => {
         const file = new File([blob], 'tien-do-hoc-tieng-anh.png', { type: 'image/png' });
         if (navigator.canShare({ files: [file] })) {
-          try { await navigator.share({ files: [file], title: '5 Phút ' + LANG.name + ' Mỗi Ngày' }); } catch (e) {}
+          try { await navigator.share({ files: [file], title: '5 Phút ' + LANG.name + ' Mỗi Ngày', text: 'Học thử miễn phí 5 phút mỗi ngày: ' + APP_URL + '?lang=' + LEARN_LANG + '&src=share' }); } catch (e) {}
         }
       }, 'image/png');
     });
@@ -6754,7 +6924,7 @@
   // ---------- CHỨNG NHẬN THÀNH TÍCH ----------
   // Vẽ 1 tờ "chứng nhận" bằng Canvas (cùng kỹ thuật với drawShareCard ở trên) để ba mẹ lưu về
   // hoặc in ra làm kỷ niệm cho bé — ghi tên bé (lấy từ hồ sơ nếu có), cấp độ và số sao hiện tại.
-  function drawCertificate() {
+  function drawCertificate(qr) {
     const canvas = document.getElementById('certificateCanvas');
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
@@ -6821,17 +6991,29 @@
       ctx.fillText(s.label, cx, 472);
     });
 
+    // Chân chứng nhận: ngày cấp, tên Fanpage, link app ở giữa; mã QR góc dưới bên phải (trong khung viền).
     const dateStr = new Date().toLocaleDateString('vi-VN');
     ctx.font = '700 15px Quicksand, sans-serif';
     ctx.fillStyle = '#8A7B68';
-    ctx.fillText('Ngày ' + dateStr, W / 2, H - 68);
-    ctx.font = '700 17px "Baloo 2", sans-serif';
-    ctx.fillText('5 Phút ' + LANG.name + ' Mỗi Ngày', W / 2, H - 46);
+    ctx.fillText('Ngày ' + dateStr, W / 2, H - 104);
+    ctx.font = '700 19px "Baloo 2", sans-serif';
+    ctx.fillStyle = '#A6431E';
+    ctx.fillText('Fanpage ' + FANPAGE_NAME, W / 2, H - 78);
+    ctx.font = '700 14px Quicksand, sans-serif';
+    ctx.fillStyle = '#4A3F35';
+    ctx.fillText(APP_URL_SHORT, W / 2, H - 56);
+    if (qr) {
+      const qs = 76, qx = W - 46 - qs, qy = H - 46 - qs;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(qx - 4, qy - 4, qs + 8, qs + 8);
+      ctx.drawImage(qr, qx, qy, qs, qs);
+    }
   }
 
   document.getElementById('certificateBtn').addEventListener('click', () => {
+    if (!verifiedEmail && backendConfigured()) { promptSaveProgress('cert'); return; }
     document.getElementById('certificateOverlay').hidden = false;
-    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(drawCertificate).catch(drawCertificate);
+    drawWhenReady('cert', drawCertificate);
   });
   document.getElementById('certificateCloseBtn').addEventListener('click', () => {
     document.getElementById('certificateOverlay').hidden = true;
@@ -6934,6 +7116,18 @@
     bootAfterGate();
     checkDeviceSession();
   }
+
+  // Đếm cả người học thử chưa lưu bằng email: mỗi máy gửi đúng 1 lần, không kèm thông tin cá nhân.
+  const VISIT_LOGGED_KEY = '5phut_visit_logged_v1';
+  (function logFirstVisit() {
+    try { if (localStorage.getItem(VISIT_LOGGED_KEY) || trafficSource() === 'co-san' || !backendConfigured()) return; } catch (e) { return; }
+    const url = SHEETS_CONFIG.webAppUrl + '?action=logVisit'
+      + '&deviceId=' + encodeURIComponent(deviceId)
+      + '&src=' + encodeURIComponent(trafficSource())
+      + '&lang=' + LEARN_LANG
+      + '&platform=' + encodeURIComponent(feedbackPlatform());
+    fetch(url).then(r => r.json()).then(d => { if (d && d.ok) { try { localStorage.setItem(VISIT_LOGGED_KEY, '1'); } catch (e) {} } }).catch(() => {});
+  })();
 
   // ---------- OFFLINE SUPPORT ----------
   // Đăng ký service worker để app + audio + icon dùng lại được kể cả khi mất mạng
@@ -7040,7 +7234,7 @@
       screens[name] = el;
       if (tabId) { TOP_LEVEL_SCREENS.push(name); TAB_FOR_SCREEN[name] = tabId; }
     },
-    showScreen, goHome, speak, shuffle, showToast, launchConfetti,
+    showScreen, goHome, speak, ttsPrefetch, shuffle, showToast, launchConfetti,
     getProgress: () => progress,
     saveProgress: () => saveProgress(progress),
     addStars, celebrate, updateStreakOnComplete, sfx, bumpDailyMission, renderTotalStars,

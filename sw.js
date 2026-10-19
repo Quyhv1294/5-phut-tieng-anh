@@ -1,7 +1,7 @@
 // Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
 // LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
 // lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v183';
+const CACHE_VERSION = 'v186';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
 // Giọng đọc thu sẵn (assets/tts/): tên file là mã băm của câu, đổi giọng thì đổi thư mục → file không bao giờ
 // đổi nội dung, nên giữ ở cache RIÊNG, không xoá khi tăng CACHE_VERSION (bé khỏi phải tải lại).
@@ -49,12 +49,17 @@ const APP_SHELL = [
   './data/emoji-icons.js',
   './data/sheets-config.js',
   './data/tts-en.js',
+  './data/tts-zh.js',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
   './assets/icons/icon-512-maskable.png',
   './assets/icons/apple-touch-icon.png',
   './assets/icons/favicon.png',
   './assets/QR.jpg',
+  './assets/qr/share-en.png',
+  './assets/qr/share-zh.png',
+  './assets/qr/cert-en.png',
+  './assets/qr/cert-zh.png',
   './assets/Anh_bia.jpg',
   './assets/mascot-fox.png',
   './assets/anh_ghep.jpeg',

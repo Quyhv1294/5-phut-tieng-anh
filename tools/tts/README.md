@@ -58,6 +58,8 @@ Công cụ chỉ tạo file cho câu **mới** hoặc câu **đã sửa** (tên 
 
 Sửa ở đầu `generate.mjs`:
 
+Mỗi ngôn ngữ có cấu hình riêng trong `PROFILES` (`en`, `zh`).
+
 - **`VOICE`:** tên giọng. Nghe thử bằng `--sample`; danh sách giọng có tại https://ai.google.dev/gemini-api/docs/speech-generation
 - **`STYLE`:** lời dặn cách đọc, ví dụ đọc chậm hơn, vui hơn. Sửa lời dặn thì **tăng `STYLE_VERSION`** (`v1` thành `v2`).
 - **`MODEL`:** tên mô hình. Nếu Google đổi tên, công cụ tự in danh sách các mô hình đọc đang có.
@@ -70,3 +72,14 @@ Sau đó chạy `node tools/tts/generate.mjs --prune`. Giọng mới nằm ở t
 - **Câu được đọc:** công cụ đọc các trường `en`, `example`, `q`, `a` trong `data/*.js`, trừ phần tiếng Trung, và bỏ qua chuỗi có dấu tiếng Việt. Nếu thêm loại dữ liệu mới dùng tên trường khác, cần sửa `EN_KEYS`.
 - **Dùng khi mất mạng:** khi bé mở 1 chủ đề, app tải trước file của chủ đề đó. File lưu ở bộ nhớ đệm riêng, nên lần sau dùng được cả khi mất mạng.
 - **Dữ liệu ở gói miễn phí:** Google có thể dùng nội dung gửi lên (từ vựng, câu cho bé) để cải thiện sản phẩm. Gửi lên không có thông tin cá nhân nào.
+
+## Giọng đọc tiếng Trung
+
+Thêm `--lang zh` vào mọi lệnh ở trên, ví dụ `node tools/tts/generate.mjs --lang zh --check`.
+
+- **Mô hình riêng:** tiếng Trung dùng `gemini-2.5-flash-preview-tts`, tiếng Anh dùng `gemini-3.1-flash-tts-preview`. Hạn mức ~100 lượt / ngày tính riêng cho từng mô hình, nên hai ngôn ngữ chạy song song được.
+- **Thứ tự ưu tiên:** bảng pinyin và 4 thanh điệu (`zh_roadmap.js`) trước, rồi lộ trình, từ vựng, bài nghe, bài đọc, đề thi thử.
+- **Đọc đúng thanh:** từ ngắn (tối đa 4 chữ) có pinyin trong dữ liệu thì được dặn đọc đúng âm đó, tránh đọc sai chữ đa âm (VD 行 háng / xíng).
+- **Câu được đọc:** mọi chuỗi có chữ Hán trong `zh_*.js` và `topics_zh.js`, trừ chuỗi lẫn tiếng Việt, pinyin hoặc chữ số (đó là ghi chú giải thích). Câu ghép lúc chạy (VD số 11–99, giờ, giá tiền) vẫn dùng giọng của máy.
+- **Kết quả:** file ở `assets/tts/zh/`, danh sách ở `data/tts-zh.js` và `tools/tts/clips-zh.json`.
+- **Lịch chạy hằng ngày** (`run-daily.cmd`) chạy tiếng Anh rồi tiếng Trung, và tự xoá lịch khi cả hai đã xong.

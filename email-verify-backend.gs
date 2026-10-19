@@ -50,7 +50,13 @@ const AUTH_HEADERS = [
   'UpdatedAt',
   // Thêm SAU CÙNG để không xê dịch cột của sheet đang có (getSheet_ tự điền tiêu đề còn thiếu).
   'ProgressZh', // tiến độ khoá Tiếng Trung (JSON) — tách riêng khỏi cột Progress của tiếng Anh
+  'Source',     // nguồn đầu tiên đưa người dùng tới app (?src=fb-reel, zalo, group, share, cert…; truc-tiep = không có mã)
 ];
+
+// Tab "Visits": mỗi MÁY mở app lần đầu = 1 dòng (kể cả người học thử chưa lưu bằng email) — đếm người tới
+// theo nguồn. Ẩn danh: không có email / tên / số điện thoại.
+const VISITS_SHEET_NAME = 'Visits';
+const VISITS_HEADERS = ['Time', 'DeviceId', 'Source', 'Lang', 'Platform'];
 
 // Cột của tab "Feedback" (mỗi ý kiến 1 dòng, thứ tự cột = thứ tự trong appendRow ở handleSaveFeedback_).
 const FEEDBACK_HEADERS = ['Time', 'Email', 'Name', 'Rating', 'Category', 'Message', 'Platform', 'DeviceId', 'Status'];
@@ -108,6 +114,9 @@ function doGet(e) {
         break;
       case 'saveFeedback':
         result = handleSaveFeedback_(e.parameter);
+        break;
+      case 'logVisit':
+        result = handleLogVisit_(e.parameter);
         break;
       default:
         result = { ok: false, error: 'unknown_action' };
@@ -294,6 +303,8 @@ function handleSaveProfile_(p) {
     setCell_(sheet, row, 'Age', p.age || '');
     setCell_(sheet, row, 'Avatar', p.avatar || '');
     setCell_(sheet, row, 'Phone', p.phone || '');
+    // Nguồn chỉ ghi lần đầu (giữ nguồn gốc thật, không bị lần lưu sau từ máy khác ghi đè).
+    if (p.src && !getCell_(sheet, row, 'Source')) setCell_(sheet, row, 'Source', safeCell_(p.src, 40));
     setCell_(sheet, row, 'UpdatedAt', new Date().toISOString());
     return { ok: true };
   } finally {
@@ -344,6 +355,35 @@ function handleSaveFeedback_(p) {
       deviceId,
       'Mới',   // Trạng thái xử lý — bạn tự đổi thành "Đã đọc"/"Đã xử lý" trên Sheet
     ]);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------- action=logVisit ----------
+// App gọi đúng 1 lần / máy (lần mở đầu tiên). Bỏ qua mã máy đã có trong ~500 dòng cuối để chống ghi trùng.
+function handleLogVisit_(p) {
+  const deviceId = String(p.deviceId || '').slice(0, 64);
+  if (!deviceId) return { ok: false, error: 'missing_params' };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(VISITS_SHEET_NAME);
+    if (!sheet) sheet = ss.insertSheet(VISITS_SHEET_NAME);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(VISITS_HEADERS);
+      sheet.setFrozenRows(1);
+      sheet.getRange(1, 1, 1, VISITS_HEADERS.length).setFontWeight('bold');
+    }
+    const lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      const fromRow = Math.max(2, lastRow - 499);
+      const ids = sheet.getRange(fromRow, 2, lastRow - fromRow + 1, 1).getValues();
+      if (ids.some(function (r) { return String(r[0]) === deviceId; })) return { ok: true, dup: true };
+    }
+    sheet.appendRow([new Date(), deviceId, safeCell_(p.src || 'truc-tiep', 40), safeCell_(p.lang, 4), safeCell_(p.platform, 60)]);
     return { ok: true };
   } finally {
     lock.releaseLock();
