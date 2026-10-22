@@ -82,4 +82,4 @@ Thêm `--lang zh` vào mọi lệnh ở trên, ví dụ `node tools/tts/generate
 - **Đọc đúng thanh:** từ ngắn (tối đa 4 chữ) có pinyin trong dữ liệu thì được dặn đọc đúng âm đó, tránh đọc sai chữ đa âm (VD 行 háng / xíng).
 - **Câu được đọc:** mọi chuỗi có chữ Hán trong `zh_*.js` và `topics_zh.js`, trừ chuỗi lẫn tiếng Việt, pinyin hoặc chữ số (đó là ghi chú giải thích). Câu ghép lúc chạy (VD số 11–99, giờ, giá tiền) vẫn dùng giọng của máy.
 - **Kết quả:** file ở `assets/tts/zh/`, danh sách ở `data/tts-zh.js` và `tools/tts/clips-zh.json`.
-- **Lịch chạy hằng ngày** (`run-daily.cmd`) chạy tiếng Anh rồi tiếng Trung, và tự xoá lịch khi cả hai đã xong.
+- **Lịch chạy hằng ngày** (`run-daily.cmd`) ưu tiên tiếng Anh: chỉ khi tiếng Anh đã xong toàn bộ mới chuyển sang tiếng Trung. Cả hai xong thì tự xoá lịch.
