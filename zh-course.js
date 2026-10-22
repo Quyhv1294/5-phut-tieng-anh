@@ -250,8 +250,11 @@
     '<div class="zh-match" id="zhMatchGrid"></div><div class="quiz-feedback" id="zhMatchFeedback"></div></div>');
   makeScreen('order',
     topbar('zhOrderBack', 'zhOrderFill') +
-    '<div class="quiz-wrap"><div class="quiz-prompt">Sắp xếp thành câu đúng:</div>' +
-    '<div class="zh-order-vi" id="zhOrderVi"></div><div class="zh-order-answer" id="zhOrderAnswer"></div>' +
+    '<div class="quiz-wrap"><div class="quiz-prompt" id="zhOrderPrompt">Sắp xếp thành câu đúng:</div>' +
+    '<div class="zh-order-vi" id="zhOrderVi"></div>' +
+    '<div class="zh-btn-row" id="zhOrderListen" hidden><button class="speak-btn" id="zhOrderSpeak">🔊 Nghe lại</button>' +
+      '<button class="speak-btn zh-slow-btn" id="zhOrderSlow" aria-label="Nghe chậm">🐢 Nghe chậm</button></div>' +
+    '<div class="zh-order-answer" id="zhOrderAnswer"></div>' +
     '<div class="zh-order-tiles" id="zhOrderTiles"></div>' +
     checkBar('zhOrderCheckBar', 'zhOrderCheck') +
     '<div class="zh-answer" id="zhOrderAns" hidden><div class="quiz-feedback" id="zhOrderFeedback"></div><div class="zh-reveal" id="zhOrderReveal"></div>' +
@@ -317,11 +320,22 @@
   }
 
   // ---------- Tab HỌC: hành trình ----------
+  // Chế độ hiện pinyin (Z().pyMode): auto = như thiết kế khoá học (hiện ở phần đầu, chạm để xem từ Phần 3) ·
+  // show = luôn hiện · tap = che lại, chạm để xem · hide = giấu hẳn lúc làm câu hỏi (hiện sau khi trả lời).
+  // Chỉ áp cho nội dung chữ Hán — bài pinyin (Phần 1) vốn là học pinyin nên không bị che.
+  const PY_MODES = [['auto', 'Tự động'], ['show', 'Luôn hiện'], ['tap', 'Chạm để xem'], ['hide', 'Ẩn']];
+  const pyMode = () => Z().pyMode || 'auto';
+  function applyPyMode() {
+    const cl = document.documentElement.classList;
+    PY_MODES.forEach(m => cl.toggle('zh-py-' + m[0], pyMode() === m[0]));
+  }
+  let pyEditing = false;
   function goHome() { renderHome(); A.showScreen('zh-home'); }
   const GOAL_LABEL = { 1: '5 phút', 2: '10 phút', 3: '15 phút' };
   let goalEditing = false;
   function renderHome() {
     const z = Z();
+    applyPyMode();
     const box = $('zhHome');
     box.innerHTML = '';
     // Tiến độ tính cả phần đã kiểm tra vượt (nhảy cóc): trước đây phần vượt không được tính nên đang ở
@@ -404,6 +418,23 @@
       goalRow.appendChild(chips);
     }
     panel.appendChild(goalRow);
+    const pyRow = el('div', 'zh-goal-row');
+    const pyName = PY_MODES.find(m => m[0] === pyMode())[1];
+    const pyBtn = el('button', 'zh-goal-toggle', '🔤 Pinyin: ' + pyName + ' · ' + (pyEditing ? 'Xong' : 'Đổi'));
+    pyBtn.setAttribute('aria-expanded', pyEditing);
+    pyBtn.addEventListener('click', () => { pyEditing = !pyEditing; renderHome(); });
+    pyRow.appendChild(pyBtn);
+    if (pyEditing) {
+      const chips = el('span', 'zh-goal-chips zh-py-chips');
+      PY_MODES.forEach(m => {
+        const c = el('button', 'zh-chip' + (pyMode() === m[0] ? ' is-active' : ''), m[1]);
+        c.addEventListener('click', () => { z.pyMode = m[0]; pyEditing = false; A.saveProgress(); applyPyMode(); renderHome(); });
+        chips.appendChild(c);
+      });
+      pyRow.appendChild(chips);
+      pyRow.appendChild(el('span', 'zh-py-help', 'Tự động: hiện pinyin ở phần đầu, từ Phần 3 chạm để xem. Ẩn: giấu pinyin khi làm câu hỏi để tự kiểm tra.'));
+    }
+    panel.appendChild(pyRow);
     box.appendChild(panel);
     // Học xong (hoặc nhảy cóc qua) Phần 2 · HSK 1 → mời thi thử ngay trên trang Học.
     const hskPart = ZH_COURSE.find(p => p.id === 'p2');
@@ -970,7 +1001,16 @@
     const span = el('span', 'zh-tap-text');
     segment(text).forEach(w => {
       const g = READ_DICT[w];
-      if (!g || !HAS_HANZI.test(w)) { span.appendChild(document.createTextNode(w)); return; }
+      if (!g || !HAS_HANZI.test(w)) {
+        // Dấu câu dính vào từ đứng trước (không bị rớt xuống dòng riêng).
+        const prev = span.lastChild;
+        if (prev && prev.nodeType === 1 && prev.tagName === 'BUTTON' && !/[A-Za-z0-9]/.test(w) && w.length <= 3) {
+          const glue = el('span', 'zh-tap-glue');
+          span.replaceChild(glue, prev);
+          glue.append(prev, document.createTextNode(w));
+        } else span.appendChild(document.createTextNode(w));
+        return;
+      }
       const b = el('button', 'zh-tap-word', w);
       b.type = 'button';
       b.addEventListener('click', () => { A.speak(w); A.showToast(w + ' · ' + g[0] + ' — ' + g[1], '📖'); });
@@ -996,6 +1036,9 @@
     let ds = [];
     units.forEach(u => { if (ZH_ROLE[u]) ds.push(...ZH_ROLE[u]); });
     if (n) ds = shuffleArr(ds).slice(0, n);
+    return roleStepsFor(ds);
+  }
+  function roleStepsFor(ds) {
     const out = [];
     ds.forEach(d => d.lines.forEach((ln, i) => {
       if (ln[0] !== 'B') return;
@@ -1014,6 +1057,29 @@
     b.addEventListener('click', fn);
     return b;
   }
+  // 1 dòng hội thoại: ảnh nhân vật + bong bóng (chữ Hán chạm được từng từ, pinyin, nghĩa). Người A là bạn đối thoại
+  // (Mei 👩), người B là bé / người học (ảnh đại diện của hồ sơ). name: hiện tên phía trên bong bóng.
+  const PARTNER = { emoji: '👩', name: 'Mei' };
+  function me() {
+    try { const p = JSON.parse(localStorage.getItem('5phut_profile_v1')) || {}; return { emoji: p.avatar || '🙂', name: p.name || 'Bạn' }; }
+    catch (e) { return { emoji: '🙂', name: 'Bạn' }; }
+  }
+  function bubbleRow(ln, current, name) {
+    const isA = ln[0] === 'A', who = isA ? PARTNER : me();
+    const row = el('div', 'zh-bubble-row ' + (isA ? 'is-a' : 'is-b'));
+    row.appendChild(el('span', 'zh-avatar ' + (isA ? 'is-a' : 'is-b'), who.emoji));
+    const b = el('div', 'zh-bubble ' + (isA ? 'is-a' : 'is-b') + (current ? ' is-current' : ''));
+    if (name) b.appendChild(el('div', 'zh-bubble-name', who.name));
+    const zh = el('div', 'zh-bubble-zh');
+    zh.append(tapText(ln[1]), ctxBtn('🔊', 'Nghe câu này', () => A.speak(ln[1])));
+    const py = el('div', 'zh-bubble-py');
+    py.innerHTML = colorPinyin(ln[2]);
+    b.append(zh, py, el('div', 'zh-bubble-vi', ln[3]));
+    // Chế độ pinyin "Chạm để xem" / "Ẩn": chạm vào bong bóng để hiện pinyin câu đó.
+    b.addEventListener('click', e => { if (!e.target.closest('button')) b.classList.toggle('show-py'); });
+    row.appendChild(b);
+    return row;
+  }
   function renderCtx(st) {
     const box = $('zhChoiceCtx');
     box.innerHTML = '';
@@ -1025,6 +1091,7 @@
     if (st.ctx.kind === 'read') {
       const p = st.ctx.p, full = p.text.map(t => t[0]).join('');
       box.classList.add('is-read');
+      if (pyMode() === 'show') box.classList.add('show-py');
       head.append(el('strong', null, '📰 ' + p.title), ctxBtn('🔊', 'Nghe cả đoạn', () => A.speak(full)),
         ctxBtn('🐢', 'Nghe chậm cả đoạn', () => A.speak(full, { slow: true })),
         ctxBtn('Pinyin', 'Hiện / ẩn pinyin', () => box.classList.toggle('show-py')));
@@ -1044,15 +1111,7 @@
     head.appendChild(el('strong', null, '🎭 ' + d.title));
     const list = el('div', 'zh-chat-list');
     box.appendChild(list);
-    d.lines.slice(0, st.ctx.upto).forEach((ln, i) => {
-      const b = el('div', 'zh-bubble ' + (ln[0] === 'A' ? 'is-a' : 'is-b') + (i === st.ctx.upto - 1 ? ' is-current' : ''));
-      const zh = el('div', 'zh-bubble-zh');
-      zh.append(tapText(ln[1]), ctxBtn('🔊', 'Nghe câu này', () => A.speak(ln[1])));
-      const py = el('div', 'zh-bubble-py');
-      py.innerHTML = colorPinyin(ln[2]);
-      b.append(zh, py, el('div', 'zh-bubble-vi', ln[3]));
-      list.appendChild(b);
-    });
+    d.lines.slice(0, st.ctx.upto).forEach((ln, i) => list.appendChild(bubbleRow(ln, i === st.ctx.upto - 1)));
     list.scrollTop = list.scrollHeight; // khung chat có giới hạn chiều cao → cuộn tới câu vừa nghe
   }
   function shuffleArr(a) { return A.shuffle(a); }
@@ -1079,7 +1138,13 @@
     $('zhCardEmoji').textContent = it.emoji || '';
     $('zhCardEmoji').hidden = !it.emoji;
     setBig($('zhCardBig'), it.big);
-    $('zhCardPy').innerHTML = it.py ? colorPinyin(it.py) : '';
+    const cpy = $('zhCardPy');
+    cpy.className = 'zh-py';
+    cpy.innerHTML = it.py ? colorPinyin(it.py) : '';
+    if (it.py && HAS_HANZI.test(it.big) && (pyMode() === 'tap' || pyMode() === 'hide')) {
+      cpy.classList.add('is-covered');
+      cpy.onclick = () => cpy.classList.remove('is-covered');
+    } else cpy.onclick = null;
     $('zhCardVi').textContent = it.vi || '';
     $('zhCardNote').textContent = it.note || '';
     $('zhCardNote').hidden = !it.note;
@@ -1130,9 +1195,12 @@
     $('zhChoiceBig').hidden = !st.big;
     const py = $('zhChoicePy');
     py.hidden = !st.py && !st.sub;
-    py.classList.toggle('is-hidden', !!st.hidePy);
+    const mode = pyMode(), hz = HAS_HANZI.test(st.big || '');
+    const hidePy = !(st.py && hz) ? !!st.hidePy : mode === 'show' ? false : mode === 'tap' || mode === 'hide' ? true : !!st.hidePy;
+    py.classList.toggle('is-hidden', hidePy);
+    py.classList.toggle('is-gone', hidePy && mode === 'hide' && !!st.py && hz);
     py.innerHTML = (st.py ? colorPinyin(st.py) : '') + (st.sub ? ' <span class="zh-sub">· ' + esc(st.sub) + '</span>' : '');
-    py.onclick = () => py.classList.remove('is-hidden');
+    py.onclick = () => { if (!py.classList.contains('is-gone')) py.classList.remove('is-hidden'); };
     $('zhChoiceSpeak').hidden = !st.say;
     $('zhChoiceSlow').hidden = !st.say;
     $('zhChoiceReveal').innerHTML = '';
@@ -1173,7 +1241,7 @@
     btn.classList.remove('is-selected');
     const st = S.steps[S.i];
     document.querySelectorAll('#zhChoiceOptions .quiz-opt').forEach(b => { b.disabled = true; if (b.dataset.correct) b.classList.add('correct'); });
-    $('zhChoicePy').classList.remove('is-hidden');
+    $('zhChoicePy').classList.remove('is-hidden', 'is-gone');
     const fb = $('zhChoiceFeedback');
     if (ok) { fb.textContent = pick(['✓ Chính xác!', '✓ Đúng rồi!', '✓ Tốt lắm!']); fb.className = 'quiz-feedback ok'; A.sfx('correct'); }
     else {
@@ -1234,18 +1302,28 @@
   RENDER.order = st => {
     A.showScreen('zh-order');
     fillFor('zhOrderFill');
-    const s = st.s;
+    const s = st.s, lis = !!st.listen;
+    // Nghe và xếp câu: không cho xem nghĩa tiếng Việt trước, chỉ nghe; có thêm 2 ô chữ thừa để phải nghe kỹ.
+    $('zhOrderPrompt').textContent = lis ? '🎧 Nghe rồi xếp lại thành câu:' : 'Sắp xếp thành câu đúng:';
     $('zhOrderVi').textContent = s.vi;
+    $('zhOrderVi').hidden = lis;
+    $('zhOrderListen').hidden = !lis;
     $('zhOrderReveal').innerHTML = '';
     const fb = $('zhOrderFeedback'); fb.textContent = ''; fb.className = 'quiz-feedback';
     $('zhOrderAns').hidden = true;
     $('zhOrderAnswer').classList.remove('is-correct', 'is-wrong');
     let tiles, guard = 0;
-    do { tiles = A.shuffle(s.tokens.map((t, k) => ({ t, k }))); } while (s.tokens.length > 1 && tiles.every((x, k) => x.k === k) && guard++ < 20);
+    const base = s.tokens.map((t, k) => ({ t, k }));
+    if (lis) shuffleArr(ORDER_TOKENS.filter(t => !s.tokens.includes(t))).slice(0, 2).forEach(t => base.push({ t, k: -1 }));
+    do { tiles = A.shuffle(base.slice()); } while (s.tokens.length > 1 && tiles.every((x, k) => x.k === k) && guard++ < 20);
     ord = { st, tiles, picked: [], done: false };
+    if (lis) A.speak(s.tokens.join('') + (s.end || '。'));
     $('zhOrderCheckBar').hidden = false;
     drawOrder();
   };
+  const orderFull = () => ord && ord.st.s.tokens.join('') + (ord.st.s.end || '。');
+  $('zhOrderSpeak').addEventListener('click', () => { if (ord) A.speak(orderFull()); });
+  $('zhOrderSlow').addEventListener('click', () => { if (ord) A.speak(orderFull(), { slow: true }); });
   function drawOrder() {
     const ans = $('zhOrderAnswer'), pool = $('zhOrderTiles');
     ans.innerHTML = ''; pool.innerHTML = '';
@@ -1274,7 +1352,7 @@
     fb.textContent = ok ? '✓ Chính xác!' : '✗ Chưa đúng — câu đúng là:'; fb.className = 'quiz-feedback ' + (ok ? 'ok' : 'no');
     A.sfx(ok ? 'correct' : 'wrong');
     $('zhOrderAnswer').classList.add(ok ? 'is-correct' : 'is-wrong');
-    $('zhOrderReveal').innerHTML = esc(full) + '<br>' + colorPinyin(s.py);
+    $('zhOrderReveal').innerHTML = esc(full) + '<br>' + colorPinyin(s.py) + (ord.st.listen ? '<div class="zh-reveal-vi">' + esc(s.vi) + '</div>' : '');
     A.speak(full);
     showAnswer('zhOrderAns', ok);
     const st = ord.st;
@@ -1648,6 +1726,77 @@
   }
   $('zhCharBack').addEventListener('click', openChars);
 
+  // ---------- HỘI THOẠI CÓ NHÂN VẬT (đợt Z5) ----------
+  // Xem từng câu hội thoại hiện dần (có giọng đọc), chạm từ để tra nghĩa; xong thì nhập vai chính đoạn đó.
+  makeScreen('dlg', '<div id="zhDlg"></div>', 'tabSentences');
+  function allDialogues() {
+    if (!HAS_READ) return [];
+    return Object.keys(ZH_ROLE).flatMap(k => ZH_ROLE[k].map(d => ({ d, unit: ALL_UNITS.find(u => u.id === k) })));
+  }
+  function dlgCard() {
+    const b = el('button', 'zh-exam-card zh-dlg-card');
+    b.appendChild(el('span', 'zh-exam-card-icon', '💬'));
+    const t = el('span', 'zh-exam-card-text');
+    t.appendChild(el('strong', null, 'Hội thoại có nhân vật'));
+    t.appendChild(el('small', null, allDialogues().length + ' đoạn · nghe từng câu, chạm từ để tra, rồi nhập vai'));
+    b.append(t, el('span', 'settings-chevron', '›'));
+    b.addEventListener('click', openDialogues);
+    return b;
+  }
+  function openDialogues() { renderDlgList(); A.showScreen('zh-dlg'); window.scrollTo(0, 0); }
+  function renderDlgList() {
+    const box = $('zhDlg');
+    box.innerHTML = '';
+    const hero = el('div', 'zh-hero');
+    hero.appendChild(el('h1', null, 'Hội thoại'));
+    hero.appendChild(el('p', null, 'Nghe và đọc từng câu hội thoại trong đời sống. Chọn 1 đoạn để bắt đầu.'));
+    box.appendChild(hero);
+    const list = el('div', 'zh-panel zh-list');
+    allDialogues().forEach(x => list.appendChild(listRow('💬', x.d.title, x.unit ? 'Chặng ' + (ALL_UNITS.indexOf(x.unit) + 1) + ' · ' + x.unit.title : '', () => playDialogue(x.d))));
+    box.appendChild(list);
+  }
+  function playDialogue(d) {
+    const box = $('zhDlg');
+    box.innerHTML = '';
+    const back = el('button', 'ghost-btn zh-mini-btn zh-dlg-back', '← Danh sách');
+    back.addEventListener('click', openDialogues);
+    box.appendChild(back);
+    const hero = el('div', 'zh-hero');
+    hero.appendChild(el('h1', null, d.title));
+    hero.appendChild(el('p', null, 'Chạm vào chữ Hán để tra nghĩa. Bấm Tiếp để nghe câu kế tiếp.'));
+    box.appendChild(hero);
+    const chat = el('div', 'zh-dlg-chat');
+    const foot = el('div', 'zh-dlg-foot');
+    box.append(chat, foot);
+    let n = 0;
+    const showNext = () => {
+      const ln = d.lines[n++];
+      const row = bubbleRow(ln, true, true);
+      chat.querySelectorAll('.is-current').forEach(x => x.classList.remove('is-current'));
+      row.querySelector('.zh-bubble').classList.add('is-current');
+      chat.appendChild(row);
+      A.speak(ln[1]);
+      foot.innerHTML = '';
+      if (n < d.lines.length) {
+        const nx = el('button', 'cta-btn zh-wide-btn', 'Tiếp ▶');
+        nx.addEventListener('click', showNext);
+        foot.appendChild(nx);
+      } else {
+        foot.appendChild(el('div', 'zh-dlg-end', '🎉 Hết đoạn hội thoại'));
+        const rp = el('button', 'cta-btn zh-wide-btn', '🎭 Nhập vai đoạn này');
+        rp.addEventListener('click', () => runSession({ lesson: { type: 'quiz', title: d.title, practice: true }, steps: roleStepsFor([d]), back: () => playDialogue(d), rebuild: () => runSession({ lesson: { type: 'quiz', title: d.title, practice: true }, steps: roleStepsFor([d]), back: () => playDialogue(d) }) }));
+        const again = el('button', 'ghost-btn zh-wide-btn', '🔁 Nghe lại từ đầu');
+        again.addEventListener('click', () => playDialogue(d));
+        foot.append(rp, again);
+      }
+      requestAnimationFrame(() => row.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+    };
+    box.hidden = false;
+    A.showScreen('zh-dlg');
+    window.scrollTo(0, 0);
+    showNext();
+  }
+
   // ---------- Dùng chung cho các tab ----------
   // 1 dòng trong danh sách hành động: biểu tượng · tiêu đề + mô tả · ›. Không có hàm bấm → dòng mờ.
   function listRow(icon, title, sub, onClick) {
@@ -1794,6 +1943,7 @@
     hero.appendChild(el('p', null, 'Luyện riêng từng kỹ năng, làm lại bao nhiêu lần cũng được — không ảnh hưởng tiến độ khoá học.'));
     box.appendChild(hero);
     box.appendChild(charsCard());
+    if (HAS_READ) box.appendChild(dlgCard());
     if (HAS_EXAM) box.appendChild(examCard());
     const learned = learnedWords();
     const pool = learned.length >= 4 ? learned : COURSE_WORDS.slice(0, 30);
@@ -1819,6 +1969,7 @@
         ['📰', 'Đọc hiểu', 'Đọc đoạn văn, trả lời câu hỏi', () => readSteps(HAS_READ ? Object.keys(ZH_READ) : [], 2)],
         ['🎭', 'Nhập vai', 'Chọn câu đáp trong hội thoại', () => roleSteps(HAS_READ ? Object.keys(ZH_ROLE) : [], 2)],
         ['🗣️', 'Sắp xếp câu', 'Các câu trong khoá học', () => shuffleArr(allSentences()).slice(0, 6).map(s => ({ kind: 'order', s }))],
+        ['✍️', 'Nghe và xếp câu', 'Nghe câu, tự xếp lại từng chữ', () => shuffleArr(allSentences()).slice(0, 6).map(s => ({ kind: 'order', s, listen: true }))],
       ]],
       ['Số, giờ & tiền', [
         ['🔢', 'Nghe số', 'Số từ 11 đến 99', () => genSteps('numbers', 10)],
@@ -1837,6 +1988,11 @@
       box.appendChild(list);
     });
   }
+  const ORDER_TOKENS = (() => {
+    const seen = new Set();
+    ALL_UNITS.forEach(u => unitLessons(u).forEach(l => { if (l.type === 'order') l.sentences.forEach(s => s.tokens.forEach(t => { if (HAS_HANZI.test(t)) seen.add(t); })); }));
+    return [...seen];
+  })();
   function allSentences() {
     const out = [];
     ALL_UNITS.forEach(u => unitLessons(u).forEach(l => { if (l.type === 'order') out.push(...l.sentences); }));

@@ -3309,3 +3309,45 @@
   .zh-char-word-zh { flex: none; min-width: 64px; font-family: 'LXGW WenKai Screen', 'PingFang SC', 'Noto Sans SC', sans-serif !important; font-size: 26px; font-weight: 400 !important; }
   .zh-char-word-say { flex: none; opacity: 0.7; }
   .zh-panel .zh-legend + .zh-wide-btn { margin-top: 14px; }
+
+  /* ================= ĐỢT Z5 — PINYIN TUỲ CHỌN, NGHE VÀ XẾP CÂU, HỘI THOẠI CÓ NHÂN VẬT ================= */
+  /* Chế độ pinyin (html.zh-py-auto|show|tap|hide — zh-course.js applyPyMode). */
+  .zh-py.is-covered { cursor: pointer; background: var(--surface-2); border-radius: 10px; padding: 2px 10px; }
+  .zh-py.is-covered > * { display: none; }
+  .zh-py.is-covered::before { content: '👆 Chạm để xem pinyin'; color: var(--ink-soft); font-size: 14px; }
+  .zh-py-btn.is-gone { display: none; }
+  /* "Chạm để xem" / "Ẩn": pinyin trong ô đáp án và ô nối cặp ẩn cho tới khi trả lời xong. */
+  html:is(.zh-py-tap, .zh-py-hide) .zh-quiz-options .quiz-opt:not(:disabled):not(.correct):not(.wrong) .word-py { display: none; }
+  html:is(.zh-py-tap, .zh-py-hide) .zh-match-card:not(.is-matched) .word-py { display: none; }
+  html:is(.zh-py-tap, .zh-py-hide) .zh-bubble:not(.show-py) .zh-bubble-py { display: none; }
+  html:is(.zh-py-tap, .zh-py-hide) .zh-bubble { cursor: pointer; }
+  .zh-py-chips { flex-wrap: wrap; }
+  .zh-py-help { font-size: 12.5px; font-weight: 500; line-height: 1.45; color: var(--ink-soft); }
+
+  /* Hội thoại: ảnh nhân vật + bong bóng. A (bạn đối thoại) bên trái, B (người học) bên phải. */
+  .zh-bubble-row { display: flex; align-items: flex-end; gap: 6px; max-width: 94%; }
+  .zh-bubble-row.is-a { align-self: flex-start; }
+  .zh-bubble-row.is-b { align-self: flex-end; flex-direction: row-reverse; }
+  .zh-bubble-row .zh-bubble { align-self: auto; max-width: none; min-width: 0; flex: 0 1 auto; }
+  .zh-avatar {
+    flex: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; line-height: 1; background: var(--surface); border: 2px solid var(--line-strong, var(--line));
+  }
+  .zh-avatar.is-a { background: color-mix(in srgb, var(--blue) 18%, var(--surface)); }
+  .zh-avatar.is-b { background: color-mix(in srgb, var(--mint) 25%, var(--surface)); }
+  .zh-avatar img.emoji-icon { width: 22px; height: 22px; }
+  .zh-bubble-name { font-size: 12px; font-weight: 800; color: var(--ink-soft); margin-bottom: 1px; }
+
+  /* Màn "Hội thoại". */
+  .zh-dlg-back { margin: 0 0 4px; }
+  .zh-dlg-chat { display: flex; flex-direction: column; gap: 12px; padding: 6px 0 14px; }
+  .zh-dlg-chat .zh-bubble-zh { font-size: 21px; }
+  .zh-dlg-chat .zh-bubble-py { font-size: 14px; }
+  .zh-dlg-chat .zh-bubble-vi { font-size: 13.5px; }
+  .zh-dlg-chat .zh-bubble { animation: zhAnsIn .25s ease-out; }
+  .zh-dlg-foot { display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px; }
+  .zh-dlg-end { text-align: center; font-weight: 700; color: var(--ink-soft); padding: 4px 0; }
+  @media (prefers-reduced-motion: reduce) { .zh-dlg-chat .zh-bubble { animation: none; } }
+  .zh-tap-glue { white-space: nowrap; }
+  .zh-dlg-chat .zh-bubble-zh { font-size: 20px; }
+  .zh-chat-list { padding: 3px; } /* chừa chỗ cho viền sáng của câu hiện tại, khỏi bị cắt */
