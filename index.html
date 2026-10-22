@@ -76,6 +76,7 @@
       <span class="kid-continue-text">
         <small id="kidContinueEyebrow">Bắt đầu học</small>
         <strong id="kidContinueTitle"></strong>
+        <span class="kid-continue-goal" id="kidContinueGoal"></span>
       </span>
       <span class="kid-continue-play" aria-hidden="true">▶</span>
     </button>
@@ -200,6 +201,21 @@
         <div class="home-hero">
           <h1>Chào ba mẹ! 👋</h1>
           <p>Chọn một chủ đề bên dưới, học cùng bé 10 từ mới, rồi chơi mini game ôn lại — chỉ mất khoảng 5 phút thôi ạ.</p>
+        </div>
+        <!-- Mặc định bé chọn chủ đề nào cũng được; bật để học đúng thứ tự trên con đường (app.js renderTopicPath). -->
+        <div class="settings-group parent-seq">
+          <button class="settings-row is-muted" id="seqPathBtn" role="switch" aria-checked="false">
+            <span class="settings-icon">📏</span>
+            <span class="settings-label">Học theo thứ tự<small>Chủ đề sau chỉ mở khi bé học xong chủ đề trước</small></span>
+            <span class="settings-switch" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div class="settings-group parent-goal">
+          <div class="parent-block">
+            <span class="settings-icon">🎯</span>
+            <span class="settings-label">Mục tiêu mỗi ngày<small>Vòng vàng quanh ảnh của bé (thẻ "Học nào") đầy lên khi đạt mục tiêu</small></span>
+          </div>
+          <div class="goal-chips" id="parentGoalChips"></div>
         </div>
 
         <!-- Ôn tập, điều kiện lên lớp, chia sẻ: việc ba mẹ chọn giúp bé — gom vào đây cho vùng của bé gọn
@@ -390,6 +406,7 @@
             <div class="summary-label">🔥 Kỷ lục chuỗi ngày</div>
           </div>
         </div>
+        <div class="streak-cal" id="streakCal" hidden></div>
         <div class="level-card">
           <span id="levelEmoji">🌱</span>
           <span id="levelLabel">Mầm non</span>
@@ -695,6 +712,11 @@
 
         <label>Chọn hình đại diện</label>
         <div class="avatar-grid" id="avatarGrid"></div>
+
+        <div class="profile-goal" id="profileGoalWrap">
+          <label>Mỗi ngày bé học bao lâu?</label>
+          <div class="goal-chips" id="profileGoalChips"></div>
+        </div>
 
         <label for="profilePhoneInput" id="profilePhoneLabel" data-zh="Số điện thoại">Số điện thoại ba/mẹ</label>
         <input type="tel" id="profilePhoneInput" inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxx">
@@ -1237,6 +1259,7 @@
       <h2 id="doneTitle">Giỏi quá!</h2>
       <p id="doneSubtitle">Bé đã học xong chủ đề này rồi đó ạ.</p>
       <div class="earned-row" id="earnedStars"></div>
+      <div class="done-stats" id="doneStats" hidden></div>
       <div class="chest-wrap" id="chestWrap">
         <button class="chest-btn" id="chestBtn">🎁 Mở rương may mắn</button>
         <div class="chest-reward" id="chestReward" hidden></div>

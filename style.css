@@ -2734,3 +2734,358 @@
   .save-card-later { width: 100%; margin: 0; }
   /* Tiếng Trung: chữ trắng trên nền đỏ (màu chữ mặc định của nút cam không đủ tương phản trên nền đỏ). */
   html.lang-zh-ui :is(.account-primary-btn, .confirm-ok-btn) { color: #fff; }
+
+  /* ================= BỘ QUY TẮC THIẾT KẾ — PHẦN TIẾNG ANH =================
+     Mọi nút / thẻ / ô chọn của phần tiếng Anh theo đúng 1 bộ quy tắc (kiểu "phẳng, có đáy dày" như Duolingo):
+     - 5 loại thành phần:
+         1. NÚT CHÍNH  — việc chính của màn (Tiếp, Bắt đầu, Lưu…): nền xanh ngọc, chữ trắng, đáy dày đậm màu.
+         2. NÚT PHỤ    — việc phụ (Học lại, Chọn chủ đề khác, nút loa…): nền trắng, viền + đáy xám.
+         3. NÚT CHỮ    — việc ít quan trọng (Quay lại, Để sau): chỉ có chữ.
+         4. Ô CHỌN     — chọn 1 trong nhiều (lớp, mục, tab, đáp án): nền trắng; đang chọn = viền + nền cam nhạt.
+         5. THẺ        — khối nội dung (cài đặt, nhiệm vụ, huy hiệu, thẻ học…): nền trắng, viền + đáy xám.
+     - Màu: XANH NGỌC = hành động / đúng · CAM = đang chọn / thương hiệu · ĐỎ = sai / nguy hiểm.
+     - Bo góc 3 mức (12 / 16 / 22px) + tròn hẳn; cỡ chữ theo thang --fs-*; mọi thứ bấm được có "đáy" (--edge),
+       bấm xuống thì lún bằng đúng độ dày đáy.
+     Chỉ áp dụng cho html.lang-en-ui — phần tiếng Trung có bộ riêng (xem "GIAO DIỆN TIẾNG TRUNG"). */
+  html.lang-en-ui {
+    --r-sm: 12px; --r-md: 16px; --r-lg: 22px; --r-pill: 999px;
+    --edge: 4px;
+    --fs-xs: 13px; --fs-sm: 15px; --fs-md: 17px; --fs-lg: 19px; --fs-xl: 24px; --fs-2xl: 30px;
+    --primary: #2E9C8F; --primary-edge: #1F7268; --on-primary: #FFFFFF;
+    --line-strong: color-mix(in srgb, var(--line) 70%, var(--ink-soft));
+    --select-bg: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    --ok-bg: color-mix(in srgb, var(--teal) 18%, var(--surface));
+    --bad-bg: color-mix(in srgb, var(--danger) 16%, var(--surface));
+  }
+  @media (prefers-color-scheme: dark) {
+    html.lang-en-ui:not([data-theme="light"]) { --primary: #36AE9F; --primary-edge: #1D6F65; --line-strong: color-mix(in srgb, var(--line) 55%, var(--ink-soft)); }
+  }
+  html.lang-en-ui[data-theme="dark"] { --primary: #36AE9F; --primary-edge: #1D6F65; --line-strong: color-mix(in srgb, var(--line) 55%, var(--ink-soft)); }
+
+  /* ---------- 1. NÚT CHÍNH ---------- */
+  html.lang-en-ui :is(.cta-btn, .account-primary-btn, .confirm-ok-btn, .nav-btn.primary, .done-next-btn) {
+    border: none; border-radius: var(--r-md); min-height: 52px; padding: 12px 22px;
+    background: var(--primary); color: var(--on-primary);
+    font-family: 'Baloo 2'; font-weight: 800; font-size: var(--fs-lg); line-height: 1.2; letter-spacing: 0.01em;
+    box-shadow: 0 var(--edge) 0 var(--primary-edge); margin-bottom: var(--edge);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-en-ui .confirm-ok-btn.is-danger { background: var(--danger); box-shadow: 0 var(--edge) 0 color-mix(in srgb, var(--danger) 65%, #000); }
+  html.lang-en-ui :is(.cta-btn, .account-primary-btn, .confirm-ok-btn, .nav-btn.primary, .done-next-btn):disabled {
+    background: var(--line); color: var(--ink-soft); box-shadow: 0 var(--edge) 0 var(--line-strong); opacity: 1;
+  }
+
+  /* ---------- 2. NÚT PHỤ (kể cả nút tròn: quay lại, loa, nút trên thanh đầu trang) ---------- */
+  html.lang-en-ui :is(.ghost-btn, .ghost-btn--solid, .nav-btn:not(.primary), .speak-btn, .judge-btn, .settings-danger-btn, .lang-close-btn) {
+    border: 2px solid var(--line-strong); border-radius: var(--r-md); min-height: 48px; padding: 10px 20px;
+    background: var(--surface); color: var(--ink);
+    font-family: 'Baloo 2'; font-weight: 700; font-size: var(--fs-md); line-height: 1.2;
+    box-shadow: 0 var(--edge) 0 var(--line-strong); margin-bottom: var(--edge);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-en-ui .speak-btn { border-radius: var(--r-pill); }
+  html.lang-en-ui :is(.ghost-btn--danger, .settings-danger-btn) { color: var(--danger-ink); border-color: color-mix(in srgb, var(--danger) 55%, var(--line)); box-shadow: 0 var(--edge) 0 color-mix(in srgb, var(--danger) 55%, var(--line)); }
+  html.lang-en-ui :is(.icon-btn, .settings-btn, .account-btn, .donate-btn, .stars-pill) {
+    border: 2px solid var(--line-strong); box-shadow: 0 3px 0 var(--line-strong);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-en-ui .donate-btn { border-color: color-mix(in srgb, var(--mint) 55%, var(--line-strong)); box-shadow: 0 3px 0 color-mix(in srgb, var(--mint) 55%, var(--line-strong)); }
+
+  /* ---------- 3. NÚT CHỮ ---------- */
+  html.lang-en-ui :is(.ghost-btn--muted, .save-card-later) {
+    border-color: transparent; background: none; box-shadow: none; color: var(--ink-soft); min-height: 44px;
+  }
+  html.lang-en-ui .account-link-btn { color: var(--primary-edge); font-family: 'Baloo 2'; font-weight: 700; font-size: var(--fs-sm); }
+
+  /* Bấm xuống: lún đúng bằng độ dày đáy (nút chính, nút phụ, nút tròn). */
+  html.lang-en-ui :is(.cta-btn, .account-primary-btn, .confirm-ok-btn, .nav-btn, .done-next-btn, .ghost-btn, .ghost-btn--solid, .speak-btn, .judge-btn, .settings-danger-btn, .lang-close-btn):active:not(:disabled) {
+    transform: translateY(var(--edge)); box-shadow: 0 0 0 transparent;
+  }
+  html.lang-en-ui :is(.icon-btn, .settings-btn, .account-btn, .donate-btn):active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
+  html.lang-en-ui :is(.ghost-btn--muted, .save-card-later):active:not(:disabled) { transform: scale(0.97); }
+
+  /* ---------- 4. Ô CHỌN (lớp, mục, tab, đáp án) ---------- */
+  html.lang-en-ui :is(.class-box, .mode-chips .segment-btn, .mode-chips .mode-grid-btn, .feedback-chip, .placement-level-btn, .avatar-option) {
+    border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink-soft);
+    box-shadow: 0 3px 0 var(--line-strong); margin-bottom: 3px;
+    font-family: 'Baloo 2'; font-weight: 700;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-en-ui .mode-chips :is(.segment-btn, .mode-grid-btn) { border-radius: var(--r-md); font-size: var(--fs-md); }
+  html.lang-en-ui :is(.class-box.active, .class-box.is-active, .mode-chips .segment-btn.active, .mode-chips .mode-grid-btn.active, .feedback-chip.active, .feedback-chip.is-active, .placement-level-btn.is-current, .avatar-option.selected) {
+    border-color: var(--accent); background: var(--select-bg); color: var(--accent-ink); box-shadow: 0 3px 0 var(--accent);
+  }
+  html.lang-en-ui :is(.class-box, .mode-chips .segment-btn, .mode-chips .mode-grid-btn, .feedback-chip, .placement-level-btn, .avatar-option):active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
+  /* Đáp án trắc nghiệm: ô chọn to; đúng = xanh ngọc, sai = đỏ (cùng kiểu đáy). */
+  html.lang-en-ui .quiz-opt {
+    border: 2px solid var(--line-strong); border-radius: var(--r-lg); background: var(--surface);
+    box-shadow: 0 var(--edge) 0 var(--line-strong); margin-bottom: var(--edge);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-en-ui .quiz-opt:active:not(:disabled) { transform: translateY(var(--edge)); box-shadow: 0 0 0 transparent; }
+  html.lang-en-ui .quiz-opt.correct { border-color: var(--teal); background: var(--ok-bg); box-shadow: 0 var(--edge) 0 var(--primary-edge); }
+  html.lang-en-ui .quiz-opt.wrong { border-color: var(--danger); background: var(--bad-bg); box-shadow: 0 var(--edge) 0 color-mix(in srgb, var(--danger) 65%, #000); }
+
+  /* ---------- 5. THẺ ---------- */
+  html.lang-en-ui :is(.settings-group, .kid-missions, .summary-item, .level-card, .badge-item, .confirm-card, .flashcard,
+    .sentence-card, .story-card, .sight-card, .quizparent-card, .recap-summary, .choi-summary, .zh-voice-card, .parent-corner, .home-hero) {
+    border: 2px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: 0 var(--edge) 0 var(--line-strong);
+  }
+  html.lang-en-ui .parent-corner { border-style: solid; }
+  html.lang-en-ui .flashcard:not([class*="t-"]) { background: var(--surface); }
+  /* Ô chủ đề màu: đáy là màu của chính ô, đậm hơn (bóng trong ở đáy) — bấm xuống thì lún. */
+  html.lang-en-ui .topic-card {
+    border-radius: var(--r-lg); box-shadow: inset 0 calc(-1 * var(--edge)) 0 rgba(0, 0, 0, 0.16);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-en-ui .topic-card:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.16); }
+  html.lang-en-ui .topic-card.is-current { box-shadow: inset 0 calc(-1 * var(--edge)) 0 rgba(0, 0, 0, 0.16), 0 0 0 3px var(--surface), 0 0 0 6px var(--teal); }
+  html.lang-en-ui :is(.reminder-banner, .streak-banner, .week-banner) { border-radius: var(--r-md); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1); }
+  html.lang-en-ui .kid-continue { border-radius: var(--r-lg); background: var(--primary); box-shadow: 0 var(--edge) 0 var(--primary-edge); margin-bottom: calc(14px + var(--edge)); }
+  html.lang-en-ui .kid-continue:active { transform: translateY(var(--edge)); box-shadow: 0 0 0 transparent; }
+
+  /* ---------- Chữ ---------- */
+  html.lang-en-ui :is(.section-label, .settings-group-label) {
+    font-family: 'Baloo 2'; font-weight: 800; font-size: var(--fs-sm); letter-spacing: 0.06em; color: var(--ink-soft);
+  }
+  html.lang-en-ui .settings-row { font-size: var(--fs-md); }
+  html.lang-en-ui .settings-row + .settings-row, html.lang-en-ui .settings-options { border-top-color: var(--line); }
+
+  /* ---------- Ô nhập liệu ---------- */
+  html.lang-en-ui .otp-form :is(input[type="email"], input[type="text"], input[type="number"], input[type="tel"]) {
+    border: 2px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface);
+  }
+  html.lang-en-ui .otp-form input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent); }
+
+  /* ---------- Thanh tiến độ trong bài ---------- */
+  html.lang-en-ui .progress-track { height: 14px; border: none; background: var(--line); }
+  html.lang-en-ui .progress-fill { background: var(--primary); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.28); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html.lang-en-ui :is(.cta-btn, .account-primary-btn, .confirm-ok-btn, .nav-btn, .ghost-btn, .speak-btn, .quiz-opt, .topic-card, .kid-continue):active { transform: none; }
+  }
+  /* Hàng 3 nút ôn tập (Góc ba mẹ): ô hẹp → bớt khoảng đệm, chữ nhỏ hơn cho khỏi bẻ từng chữ một dòng. */
+  html.lang-en-ui .progress-actions :is(.cta-btn, .ghost-btn) { padding: 8px 6px; min-height: 60px; font-size: var(--fs-sm); line-height: 1.2; }
+
+  /* ================= ĐỢT 2 — MÀN LÀM BÀI & MÀN KẾT THÚC THỐNG NHẤT (phần tiếng Anh) =================
+     Mọi dạng bài báo đúng / sai bằng .quiz-feedback.ok / .no → ở phần tiếng Anh, dòng báo này thành DẢI KẾT QUẢ
+     trượt lên từ đáy màn hình (xanh = đúng, đỏ = sai) có bạn cáo, giống nhau ở cả 13 dạng bài. */
+  html.lang-en-ui .quiz-feedback:is(.ok, .no) {
+    position: fixed; z-index: 60; bottom: 0;
+    left: max(0px, calc(50% - 320px)); right: max(0px, calc(50% - 320px));
+    display: flex; align-items: center; gap: 14px; min-height: 0; margin: 0;
+    padding: 14px 20px calc(16px + env(safe-area-inset-bottom)) 16px;
+    border-radius: 24px 24px 0 0; border-top: 3px solid;
+    font-family: 'Baloo 2'; font-weight: 800; font-size: var(--fs-lg); line-height: 1.3; text-align: left;
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.12);
+    animation: fb-sheet-in .24s cubic-bezier(.2, .9, .3, 1.2);
+  }
+  html.lang-en-ui .quiz-feedback.ok { background: color-mix(in srgb, var(--teal) 22%, var(--surface)); border-color: var(--teal); color: var(--primary-edge); }
+  html.lang-en-ui .quiz-feedback.no { background: color-mix(in srgb, var(--danger) 18%, var(--surface)); border-color: var(--danger); color: var(--danger-ink); }
+  html.lang-en-ui .quiz-feedback:is(.ok, .no)::before {
+    content: ''; flex: none; width: 56px; height: 56px; border-radius: 50%;
+    background: var(--surface) url('assets/mascot-fox.png') center 30% / 88% no-repeat;
+    box-shadow: 0 0 0 3px currentColor;
+  }
+  html.lang-en-ui .quiz-feedback.ok::before { animation: fb-fox-hop .5s ease-out; }
+  html.lang-en-ui .quiz-feedback.no::before { animation: fb-fox-shake .45s ease-in-out; }
+  @media (prefers-color-scheme: dark) {
+    html.lang-en-ui:not([data-theme="light"]) .quiz-feedback.ok { color: var(--teal-ink); }
+  }
+  html.lang-en-ui[data-theme="dark"] .quiz-feedback.ok { color: var(--teal-ink); }
+  /* Chừa chỗ dưới cùng khi dải kết quả đang hiện, để nút / ô chữ cuối trang không bị che. */
+  html.lang-en-ui body:has(.screen.active .quiz-feedback.ok, .screen.active .quiz-feedback.no) .app { padding-bottom: 130px; }
+  @keyframes fb-sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes fb-fox-hop { 0%, 100% { transform: none; } 40% { transform: translateY(-8px) rotate(-6deg); } }
+  @keyframes fb-fox-shake { 0%, 100% { transform: none; } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+  /* "🔥 3 câu đúng liền!" nổi ngay trên dải kết quả. */
+  html.lang-en-ui .combo-toast { z-index: 61; }
+
+  /* ---------- Màn "Xong": bạn cáo ăn mừng + số liệu của lượt học ---------- */
+  html.lang-en-ui .done-wrap { gap: 12px; padding-bottom: 12px; }
+  html.lang-en-ui .done-wrap .big-star {
+    width: 132px; height: 132px; font-size: 0; flex: none;
+    background: url('assets/mascot-fox.png') center / contain no-repeat;
+    animation: done-fox 1s cubic-bezier(.2, .9, .3, 1.3) both;
+  }
+  html.lang-en-ui .done-wrap .big-star > * { display: none; }
+  html.lang-en-ui .done-wrap h2 { font-size: var(--fs-2xl); }
+  html.lang-en-ui .done-wrap p { font-size: var(--fs-md); max-width: 320px; }
+  html.lang-en-ui #earnedStars { display: none; } /* thay bằng ô "⭐ +N sao" trong .done-stats */
+  .done-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 8px; width: 100%; max-width: 420px; margin: 4px 0; }
+  .done-stats[hidden] { display: none; }
+  .done-stat {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px 12px;
+    border-radius: var(--r-md, 16px); border: 2px solid; background: var(--surface);
+    animation: done-stat-in .4s ease-out both;
+  }
+  .done-stat:nth-child(2) { animation-delay: .12s; } .done-stat:nth-child(3) { animation-delay: .24s; } .done-stat:nth-child(4) { animation-delay: .36s; }
+  .done-stat-icon { font-size: 26px; line-height: 1.1; }
+  .done-stat-icon img.emoji-icon { width: 30px; height: 30px; }
+  .done-stat strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 20px; line-height: 1.1; color: var(--ink); white-space: nowrap; }
+  .done-stat small { font-weight: 700; font-size: 12px; line-height: 1.2; color: var(--ink-soft); }
+  .done-stat--gold { border-color: var(--gold); box-shadow: 0 4px 0 color-mix(in srgb, var(--gold) 70%, #000 10%); }
+  .done-stat--teal { border-color: var(--teal); box-shadow: 0 4px 0 var(--teal); }
+  .done-stat--blue { border-color: var(--blue); box-shadow: 0 4px 0 var(--blue); }
+  .done-stat--accent { border-color: var(--accent); box-shadow: 0 4px 0 var(--accent); }
+  .done-stat.is-bumped { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+  .done-stat.is-bumped .done-stat-icon { animation: done-flame 1.1s ease-in-out .5s 2; }
+  .done-stat.is-bumped small { color: var(--accent-ink); }
+  @keyframes done-fox { from { transform: scale(.4) translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes done-stat-in { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes done-flame { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.45) rotate(-8deg); } 70% { transform: scale(.95); } }
+  /* Mỗi màn 1 nút chính: có "▶ Học tiếp" thì "Về trang chủ" lùi xuống thành nút phụ. */
+  html.lang-en-ui #doneNextBtn:not([hidden]) ~ #backHomeBtn {
+    background: var(--surface); color: var(--ink); border: 2px solid var(--line-strong); box-shadow: 0 var(--edge) 0 var(--line-strong);
+    font-weight: 700; font-size: var(--fs-md);
+  }
+  html.lang-en-ui :is(.done-wrap .cta-btn, .done-wrap .ghost-btn--solid) { width: 100%; max-width: 360px; }
+  html.lang-en-ui .chest-btn {
+    border-radius: var(--r-md); border: 2px solid color-mix(in srgb, var(--gold) 70%, #000 12%);
+    box-shadow: 0 var(--edge) 0 color-mix(in srgb, var(--gold) 70%, #000 12%); margin-bottom: var(--edge);
+  }
+  html.lang-en-ui .chest-btn:active { transform: translateY(var(--edge)); box-shadow: 0 0 0 transparent; }
+  @media (prefers-reduced-motion: reduce) {
+    html.lang-en-ui .quiz-feedback:is(.ok, .no), html.lang-en-ui .quiz-feedback:is(.ok, .no)::before,
+    html.lang-en-ui .done-wrap .big-star, .done-stat, .done-stat.is-bumped .done-stat-icon { animation: none; }
+  }
+
+  /* ================= ĐỢT 3 — CON ĐƯỜNG HỌC (Từ vựng 3 lớp, phần tiếng Anh; app.js renderTopicPath) =================
+     Nút tròn to theo màu chủ đề đi zíc zắc (--x = độ lệch ngang theo bậc), chủ đề tiếp theo to hơn + vòng xanh +
+     nhãn "Học nào!" nhấp nhô, chủ đề đã học có dấu ✓, sau mỗi 3 chủ đề có 1 rương quà. */
+  html.lang-en-ui .topic-path { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0 12px; }
+  .path-row {
+    --step: 46px; position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    transform: translateX(calc(var(--x, 0) * var(--step)));
+  }
+  @media (max-width: 360px) { .path-row { --step: 38px; } }
+  .path-node {
+    position: relative; width: 84px; height: 84px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 -7px 0 rgba(0, 0, 0, 0.18), 0 4px 10px rgba(0, 0, 0, 0.08);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .path-node:active { transform: translateY(4px); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18); }
+  .path-emoji { font-size: 40px; line-height: 1; margin-top: -4px; }
+  .path-emoji img.emoji-icon { width: 46px; height: 46px; }
+  .path-check {
+    position: absolute; right: -4px; bottom: -2px; width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--teal); color: #fff; font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; line-height: 1;
+    border: 3px solid var(--bg);
+  }
+  .path-node.is-locked { background: var(--line); color: var(--ink-soft); }
+  .path-node.is-locked .path-emoji { opacity: 0.6; }
+  .path-node.is-current {
+    width: 100px; height: 100px;
+    box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.18), 0 0 0 6px var(--bg), 0 0 0 11px var(--primary, var(--teal));
+  }
+  .path-node.is-current .path-emoji { font-size: 48px; }
+  .path-node.is-current .path-emoji img.emoji-icon { width: 54px; height: 54px; }
+  .is-current-row { margin: 6px 0 10px; gap: 16px; }
+  .path-label {
+    max-width: 130px; padding: 1px 10px; border-radius: 999px; text-align: center;
+    font-family: 'Baloo 2'; font-weight: 700; font-size: 14.5px; line-height: 1.25; color: var(--ink);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+  }
+  .path-label:empty { display: none; }
+  .path-start {
+    position: relative; margin-bottom: 8px; padding: 5px 14px; border-radius: 12px;
+    background: var(--surface); border: 2px solid var(--primary, var(--teal)); color: var(--primary-edge, var(--teal-ink));
+    font-family: 'Baloo 2'; font-weight: 800; font-size: 16px; line-height: 1.2; white-space: nowrap;
+    box-shadow: 0 3px 0 var(--primary, var(--teal));
+    animation: path-bob 1.4s ease-in-out infinite;
+  }
+  .path-start::after {
+    content: ''; position: absolute; left: 50%; bottom: -9px; width: 12px; height: 12px; margin-left: -6px;
+    background: var(--surface); border-right: 2px solid var(--primary, var(--teal)); border-bottom: 2px solid var(--primary, var(--teal));
+    transform: rotate(45deg);
+  }
+  .path-chest {
+    width: 66px; height: 66px; border-radius: 20px; padding: 0; cursor: pointer; font-size: 34px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--gold) 45%, var(--surface));
+    border: 2px solid color-mix(in srgb, var(--gold) 75%, #000 12%);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--gold) 75%, #000 12%);
+    filter: grayscale(0.55); opacity: 0.8;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .path-chest img.emoji-icon { width: 38px; height: 38px; }
+  .path-chest:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
+  .path-chest.is-ready { filter: none; opacity: 1; background: var(--gold); animation: path-chest 1.6s ease-in-out infinite; }
+  .path-chest.is-open { filter: none; opacity: 1; background: var(--surface); border-color: var(--line-strong, var(--line)); box-shadow: 0 4px 0 var(--line-strong, var(--line)); }
+  @keyframes path-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes path-chest { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(-9deg); } 84% { transform: rotate(8deg); } 92% { transform: rotate(-4deg); } }
+  @media (prefers-reduced-motion: reduce) { .path-start, .path-chest.is-ready { animation: none; } }
+
+  /* Đợt 3 (bổ sung): chủ đề chưa tới lượt hơi mờ; công tắc "Học theo thứ tự" trong Góc ba mẹ. */
+  .path-node.is-ahead { opacity: 0.55; filter: saturate(0.6); }
+  .path-node.is-ahead:active { opacity: 0.8; }
+  .parent-seq { margin: 0 0 14px; }
+  .parent-seq .settings-label small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--ink-soft); line-height: 1.35; }
+
+  /* ================= ĐỢT 4 — MỤC TIÊU NGÀY, LỊCH CHUỖI NGÀY, NHẮC HỌC (phần tiếng Anh) ================= */
+  /* Vòng mục tiêu quanh ảnh của bé trên thẻ "Học nào" (--p = tỉ lệ đã đạt, app.js renderKidContinue). */
+  html.lang-en-ui .kid-continue-avatar {
+    border: none; background-clip: border-box;
+    background: radial-gradient(closest-side, #fff 80%, transparent 82%),
+      conic-gradient(var(--gold) calc(var(--p, 0) * 360deg), rgba(255, 255, 255, 0.35) 0);
+  }
+  html.lang-en-ui .kid-continue-avatar.is-goal-done {
+    background: radial-gradient(closest-side, #fff 80%, transparent 82%), var(--gold);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 0 14px var(--gold);
+  }
+  .kid-continue-goal { margin-top: 3px; font-family: 'Baloo 2'; font-weight: 700; font-size: 14px; opacity: 0.95; }
+  html.lang-zh-ui .kid-continue-goal { display: none; }
+
+  /* Lựa chọn mục tiêu (tạo hồ sơ + Góc ba mẹ) — kiểu "ô chọn" của bộ quy tắc thiết kế. */
+  .goal-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .goal-chip {
+    display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; cursor: pointer;
+    border: 2px solid var(--line-strong, var(--line)); border-radius: var(--r-md, 16px); background: var(--surface); color: var(--ink);
+    box-shadow: 0 3px 0 var(--line-strong, var(--line)); margin-bottom: 3px;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .goal-chip strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; line-height: 1.2; }
+  .goal-chip small { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+  .goal-chip.is-active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); box-shadow: 0 3px 0 var(--accent); }
+  .goal-chip.is-active strong { color: var(--accent-ink); }
+  .goal-chip:active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
+  .profile-goal { display: flex; flex-direction: column; gap: 8px; }
+  .profile-goal[hidden] { display: none; }
+
+  /* Góc ba mẹ: khối mục tiêu + nhắc học. */
+  .parent-goal { margin: 0 0 14px; }
+  .parent-block { display: flex; align-items: center; gap: 12px; padding: 12px 14px 8px; }
+  .parent-block .settings-label { font-family: 'Quicksand'; font-weight: 700; font-size: var(--fs-md, 17px); }
+  .parent-block .settings-label small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--ink-soft); line-height: 1.35; }
+  .parent-goal .goal-chips { padding: 0 14px 12px; }
+
+  /* Dải chuỗi ngày ở trang chủ bấm được → mở lịch học. */
+  html.lang-en-ui .streak-banner { cursor: pointer; }
+
+  /* Lịch học 5 tuần (Thành tích › Tiến độ). */
+  .streak-cal {
+    margin: 4px 0 16px; padding: 14px; background: var(--surface);
+    border: 2px solid var(--line-strong, var(--line)); border-radius: var(--r-lg, 22px); box-shadow: 0 4px 0 var(--line-strong, var(--line));
+  }
+  .streak-cal[hidden] { display: none; }
+  .cal-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; margin-bottom: 10px; }
+  .cal-head strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; }
+  .cal-head span { font-size: 13.5px; font-weight: 700; color: var(--ink-soft); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal-wd { text-align: center; font-size: 12px; font-weight: 800; color: var(--ink-soft); padding-bottom: 2px; }
+  .cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 10px;
+    background: var(--surface-2); color: var(--ink-soft); font-family: 'Baloo 2'; font-weight: 700; font-size: 15px;
+  }
+  .cal-day.is-study { background: linear-gradient(160deg, #FFB25B, var(--accent)); color: #fff; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15); }
+  .cal-day.is-freeze { background: color-mix(in srgb, var(--blue) 35%, var(--surface)); font-size: 14px; }
+  .cal-day.is-freeze img.emoji-icon { width: 18px; height: 18px; }
+  .cal-day.is-today { outline: 3px solid var(--primary, var(--teal)); outline-offset: 1px; }
+  .cal-day.is-future { opacity: 0.35; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+  .cal-legend span { display: flex; align-items: center; gap: 6px; }
+  .cal-legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+  .cal-legend i.is-study { background: var(--accent); }
+  .cal-legend i.is-freeze { background: color-mix(in srgb, var(--blue) 45%, var(--surface)); }

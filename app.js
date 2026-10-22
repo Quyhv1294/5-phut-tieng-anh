@@ -299,6 +299,14 @@
   // purchasedTopics/topicsSeen là dữ liệu cũ từ thời Trò chơi/Câu còn khoá mua bằng sao (2 tab này
   // giờ luôn mở, không còn đọc 2 field này ở đâu nữa) — giữ lại migrate cho khỏi vỡ dữ liệu cũ của
   // bé đã lưu trước đây, không có tác dụng khoá gì nữa.
+  // Bản cũ chưa ghi từng ngày học: dựng lại các ngày của chuỗi hiện tại (đếm lùi từ ngày học gần nhất).
+  function backfillStudyDays(streak) {
+    const out = {};
+    if (!streak || !streak.lastDate || !streak.count) return out;
+    const d = new Date(streak.lastDate + 'T12:00:00Z');
+    for (let i = 0; i < Math.min(streak.count, 120); i++) { out[d.toISOString().slice(0, 10)] = 1; d.setUTCDate(d.getUTCDate() - 1); }
+    return out;
+  }
   function normalizeProgress(p) {
     p = p || {};
     // "p" có thể ở 1 trong 3 dạng: (a) đã ở schema mới (có sẵn lifetimeStars, VD mọi lần tải lại
@@ -371,6 +379,10 @@
       },
       topicsSeen: topicsSeen,
       zh: p.zh || {}, // khoá học Tiếng Trung — zh-course.js tự chuẩn hoá các trường bên trong
+      dailyGoal: [1, 2, 3].indexOf(p.dailyGoal) >= 0 ? p.dailyGoal : 1, // mục tiêu: số bài / ngày (1 bài ≈ 5 phút)
+      studyDays: p.studyDays || backfillStudyDays(p.streak), // ngày đã học: { 'YYYY-MM-DD': 1 | 'f' (dùng khiên) }
+      sequentialPath: !!p.sequentialPath, // Góc ba mẹ › "Học theo thứ tự": chủ đề sau mở khi học xong chủ đề trước
+      pathChests: p.pathChests || {}, // rương quà trên con đường Từ vựng đã mở: { 'mam-1': true, … } (xem renderTopicPath)
       // Di trú equippedOutfits qua 3 đời schema, cũ nhất trước:
       //  (a) chưa từng có slot: progress.equippedOutfit là 1 string (hoặc null) — coi là 1 món đầu.
       //  (b) có slot đầu/thân nhưng đầu vẫn chỉ mặc được 1 món: equippedOutfits.head là 1 string.
@@ -400,6 +412,7 @@
       choi: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, memoryTopics: {}, writeGroups: {}, lettersWritten: 0, simonPlayed: {}, songsPlayed: {} },
       la: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, qaGroups: {}, dialogueGroups: {}, writeSentGroups: {}, paragraphGroups: {}, memoryTopics: {}, simonPlayed: {}, songsPlayed: {} },
       zh: {},
+      pathChests: {}, sequentialPath: false, dailyGoal: 1, studyDays: {},
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -524,7 +537,12 @@
   // getBoundingClientRect phải chia cho hệ số này trước khi gán vào left/top của phần tử trong trang.
   const pageZoom = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
   let comboCount = 0;
+  // Số liệu 1 lượt học (từ lúc rời trang chủ vào bài tới màn "Xong"): câu đúng / sai, thời gian, sao lúc bắt đầu —
+  // hiện ở màn kết thúc bài (renderDoneStats). Đếm qua sfx('correct'/'wrong') nên mọi dạng bài đều tính.
+  const lessonStats = { start: 0, ok: 0, bad: 0, stars0: 0 };
+  let streakBumped = false; // chuỗi ngày vừa tăng ở bài này (màn "Xong" hiện hiệu ứng 🔥 +1)
   function noteCombo(ok) {
+    if (ok) lessonStats.ok++; else lessonStats.bad++;
     if (!ok) { comboCount = 0; foxCheer('wrong'); return; }
     comboCount++;
     if (comboCount === 3 || comboCount === 5 || (comboCount >= 10 && comboCount % 5 === 0)) showComboToast(comboCount);
@@ -539,6 +557,7 @@
   let foxCheerAt = 0;
   function foxCheer(kind) {
     if (IS_ZH || screens.quizparent.classList.contains('active') || screens.quiz.classList.contains('active')) return;
+    if (document.querySelector('.screen.active .quiz-feedback.ok, .screen.active .quiz-feedback.no')) return;
     const now = Date.now();
     if (now - foxCheerAt < 4000 || (kind === 'correct' && Math.random() > 0.35)) return;
     foxCheerAt = now;
@@ -735,7 +754,15 @@
   // Màn nào ứng với nút nào trên thanh tab (module tiếng Trung đăng ký thêm màn của mình qua APP.registerScreen).
   const TAB_FOR_SCREEN = { home: 'tabHome', games: 'tabGames', sentences: 'tabSentences', achievements: 'tabAchievements' };
 
+  let currentScreenName = 'home';
   function showScreen(name) {
+    // Rời trang chủ / màn "Xong" để vào 1 bài → bắt đầu đếm số liệu của lượt học mới.
+    const from = currentScreenName;
+    currentScreenName = name;
+    if ((TOP_LEVEL_SCREENS.includes(from) || from === 'done') && !TOP_LEVEL_SCREENS.includes(name) && name !== 'done') {
+      Object.assign(lessonStats, { start: Date.now(), ok: 0, bad: 0, stars0: progress.lifetimeStars || 0 });
+    }
+    if (name === 'done' && !IS_ZH) setTimeout(renderDoneStats, 0); // sau khi bài ghi xong sao / chuỗi ngày
     // Rời màn "Ai nhanh hơn" giữa chừng thì phải dừng đồng hồ đếm giờ, không thì nó vẫn
     // chạy ngầm và tự kết thúc lượt chơi (cộng sao) trong lúc bé đang ở màn khác.
     if (name !== 'speed' && speedTimerId) {
@@ -764,6 +791,24 @@
     // Đang học / chơi (không phải 4 tab chính): thanh tab dưới đáy ẩn → bỏ khoảng đệm dưới trang (style.css).
     document.body.classList.toggle('in-activity', !isTopLevel);
     if (isTopLevel) setActiveTab(name);
+  }
+
+  // Màn "Xong" (phần tiếng Anh): sao nhận được, % trả lời đúng, thời gian học, chuỗi ngày (nảy lên khi vừa +1).
+  function renderDoneStats() {
+    const box = document.getElementById('doneStats');
+    if (!box) return;
+    const n = lessonStats.ok + lessonStats.bad;
+    const secs = lessonStats.start ? Math.round((Date.now() - lessonStats.start) / 1000) : 0;
+    const stars = Math.max(0, (progress.lifetimeStars || 0) - lessonStats.stars0);
+    const items = [];
+    if (stars) items.push(['⭐', '+' + stars, 'sao', 'gold']);
+    if (n) items.push(['🎯', Math.round(lessonStats.ok / n * 100) + '%', 'đúng', 'teal']);
+    if (secs >= 5) items.push(['⏱️', secs < 60 ? secs + ' giây' : Math.round(secs / 60) + ' phút', 'thời gian', 'blue']);
+    if (progress.streak.count) items.push(['🔥', progress.streak.count + ' ngày', streakBumped ? 'chuỗi +1!' : 'liên tiếp', 'accent' + (streakBumped ? ' is-bumped' : '')]);
+    streakBumped = false;
+    box.innerHTML = items.map(x => '<div class="done-stat done-stat--' + x[3] + '"><span class="done-stat-icon">' + x[0] + '</span>'
+      + '<strong>' + x[1] + '</strong><small>' + x[2] + '</small></div>').join('');
+    box.hidden = !items.length;
   }
 
   // ---------- BỐ CỤC PHẦN TIẾNG ANH ----------
@@ -1234,6 +1279,7 @@
     } else if (progress.streak.lastDate === yesterdayStr) {
       progress.streak.count += 1;
       progress.streak.lastDate = todayStr;
+      streakBumped = true;
     } else if (progress.streak.lastDate === twoDaysAgoStr && (progress.streakFreezes || 0) > 0) {
       // Lỡ đúng 1 ngày nhưng còn khiên — dùng khiên để nối chuỗi thay vì reset về 1. Khiên chỉ
       // cứu được đúng 1 ngày lỡ, lỡ từ 2 ngày trở lên thì vẫn reset như cũ.
@@ -1241,15 +1287,23 @@
       progress.streak.count += 1;
       progress.streak.lastDate = todayStr;
       usedFreeze = true;
+      streakBumped = true;
     } else {
       progress.streak.count = 1;
       progress.streak.lastDate = todayStr;
+      streakBumped = true;
     }
     progress.streak.best = Math.max(progress.streak.best || 0, progress.streak.count);
+    // Lịch chuỗi ngày: đánh dấu hôm nay (và hôm qua nếu vừa dùng khiên), giữ 120 ngày gần nhất.
+    const days = progress.studyDays || (progress.studyDays = {});
+    days[todayStr] = 1;
+    if (usedFreeze && !days[yesterdayStr]) days[yesterdayStr] = 'f';
+    Object.keys(days).sort().slice(0, -120).forEach(k => delete days[k]);
     saveProgress(progress);
     noteGuestLessonDone();
     if (usedFreeze) showToast('🛡️ ' + (IS_ZH ? 'Bạn' : 'Bé') + ' lỡ mất 1 ngày nhưng đã dùng khiên để giữ chuỗi ' + progress.streak.count + ' ngày!', '🛡️');
     bumpDailyMission('sessions');
+    if (!IS_ZH && lessonsToday() === progress.dailyGoal) setTimeout(() => showToast('Bé đã đạt mục tiêu hôm nay (' + progress.dailyGoal + ' bài)!', '🎯'), 2200);
   }
 
   // ---------- NHIỆM VỤ HẰNG NGÀY ----------
@@ -1381,9 +1435,40 @@
     if (progress.streakFreezes > 0) document.getElementById('streakFreezeCount').textContent = progress.streakFreezes;
   }
 
+  // Lịch học 5 tuần gần nhất (T2 → CN): 🔥 ngày có học, 🛡️ ngày được khiên giữ chuỗi, viền xanh = hôm nay.
+  function renderStreakCalendar() {
+    const box = document.getElementById('streakCal');
+    if (!box) return;
+    box.hidden = IS_ZH;
+    if (IS_ZH) return;
+    const days = progress.studyDays || {};
+    const today = new Date(), todayKey = toDateStr(today);
+    const start = new Date(today);
+    start.setDate(start.getDate() - ((today.getDay() + 6) % 7) - 28);
+    let cells = '';
+    let studied = 0;
+    for (let i = 0; i < 35; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = toDateStr(d), v = days[key];
+      if (v === 1) studied++;
+      const cls = 'cal-day' + (v === 1 ? ' is-study' : v === 'f' ? ' is-freeze' : '') + (key === todayKey ? ' is-today' : '') + (key > todayKey ? ' is-future' : '');
+      cells += '<span class="' + cls + '" title="' + d.getDate() + '/' + (d.getMonth() + 1) + '">' + (v === 'f' ? '🛡️' : d.getDate()) + '</span>';
+    }
+    box.innerHTML = '<div class="cal-head"><strong>📅 Lịch học</strong><span>🔥 ' + progress.streak.count + ' ngày liên tiếp · kỷ lục ' + (progress.streak.best || 0) + '</span></div>'
+      + '<div class="cal-grid">' + ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(w => '<span class="cal-wd">' + w + '</span>').join('') + cells + '</div>'
+      + '<div class="cal-legend"><span><i class="is-study"></i>Có học (' + studied + ' ngày)</span><span><i class="is-freeze"></i>Khiên giữ chuỗi</span></div>';
+  }
+  document.getElementById('streakBanner').addEventListener('click', () => {
+    document.getElementById('tabAchievements').click();
+    document.getElementById('achModeProgressBtn').click();
+    setTimeout(() => { const c = document.getElementById('streakCal'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+  });
+
   // ---------- PROGRESS SCREEN ----------
   function renderProgressScreen() {
     renderClassSwitches();
+    renderStreakCalendar();
     const cls = getActiveClassId();
     const doneTopicsList = TOPICS.filter(t => progress.doneTopics[t.id]);
     const doneCount = doneTopicsList.length;
@@ -2755,8 +2840,12 @@
     document.getElementById('profilePhoneInput').value = profile ? profile.parentPhone : '';
     selectedAvatar = profile ? profile.avatar : AVATAR_PRESETS[0];
     renderAvatarGrid();
+    profileGoal = progress.dailyGoal || 1;
+    document.getElementById('profileGoalWrap').hidden = IS_ZH;
+    renderGoalChips('profileGoalChips', profileGoal, v => { profileGoal = v; });
     showProfileFormError('');
   }
+  let profileGoal = 1;
 
   function logProfileToSheet(p) {
     if (!backendConfigured() || !verifiedEmail) return; // học thử: hồ sơ chỉ lưu trên máy, gửi lên khi lưu bằng email
@@ -2782,6 +2871,7 @@
     if (verifiedEmail && !isValidVnPhone(phone)) { showProfileFormError('Số điện thoại chưa đúng định dạng (VD: 0912345678).'); return; }
 
     const wasEditing = !!profile;
+    if (!IS_ZH) { progress.dailyGoal = profileGoal; saveProgress(progress); }
     profile = { name: name, age: age, avatar: selectedAvatar, parentPhone: verifiedEmail ? phone : ((profile && profile.parentPhone) || '') };
     saveProfileLocal(profile);
     logProfileToSheet(profile);
@@ -3459,6 +3549,8 @@
   // như chủ đề lớp Mầm nhưng không khoá tuần tự và không có mảnh ghép tranh (xem startTopic / finishTopic).
   function renderChoiVocab() {
     const grid = document.getElementById('choiVocabGrid');
+    const next = CHOI_TOPICS.find(t => !progress.doneTopics[t.id]);
+    if (!IS_ZH) { renderTopicPath(grid, CHOI_TOPICS, 'choi', next && next.id); return; }
     grid.innerHTML = '';
     CHOI_TOPICS.forEach(topic => {
       const done = !!progress.doneTopics[topic.id];
@@ -3555,6 +3647,8 @@
   function renderLaVocab() {
     const grid = document.getElementById('laVocabGrid');
     if (!grid) return;
+    const next = LA_TOPICS.find(t => !progress.doneTopics[t.id]);
+    if (!IS_ZH) { renderTopicPath(grid, LA_TOPICS, 'la', next && next.id); return; }
     grid.innerHTML = '';
     LA_TOPICS.forEach(topic => {
       const done = !!progress.doneTopics[topic.id];
@@ -3807,8 +3901,45 @@
     return topic ? { topic, retry: cls === 'mam' && !!progress.doneTopics[topic.id], fresh: !list.some(t => progress.doneTopics[t.id]) } : null;
   }
   // Avatar + tên bé (hồ sơ) ở đầu nút, chưa có hồ sơ thì gọi chung là "Bé".
+  // ---------- MỤC TIÊU NGÀY (phần tiếng Anh) ----------
+  // 1 / 2 / 3 bài mỗi ngày (≈ 5 / 10 / 15 phút). Chọn lúc tạo hồ sơ hoặc trong Góc ba mẹ; vòng vàng quanh ảnh
+  // của bé trên thẻ "Học nào" đầy dần theo số bài đã học hôm nay (đếm qua nhiệm vụ ngày "sessions").
+  const GOAL_OPTIONS = [[1, '5 phút', '1 bài/ngày'], [2, '10 phút', '2 bài/ngày'], [3, '15 phút', '3 bài/ngày']];
+  function lessonsToday() {
+    const dm = progress.dailyMissions;
+    return dm && dm.date === toDateStr(new Date()) && dm.stats ? (dm.stats.sessions || 0) : 0;
+  }
+  function renderGoalChips(boxId, value, onPick) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    box.innerHTML = '';
+    GOAL_OPTIONS.forEach(o => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'goal-chip' + (o[0] === value ? ' is-active' : '');
+      b.setAttribute('aria-pressed', o[0] === value ? 'true' : 'false');
+      b.innerHTML = '<strong>' + o[1] + '</strong><small>' + o[2] + '</small>';
+      b.addEventListener('click', () => { onPick(o[0]); renderGoalChips(boxId, o[0], onPick); });
+      box.appendChild(b);
+    });
+  }
+  function renderParentGoal() {
+    renderGoalChips('parentGoalChips', progress.dailyGoal, v => {
+      progress.dailyGoal = v;
+      saveProgress(progress);
+      renderKidContinue();
+      showToast('Mục tiêu mới: ' + v + ' bài mỗi ngày', '🎯');
+    });
+  }
+
   function renderKidContinue() {
     const n = nextKidLesson();
+    // Vòng mục tiêu ngày quanh ảnh của bé + dòng "Hôm nay: 1/2 bài".
+    const goal = progress.dailyGoal || 1, doneToday = Math.min(lessonsToday(), goal);
+    const av = document.getElementById('kidContinueAvatar');
+    av.style.setProperty('--p', doneToday / goal);
+    av.classList.toggle('is-goal-done', doneToday >= goal);
+    document.getElementById('kidContinueGoal').textContent = doneToday >= goal ? '🎯 Đạt mục tiêu hôm nay!' : '🎯 Hôm nay: ' + doneToday + '/' + goal + ' bài';
     const name = profile && profile.name ? profile.name.trim() : '';
     document.getElementById('kidContinueAvatar').textContent = profile && profile.avatar ? profile.avatar : '🧒';
     // Chỉ ghi tên chủ đề — emoji ghép nhiều người (VD 👨‍👩‍👧‍👦 của Gia đình) bị đổi thành nhiều ảnh, đẩy chữ xuống dòng.
@@ -3833,6 +3964,95 @@
   document.getElementById('parentCorner').addEventListener('toggle', e => {
     try { localStorage.setItem(PARENT_CORNER_KEY, e.target.open ? '1' : '0'); } catch (err) {}
   });
+
+  // ---------- CON ĐƯỜNG HỌC (Từ vựng của cả 3 lớp, phần tiếng Anh) ----------
+  // Thay lưới ô bằng 1 con đường dọc kiểu Duolingo: mỗi chủ đề là 1 nút tròn to đi zíc zắc, chủ đề tiếp theo
+  // có nhãn "Học nào!" nhấp nháy, sau mỗi PATH_CHEST_EVERY chủ đề có 1 rương quà — học xong cả nhóm phía trên
+  // thì mở được, thưởng PATH_CHEST_STARS sao (1 lần, lưu ở progress.pathChests).
+  const PATH_CHEST_EVERY = 3, PATH_CHEST_STARS = 3;
+  const PATH_X = [0, 1, 2, 1, 0, -1, -2, -1]; // độ lệch ngang (bậc) theo thứ tự nút → đường uốn lượn
+  // Chủ đề phía sau chủ đề đang học: hơi mờ (vẫn bấm học được). Ba mẹ bật "Học theo thứ tự" (Góc ba mẹ) thì
+  // khoá hẳn: chủ đề chỉ mở khi mọi chủ đề phía trước đã đạt (opts.passed — lớp Mầm cần đúng ≥ 70%).
+  function renderTopicPath(grid, topics, classKey, currentId, opts) {
+    opts = opts || {};
+    const passed = opts.passed || (t => !!progress.doneTopics[t.id]);
+    const curIdx = topics.findIndex(t => t.id === currentId);
+    grid.innerHTML = '';
+    grid.classList.add('topic-path');
+    let k = 0;
+    const row = (node, label) => {
+      const r = document.createElement('div');
+      r.className = 'path-row';
+      r.style.setProperty('--x', PATH_X[k++ % PATH_X.length]);
+      r.appendChild(node);
+      if (label) { const l = document.createElement('span'); l.className = 'path-label'; l.textContent = label; r.appendChild(l); }
+      grid.appendChild(r);
+      return r;
+    };
+    topics.forEach((topic, i) => {
+      const done = !!progress.doneTopics[topic.id];
+      const soon = !!opts.isLocked && opts.isLocked(topic); // chủ đề "sắp ra mắt"
+      const blocker = !soon && progress.sequentialPath ? topics.slice(0, i).find(t => !(opts.isLocked && opts.isLocked(t)) && !passed(t)) : null;
+      const locked = soon || !!blocker;
+      const reason = blocker ? 'Học xong "' + blocker.label + '" để mở' : soon && opts.lockText ? opts.lockText(topic) : '';
+      const current = topic.id === currentId;
+      const ahead = !locked && !done && curIdx >= 0 && i > curIdx;
+      const btn = document.createElement('button');
+      btn.className = 'path-node ' + topic.cls + (done ? ' is-done' : '') + (locked ? ' is-locked' : '') + (current ? ' is-current' : '') + (ahead ? ' is-ahead' : '');
+      btn.setAttribute('aria-label', (i + 1) + '. ' + topic.label + (locked && reason ? ' — ' + reason : done ? ' — đã học' : ''));
+      btn.innerHTML = '<span class="path-emoji">' + (locked ? '🔒' : topic.emoji) + '</span>'
+        + (done ? '<span class="path-check" aria-hidden="true">✓</span>' : '');
+      btn.addEventListener('click', () => {
+        if (!blocker) { startTopic(topic.id); return; } // "sắp ra mắt": startTopic tự báo
+        showToast(reason + '!', '🔒');
+        speakVi('Học xong chủ đề ' + blocker.label + ' trước nhé!');
+      });
+      const r = row(btn, topic.label);
+      if (current) {
+        const tip = document.createElement('span');
+        tip.className = 'path-start';
+        tip.textContent = 'Học nào!';
+        r.insertBefore(tip, btn);
+        r.classList.add('is-current-row');
+      }
+      // Rương sau mỗi nhóm chủ đề.
+      if ((i + 1) % PATH_CHEST_EVERY === 0) {
+        const group = topics.slice(i + 1 - PATH_CHEST_EVERY, i + 1);
+        const id = classKey + '-' + (i + 1) / PATH_CHEST_EVERY;
+        const opened = !!progress.pathChests[id];
+        const ready = !opened && group.every(t => progress.doneTopics[t.id]);
+        const chest = document.createElement('button');
+        chest.className = 'path-chest' + (opened ? ' is-open' : ready ? ' is-ready' : '');
+        chest.setAttribute('aria-label', opened ? 'Rương đã mở' : ready ? 'Mở rương quà' : 'Rương quà — học xong ' + PATH_CHEST_EVERY + ' chủ đề phía trên để mở');
+        chest.textContent = opened ? '✨' : '🎁';
+        chest.addEventListener('click', () => openPathChest(id, ready, opened));
+        row(chest, opened ? 'Đã mở' : ready ? 'Mở rương!' : '');
+      }
+    });
+  }
+  function renderSeqPathSwitch() {
+    const b = document.getElementById('seqPathBtn');
+    if (!b) return;
+    b.classList.toggle('is-muted', !progress.sequentialPath);
+    b.setAttribute('aria-checked', progress.sequentialPath ? 'true' : 'false');
+  }
+  document.getElementById('seqPathBtn').addEventListener('click', () => {
+    progress.sequentialPath = !progress.sequentialPath;
+    saveProgress(progress);
+    renderHome();
+    showToast(progress.sequentialPath ? 'Đã bật: chủ đề sau mở khi bé học xong chủ đề trước' : 'Đã tắt: bé chọn học chủ đề nào cũng được', '📏');
+  });
+  function openPathChest(id, ready, opened) {
+    if (opened) { showToast('Bé đã mở rương này rồi!', '✨'); return; }
+    if (!ready) { showToast('Học xong ' + PATH_CHEST_EVERY + ' chủ đề phía trên để mở rương nhé!', '🎁'); speakVi('Học xong ba chủ đề phía trên để mở rương nhé!'); return; }
+    progress.pathChests[id] = true;
+    addStars(PATH_CHEST_STARS);
+    saveProgress(progress);
+    renderTotalStars();
+    launchConfetti();
+    showToast('Rương quà: +' + PATH_CHEST_STARS + ' ⭐', '🎁');
+    renderHome();
+  }
 
   function renderHome() {
     applyClassScope();
@@ -3861,6 +4081,16 @@
     // qua" (doneTopics) 1 chủ đề mà chưa đạt yêu cầu, lúc đó chủ đề kế tiếp vẫn đang khoá và mascot
     // không nên nhảy sang đó.
     const nextUpTopic = TOPICS.find(t => t.unlocksAt !== Infinity && !progress.topicPassed[t.id]);
+    if (!IS_ZH) {
+      renderTopicPath(grid, TOPICS, 'mam', nextUpTopic && nextUpTopic.id, { isLocked: isTopicLocked, lockText: topicLockReasonText, passed: t => !!progress.topicPassed[t.id] });
+      renderSeqPathSwitch();
+      renderParentGoal();
+      renderTotalStars();
+      renderHomeBanners();
+      renderReviewButtons();
+      renderDailyMissions();
+      return;
+    }
     // Lưới ô chủ đề 3 cột (style.css .topic-tiles): 12 chủ đề gọn trong ~1 màn hình, ô to dễ bấm. Ô chỉ có
     // hình + tên; ô đang khoá thay hình bằng ❓ — lý do khoá hiện + đọc to khi bé chạm (showLockedTopicNotice).
     TOPICS.forEach((topic, i) => {
