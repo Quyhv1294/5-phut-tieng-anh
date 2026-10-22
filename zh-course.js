@@ -139,7 +139,7 @@
   function Z() {
     const p = A.getProgress();
     p.zh = p.zh || {};
-    ['done', 'best', 'units', 'skip', 'srs', 'log'].forEach(k => { if (!p.zh[k]) p.zh[k] = {}; });
+    ['done', 'best', 'units', 'skip', 'srs', 'log', 'chests', 'charLv'].forEach(k => { if (!p.zh[k]) p.zh[k] = {}; });
     if (!p.zh.goal) p.zh.goal = 1;
     if (!p.zh.today || p.zh.today.date !== todayStr()) p.zh.today = { date: todayStr(), n: 0 };
     return p.zh;
@@ -198,6 +198,8 @@
     + (fillId ? '<div class="progress-track"><div class="progress-fill" id="' + fillId + '"></div></div><span class="zh-step-count"></span>' : '') + '</div>';
   // Dòng phím tắt — chỉ hiện trên máy có chuột + bàn phím (xem style.css .zh-kbd-hint).
   const kbdHint = t => '<p class="zh-kbd-hint">⌨️ ' + t + '</p>';
+  // Thanh "Kiểm tra" ghim ở đáy màn hình: chọn đáp án trước, bấm Kiểm tra mới chấm (chọn nhầm còn đổi được).
+  const checkBar = (barId, btnId) => '<div class="zh-check-bar" id="' + barId + '"><button class="nav-btn primary zh-check-btn" id="' + btnId + '" disabled>Kiểm tra</button></div>';
   function sizeClass(text) {
     const len = [...String(text || '')].length;
     return len <= 2 ? 'zh-big--xl' : len <= 4 ? 'zh-big--l' : len <= 8 ? 'zh-big--m' : 'zh-big--s';
@@ -237,10 +239,11 @@
     '<div class="zh-btn-row"><button class="speak-btn" id="zhChoiceSpeak" hidden>🔊 Nghe lại</button>' +
     '<button class="speak-btn zh-slow-btn" id="zhChoiceSlow" hidden aria-label="Nghe chậm">🐢 Nghe chậm</button></div>' +
     '<div class="quiz-options zh-quiz-options" id="zhChoiceOptions"></div>' +
+    checkBar('zhChoiceCheckBar', 'zhChoiceCheck') +
     '<div class="zh-answer" id="zhChoiceAns" hidden><div class="quiz-feedback" id="zhChoiceFeedback"></div>' +
       '<div class="zh-answer-key" id="zhChoiceKey"></div><div class="zh-reveal" id="zhChoiceReveal"></div>' +
-      '<button class="nav-btn primary zh-next-btn" id="zhChoiceNext">Tiếp →</button></div>' +
-    kbdHint('1–4 chọn đáp án · Enter đi tiếp · Space nghe lại') + '</div>');
+      '<button class="nav-btn primary zh-next-btn" id="zhChoiceNext">Tiếp tục</button></div>' +
+    kbdHint('1–4 chọn đáp án · Enter kiểm tra / đi tiếp · Space nghe lại') + '</div>');
   makeScreen('match',
     topbar('zhMatchBack', 'zhMatchFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt">Nối chữ với nghĩa đúng</div>' +
@@ -250,9 +253,10 @@
     '<div class="quiz-wrap"><div class="quiz-prompt">Sắp xếp thành câu đúng:</div>' +
     '<div class="zh-order-vi" id="zhOrderVi"></div><div class="zh-order-answer" id="zhOrderAnswer"></div>' +
     '<div class="zh-order-tiles" id="zhOrderTiles"></div>' +
+    checkBar('zhOrderCheckBar', 'zhOrderCheck') +
     '<div class="zh-answer" id="zhOrderAns" hidden><div class="quiz-feedback" id="zhOrderFeedback"></div><div class="zh-reveal" id="zhOrderReveal"></div>' +
-      '<button class="nav-btn primary zh-next-btn" id="zhOrderNext">Tiếp →</button></div>' +
-    kbdHint('Phím số chọn ô · Backspace bỏ ô cuối · Enter đi tiếp') + '</div>');
+      '<button class="nav-btn primary zh-next-btn" id="zhOrderNext">Tiếp tục</button></div>' +
+    kbdHint('Phím số chọn ô · Backspace bỏ ô cuối · Enter kiểm tra / đi tiếp') + '</div>');
   makeScreen('write',
     topbar('zhWriteBack', 'zhWriteFill') +
     '<div class="flash-wrap"><div class="zh-write-info" id="zhWriteInfo"></div>' +
@@ -265,10 +269,12 @@
     '<div class="zh-big" id="zhTypeBig"></div><div class="zh-vi" id="zhTypeVi"></div>' +
     '<input class="zh-type-input" id="zhTypeInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="vd: nihao">' +
     '<div class="zh-candidates" id="zhTypeCands"></div><button class="ghost-btn zh-type-hint" id="zhTypeHint">💡 Gợi ý pinyin</button>' +
-    '<div class="zh-answer" id="zhTypeAns" hidden><div class="quiz-feedback" id="zhTypeFeedback"></div><div class="zh-reveal" id="zhTypeReveal"></div></div>' +
+    '<div class="zh-answer" id="zhTypeAns" hidden><div class="quiz-feedback" id="zhTypeFeedback"></div><div class="zh-reveal" id="zhTypeReveal"></div>' +
+      '<button class="nav-btn primary zh-next-btn" id="zhTypeNext" hidden>Tiếp tục</button></div>' +
     kbdHint('Gõ pinyin · phím số hoặc Enter chọn chữ') + '</div>');
   makeScreen('done',
     '<div class="done-wrap zh-done"><div class="big-star" id="zhDoneEmoji">🌟</div><h2 id="zhDoneTitle"></h2><p id="zhDoneText"></p>' +
+    '<div class="done-stats" id="zhDoneStats" hidden></div>' +
     '<div class="zh-done-goal" id="zhDoneGoal"></div>' +
     '<button class="cta-btn" id="zhDoneNext">Bài tiếp theo →</button>' +
     '<button class="ghost-btn ghost-btn--solid" id="zhDoneRetry">🔁 Làm lại</button>' +
@@ -418,6 +424,7 @@
       // và khó hiểu vì sao phần sau lại mở trong khi phần giữa còn khoá).
       const partSkipped = !!z.skip[part.id] && !partDone;
       const card = el('div', 'zh-part' + (isOpen ? ' is-open' : '') + (part === curPart && next ? ' is-current' : '') + (partDone ? ' is-done' : '') + (partSkipped ? ' is-skipped' : '') + (partLocked ? ' is-locked' : ''));
+      card.style.setProperty('--pc', PART_COLORS[pi % PART_COLORS.length]);
       const head = el('button', 'zh-part-head');
       head.setAttribute('aria-expanded', isOpen);
       head.appendChild(el('span', 'zh-part-num', partDone ? '✓' : partSkipped ? '»' : partLocked ? '🔒' : String(pi + 1)));
@@ -441,42 +448,76 @@
 
       if (isOpen) {
         const body = el('div', 'zh-part-body');
-        const grid = el('div', 'zh-unit-grid');
-        part.units.forEach(u => {
-          const n = ALL_UNITS.indexOf(u) + 1;
-          const ls = unitLessons(u);
-          const dn = ls.filter(lessonDone).length;
-          const unlocked = unitUnlocked(u);
-          const isDone = unitDone(u);
-          const isCur = next && next.unit === u;
-          const b = el('button', 'zh-unit' + (isDone ? ' is-done' : '') + (isCur ? ' is-current' : '') + (!unlocked ? ' is-locked' : ''));
-          if (isCur) b.appendChild(el('span', 'zh-unit-badge', 'Đang học'));
-          else if (isDone) b.appendChild(el('span', 'zh-unit-badge zh-unit-badge--done', '✓'));
-          b.appendChild(el('span', 'zh-unit-emoji', unlocked ? u.emoji : '🔒'));
-          b.appendChild(el('small', 'zh-unit-num', 'Chặng ' + n));
-          b.appendChild(el('strong', 'zh-unit-title', u.title));
-          if (unlocked) {
-            const ub = el('span', 'zh-step-bar'); const uf = el('span', 'zh-step-bar-fill'); uf.style.width = (dn / ls.length * 100) + '%'; ub.appendChild(uf);
-            b.appendChild(ub);
-          } else {
-            b.appendChild(el('small', 'zh-unit-why', 'Sau chặng ' + (n - 1)));
-          }
-          b.addEventListener('click', () => {
-            if (!unlocked) { A.showToast('Học xong Chặng ' + (n - 1) + ' (hoặc làm Kiểm tra nhảy cóc) để mở chặng này nhé!', '🔒'); return; }
-            openUnit(u);
-          });
-          grid.appendChild(b);
-        });
-        body.appendChild(grid);
-        if (!partDone && !z.skip[part.id]) {
+        const skipBtn = () => {
           const sk = el('button', 'zh-skip-btn', partLocked ? '🏁 Đã biết phần này? Làm bài kiểm tra để mở luôn' : '🏁 Đã biết phần này? Kiểm tra nhảy cóc');
           sk.addEventListener('click', () => startSkipTest(part));
-          body.appendChild(sk);
-        }
+          return sk;
+        };
+        const canSkip = !partDone && !z.skip[part.id];
+        if (canSkip && partLocked) body.appendChild(skipBtn()); // phần còn khoá: lối mở nằm ngay trên đầu
+        body.appendChild(unitPath(part, next));
+        if (canSkip && !partLocked) body.appendChild(skipBtn());
         card.appendChild(body);
       }
       box.appendChild(card);
     });
+  }
+  // Con đường các chặng của 1 phần (kiểu Duolingo): nút tròn theo màu của phần đi zíc zắc, chặng đang học to
+  // hơn + nhãn "Bắt đầu" / "Học tiếp", chặng xong có dấu ✓, sau mỗi 3 chặng có 1 rương quà (+5 sao).
+  // Dùng chung kiểu .path-row / .path-node / .path-chest với con đường của phần tiếng Anh (style.css).
+  const PART_COLORS = ['#D9453B', '#E08A1E', '#2E9C8F', '#3B82C4', '#8A5CC7'];
+  const PATH_X = [0, 1, 2, 1, 0, -1, -2, -1];
+  const CHEST_EVERY = 3, CHEST_STARS = 5;
+  function unitPath(part, next) {
+    const z = Z();
+    const path = el('div', 'topic-path zh-path');
+    let k = 0;
+    const row = (node, label, cls) => {
+      const r = el('div', 'path-row' + (cls ? ' ' + cls : ''));
+      r.style.setProperty('--x', PATH_X[k++ % PATH_X.length]);
+      r.appendChild(node);
+      if (label) r.appendChild(label);
+      path.appendChild(r);
+      return r;
+    };
+    part.units.forEach((u, ui) => {
+      const n = ALL_UNITS.indexOf(u) + 1;
+      const ls = unitLessons(u), dn = ls.filter(lessonDone).length;
+      const unlocked = unitUnlocked(u), isDone = unitDone(u), isCur = !!next && next.unit === u;
+      const b = el('button', 'path-node zh-node' + (isDone ? ' is-done' : '') + (isCur ? ' is-current' : '') + (!unlocked ? ' is-locked' : ''));
+      b.setAttribute('aria-label', 'Chặng ' + n + ': ' + u.title + (isDone ? ' — đã xong' : !unlocked ? ' — chưa mở' : isCur ? ' — đang học ' + dn + '/' + ls.length + ' bài' : ''));
+      b.appendChild(el('span', 'path-emoji', unlocked ? u.emoji : '🔒'));
+      if (isDone) b.appendChild(el('span', 'path-check', '✓'));
+      b.addEventListener('click', () => {
+        if (!unlocked) { A.showToast('Học xong Chặng ' + (n - 1) + ' (hoặc làm Kiểm tra nhảy cóc) để mở chặng này nhé!', '🔒'); return; }
+        openUnit(u);
+      });
+      const label = el('span', 'path-label zh-node-label');
+      label.appendChild(el('small', null, 'Chặng ' + n + (isCur && dn ? ' · ' + dn + '/' + ls.length + ' bài' : '')));
+      label.appendChild(el('span', null, u.title));
+      const r = row(b, label, isCur ? 'is-current-row' : '');
+      if (isCur) r.insertBefore(el('span', 'path-start', dn ? 'Học tiếp' : 'Bắt đầu'), b);
+      if ((ui + 1) % CHEST_EVERY === 0) {
+        const group = part.units.slice(ui + 1 - CHEST_EVERY, ui + 1);
+        const id = part.id + '-' + (ui + 1) / CHEST_EVERY;
+        const opened = !!z.chests[id], ready = !opened && group.every(unitDone);
+        const chest = el('button', 'path-chest' + (opened ? ' is-open' : ready ? ' is-ready' : ''), opened ? '✨' : '🎁');
+        chest.setAttribute('aria-label', opened ? 'Rương đã mở' : ready ? 'Mở rương quà' : 'Rương quà — học xong ' + CHEST_EVERY + ' chặng phía trên để mở');
+        chest.addEventListener('click', () => {
+          if (opened) { A.showToast('Bạn đã mở rương này rồi.', '✨'); return; }
+          if (!ready) { A.showToast('Học xong ' + CHEST_EVERY + ' chặng phía trên để mở rương nhé!', '🎁'); return; }
+          z.chests[id] = true;
+          const old = A.getProgress().lifetimeStars;
+          A.addStars(CHEST_STARS);
+          A.saveProgress();
+          A.celebrate(true, old);
+          A.showToast('Mở rương: +' + CHEST_STARS + ' sao!', '🎁');
+          renderHome();
+        });
+        row(chest, opened || ready ? el('span', 'path-label', opened ? 'Đã mở' : 'Mở rương!') : null);
+      }
+    });
+    return path;
   }
   let openParts = null; // các phần đang mở trên bản đồ (giữ nguyên khi quay lại trang Học trong phiên)
   let lastCurPart = null;
@@ -492,6 +533,12 @@
     head.appendChild(el('h2', null, 'Chặng ' + (ALL_UNITS.indexOf(u) + 1) + ': ' + u.title));
     head.appendChild(el('p', null, u.part.title));
     box.appendChild(head);
+    if (unitDone(u)) {
+      const rv = unitLessons(u).find(l => l.type === 'review');
+      const again = el('button', 'cta-btn zh-wide-btn zh-unit-again', '🔁 Ôn lại chặng này');
+      again.addEventListener('click', () => startLesson(rv, () => openUnit(u)));
+      box.appendChild(again);
+    }
     const list = el('div', 'zh-lesson-list');
     const next = unitLessons(u).find(l => !lessonDone(l));
     unitLessons(u).forEach((l, i) => {
@@ -519,22 +566,31 @@
     runSession({ lesson, steps, back });
   }
   function runSession(opts) {
-    S = Object.assign({ i: 0, correct: 0, total: opts.steps.filter(s => s.kind !== 'card').length }, opts);
+    S = Object.assign({ i: 0, correct: 0, start: Date.now(), total: opts.steps.filter(s => s.kind !== 'card').length }, opts);
     // Tải trước giọng đọc thu sẵn của cả bài (nghe ngay khi bấm, và lưu lại để học được lúc mất mạng).
     if (A.ttsPrefetch) A.ttsPrefetch([...new Set(S.steps.flatMap(st => [st.say, st.sayAfter, st.char, st.word && st.word.zh,
       st.item && (st.item.say || st.item.big), st.item && st.item.ex].concat((st.pairs || []).map(w => w.zh))).filter(Boolean))]);
     nextStep();
   }
   function exitSession() { const back = S && S.back; S = null; (back || goHome)(); }
+  // Đã làm được ít nhất 1 bước thì hỏi lại trước khi thoát — bấm nhầm nút ← không mất cả bài.
+  function confirmExit() {
+    if (!S || S.i === 0) return Promise.resolve(true);
+    return A.confirm('Thoát bài này? Kết quả đang làm dở sẽ không được lưu.', { okLabel: 'Thoát', cancelLabel: 'Học tiếp', danger: true });
+  }
   ['zhCardBack', 'zhChoiceBack', 'zhMatchBack', 'zhOrderBack', 'zhWriteBack', 'zhTypeBack'].forEach(id => $(id).addEventListener('click', () => {
-    if (wr.writer) wr.writer.cancelQuiz();
-    exitSession();
+    confirmExit().then(ok => {
+      if (!ok) return;
+      if (wr.writer) wr.writer.cancelQuiz();
+      exitSession();
+    });
   }));
   function fillFor(id) {
     const f = $(id);
     f.style.width = (S ? S.i / S.steps.length * 100 : 0) + '%';
     const c = f.closest('.card-topbar').querySelector('.zh-step-count');
-    if (c) c.textContent = S ? (S.i + 1) + '/' + S.steps.length : '';
+    const st = S && S.steps[S.i];
+    if (c) { c.textContent = !S ? '' : st && st.retry ? 'Làm lại' : (S.i + 1) + '/' + S.steps.length; c.classList.toggle('is-retry', !!(st && st.retry)); }
   }
   function nextStep() {
     if (!S) return;
@@ -543,13 +599,19 @@
     RENDER[st.kind](st);
   }
   // ok: true/false = tính điểm; null = không tính (vd. không tải được nét chữ).
+  // Câu sai (chọn đáp án, sắp xếp câu, gõ chữ) được hỏi lại 1 lần ở cuối bài; lần làm lại không tính điểm.
+  // Bài kiểm tra nhảy cóc thì không hỏi lại.
+  const RETRY_KINDS = { choice: 1, order: 1, type: 1 };
   function stepDone(ok) {
     const st = S.steps[S.i];
-    if (st.kind !== 'card') {
+    if (st.kind !== 'card' && !st.retry) {
       if (ok === null) S.total--;
       else if (ok) S.correct++;
       if (st.word && ok !== null) srsRecord(st.word, !!ok);
+      const ch = st.ch || (st.kind === 'write' ? st.char : null);
+      if (ch && ok !== null) charRecord(ch, !!ok);
     }
+    if (ok === false && !st.retry && RETRY_KINDS[st.kind] && S.lesson.type !== 'test') S.steps.push(Object.assign({}, st, { retry: true }));
     S.i++;
     nextStep();
   }
@@ -586,16 +648,28 @@
     }
     if (stars) A.addStars(stars + (unitJustDone ? 5 : 0));
     if (pass && (l.practice || total)) A.bumpDailyMission('games');
+    const streak0 = A.getProgress().streak.count;
     if (pass) A.updateStreakOnComplete(); // tự lưu tiến độ
     else A.saveProgress();
+    const streakNow = A.getProgress().streak.count;
     A.renderTotalStars();
     if (pass) A.celebrate(pct === 100 || !!unitJustDone, oldLifetime);
 
     $('zhDoneEmoji').textContent = !pass ? '💪' : unitJustDone ? '🏆' : pct === 100 ? '🌟' : '👍';
     $('zhDoneTitle').textContent = !pass ? 'Gần được rồi, thử lại nhé!' : unitJustDone ? 'Hoàn thành chặng "' + unitJustDone.title + '"!' : l.type === 'test' ? 'Đã mở khoá cả phần!' : 'Hoàn thành bài!';
-    $('zhDoneText').textContent = (total ? 'Đúng ' + s.correct + '/' + total + ' (' + pct + '%). ' : '')
-      + (stars ? '+' + (stars + (unitJustDone ? 5 : 0)) + ' sao' : pass ? '' : 'Cần đúng từ ' + Math.round(passNeed * 100) + '% để qua bài.');
-    $('zhDoneGoal').textContent = z.today.n >= z.goal ? '🎯 Đã đạt mục tiêu hôm nay (' + z.today.n + '/' + z.goal + ' bài)!' : '🎯 Hôm nay: ' + z.today.n + '/' + z.goal + ' bài';
+    $('zhDoneText').textContent = (total ? 'Đúng ' + s.correct + '/' + total + ' câu. ' : '')
+      + (pass ? '' : 'Cần đúng từ ' + Math.round(passNeed * 100) + '% để qua bài.');
+    // Thẻ số liệu: sao nhận được · độ chính xác · thời gian · chuỗi ngày (nảy lên khi vừa +1).
+    const secs = Math.round((Date.now() - s.start) / 1000), bumped = streakNow > streak0;
+    const stat = [];
+    if (stars) stat.push(['⭐', '+' + (stars + (unitJustDone ? 5 : 0)), 'sao', 'gold']);
+    if (total) stat.push(['🎯', pct + '%', 'chính xác', pass ? 'teal' : 'accent']);
+    if (secs >= 5) stat.push(['⏱️', secs < 60 ? secs + ' giây' : Math.round(secs / 60) + ' phút', 'thời gian', 'blue']);
+    if (pass && streakNow) stat.push(['🔥', streakNow + ' ngày', bumped ? 'chuỗi +1!' : 'liên tiếp', 'accent' + (bumped ? ' is-bumped' : '')]);
+    $('zhDoneStats').innerHTML = stat.map(x => '<div class="done-stat done-stat--' + x[3] + '"><span class="done-stat-icon">' + x[0] + '</span>'
+      + '<strong>' + x[1] + '</strong><small>' + x[2] + '</small></div>').join('');
+    $('zhDoneStats').hidden = !stat.length;
+    $('zhDoneGoal').textContent = z.today.n >= z.goal ? '🎯 Đã đạt mục tiêu hôm nay · đã học ' + z.today.n + ' bài' : '🎯 Hôm nay: ' + z.today.n + '/' + z.goal + ' bài';
     const nxt = isCourse ? nextLesson() : null;
     const nb = $('zhDoneNext');
     nb.hidden = !nxt || !pass;
@@ -1047,8 +1121,10 @@
   RENDER.choice = st => {
     A.showScreen('zh-choice');
     fillFor('zhChoiceFill');
-    chLocked = false;
-    $('zhChoicePrompt').textContent = (st.warmup ? '🔁 Ôn nhanh · ' : '') + st.prompt;
+    chLocked = false; chSel = null;
+    $('zhChoiceCheck').disabled = true;
+    $('zhChoiceCheckBar').hidden = false;
+    $('zhChoicePrompt').textContent = (st.retry ? '🔁 Làm lại câu sai · ' : st.warmup ? '🔁 Ôn nhanh · ' : '') + st.prompt;
     renderCtx(st);
     setBig($('zhChoiceBig'), st.big || '');
     $('zhChoiceBig').hidden = !st.big;
@@ -1074,16 +1150,27 @@
       b.textContent = optText(o);
       if (Array.isArray(o) && o[1]) { const s = el('span', 'word-py'); s.innerHTML = colorPinyin(o[1]); b.appendChild(s); }
       b.dataset.correct = i === st.answer ? '1' : '';
-      b.addEventListener('click', () => answerChoice(b, i === st.answer));
+      b.addEventListener('click', () => selectChoice(b, i === st.answer));
       wrap.appendChild(b);
     });
     if (st.say) A.speak(st.say);
   };
   $('zhChoiceSpeak').addEventListener('click', () => { const st = S && S.steps[S.i]; if (st && st.say) A.speak(st.say); });
   $('zhChoiceSlow').addEventListener('click', () => { const st = S && S.steps[S.i]; if (st && st.say) A.speak(st.say, { slow: true }); });
+  let chSel = null;
+  function selectChoice(btn, ok) {
+    if (chLocked) return;
+    document.querySelectorAll('#zhChoiceOptions .quiz-opt.is-selected').forEach(b => b.classList.remove('is-selected'));
+    btn.classList.add('is-selected');
+    chSel = { btn, ok };
+    $('zhChoiceCheck').disabled = false;
+  }
+  $('zhChoiceCheck').addEventListener('click', () => { if (chSel) answerChoice(chSel.btn, chSel.ok); });
   function answerChoice(btn, ok) {
     if (chLocked) return;
     chLocked = true;
+    $('zhChoiceCheckBar').hidden = true;
+    btn.classList.remove('is-selected');
     const st = S.steps[S.i];
     document.querySelectorAll('#zhChoiceOptions .quiz-opt').forEach(b => { b.disabled = true; if (b.dataset.correct) b.classList.add('correct'); });
     $('zhChoicePy').classList.remove('is-hidden');
@@ -1098,9 +1185,8 @@
     $('zhChoiceCtx').classList.add('is-answered'); // hiện bản dịch đoạn văn / câu vừa nghe
     if (st.sayAfter) A.speak(st.sayAfter); // nhập vai: đọc câu đáp đúng của vai mình
     showAnswer('zhChoiceAns', ok);
+    // Đúng hay sai đều chờ bấm "Tiếp tục" — đủ thời gian đọc đáp án, pinyin và phần giải thích.
     $('zhChoiceNext').onclick = () => { if (S && S.steps[S.i] === st) stepDone(ok); };
-    // Đúng: tự sang câu (đủ lâu để đọc phần giải thích); sai: chờ người học bấm Tiếp.
-    if (ok) setTimeout(() => { if (S && S.steps[S.i] === st) stepDone(true); }, st.sayAfter ? 2600 : st.reveal ? 1600 : 1100);
   }
 
   // match: 4 cặp chữ ↔ nghĩa
@@ -1157,6 +1243,7 @@
     let tiles, guard = 0;
     do { tiles = A.shuffle(s.tokens.map((t, k) => ({ t, k }))); } while (s.tokens.length > 1 && tiles.every((x, k) => x.k === k) && guard++ < 20);
     ord = { st, tiles, picked: [], done: false };
+    $('zhOrderCheckBar').hidden = false;
     drawOrder();
   };
   function drawOrder() {
@@ -1171,13 +1258,16 @@
     ord.tiles.forEach(tile => {
       if (ord.picked.includes(tile)) return;
       const b = el('button', 'zh-tile', tile.t);
-      b.addEventListener('click', () => { if (ord.done) return; ord.picked.push(tile); drawOrder(); if (ord.picked.length === ord.tiles.length) checkOrder(); });
+      b.addEventListener('click', () => { if (ord.done) return; ord.picked.push(tile); drawOrder(); });
       pool.appendChild(b);
     });
+    $('zhOrderCheck').disabled = ord.done || !ord.picked.length;
   }
+  $('zhOrderCheck').addEventListener('click', () => { if (ord && !ord.done && ord.picked.length) checkOrder(); });
   function checkOrder() {
     const s = ord.st.s;
     ord.done = true;
+    $('zhOrderCheckBar').hidden = true;
     const ok = ord.picked.map(x => x.t).join('') === s.tokens.join('');
     const full = s.tokens.join('') + (s.end || '。');
     const fb = $('zhOrderFeedback');
@@ -1271,6 +1361,7 @@
     $('zhTypeVi').textContent = st.word.vi;
     $('zhTypeReveal').innerHTML = '';
     $('zhTypeAns').hidden = true;
+    $('zhTypeNext').hidden = true;
     const fb = $('zhTypeFeedback'); fb.textContent = ''; fb.className = 'quiz-feedback';
     const input = $('zhTypeInput');
     input.value = ''; input.disabled = false;
@@ -1309,7 +1400,9 @@
       $('zhTypeInput').disabled = true;
       A.speak(w.zh);
       const st = ty.st, ok = ty.tries === 0;
-      setTimeout(() => { if (S && S.steps[S.i] === st) stepDone(ok); }, 1100);
+      const nb = $('zhTypeNext');
+      nb.hidden = false;
+      nb.onclick = () => { if (S && S.steps[S.i] === st) stepDone(ok); };
     } else {
       ty.tries++;
       btn.classList.add('wrong');
@@ -1336,16 +1429,224 @@
       else if (e.key === ' ') click($('zhCardSpeak'));
     } else if (id === 'choice') {
       if (num) click($('zhChoiceOptions').querySelectorAll('.quiz-opt')[num - 1]);
-      else if (e.key === 'Enter') click($('zhChoiceNext'));
+      else if (e.key === 'Enter') click($('zhChoiceCheckBar').hidden ? $('zhChoiceNext') : $('zhChoiceCheck'));
       else if (e.key === ' ') click($('zhChoiceSpeak'));
     } else if (id === 'order') {
       if (num) click($('zhOrderTiles').querySelectorAll('.zh-tile')[num - 1]);
       else if (e.key === 'Backspace') click([...$('zhOrderAnswer').querySelectorAll('.zh-tile')].pop());
-      else if (e.key === 'Enter') click($('zhOrderNext'));
+      else if (e.key === 'Enter') click($('zhOrderCheckBar').hidden ? $('zhOrderNext') : $('zhOrderCheck'));
     } else if (id === 'write') {
       if (e.key === 'Enter') click($('zhWriteNext'));
+    } else if (id === 'type') {
+      if (e.key === 'Enter') click($('zhTypeNext'));
     }
   });
+
+  // ---------- CHỮ HÁN (đợt Z4) ----------
+  // Mọi chữ Hán trong khoá, xếp theo phần (chữ thuộc phần đầu tiên nó xuất hiện). Độ thuộc 1 chữ (0–4) = mức cao
+  // nhất của: lần luyện riêng chữ đó (Z().charLv) và hộp ôn tập của các từ có chữ đó (Z().srs). Chữ "đã gặp" =
+  // có từ chứa nó đã học, hoặc đã luyện riêng.
+  const CHAR_WORDS = {}; // chữ → các từ trong khoá có chữ đó
+  COURSE_WORDS.forEach(w => [...w.zh].forEach(c => { if (HAS_HANZI.test(c)) (CHAR_WORDS[c] = CHAR_WORDS[c] || []).push(w); }));
+  const PART_CHARS = (() => {
+    const seen = new Set();
+    return ZH_COURSE.map(part => {
+      const out = [];
+      const add = c => { if (HAS_HANZI.test(c) && !seen.has(c)) { seen.add(c); out.push(c); } };
+      part.units.forEach(u => {
+        unitLessons(u).forEach(l => { if (l.type === 'write' && l.chars) l.chars.forEach(add); });
+        unitWords(u).forEach(w => [...w.zh].forEach(add));
+      });
+      return out;
+    });
+  })();
+  const ALL_CHARS = PART_CHARS.flat();
+  // Pinyin của 1 chữ: lấy từ CHAR_INFO, không có thì tách từ pinyin của từ chứa nó (số âm tiết = số chữ).
+  function charPy(c) {
+    if (CHAR_INFO[c]) return CHAR_INFO[c].py;
+    let plain = '';
+    for (const w of CHAR_WORDS[c] || []) {
+      const chars = [...w.zh], syl = (w.py.toLowerCase().match(SYL) || []);
+      if (syl.length !== chars.length) continue;
+      const s = syl[chars.indexOf(c)];
+      if (toneOf(s) !== 5) return s; // ưu tiên âm có dấu thanh (từ có thanh nhẹ như 客气 kèqi làm mất dấu của 气)
+      plain = plain || s;
+    }
+    return plain;
+  }
+  const charVi = c => (CHAR_INFO[c] ? CHAR_INFO[c].vi : '');
+  const charSeen = c => Z().charLv[c] !== undefined || (CHAR_WORDS[c] || []).some(w => Z().srs[w.zh]);
+  function charLevel(c) {
+    const z = Z();
+    let lv = z.charLv[c] || 0;
+    (CHAR_WORDS[c] || []).forEach(w => { if (z.srs[w.zh]) lv = Math.max(lv, z.srs[w.zh].box); });
+    return Math.min(lv, 4);
+  }
+  function charRecord(c, ok) {
+    const m = Z().charLv;
+    m[c] = ok ? Math.min((m[c] || 0) + 1, 4) : Math.max((m[c] || 0) - 1, 0);
+  }
+  const CHAR_LV = lv => (lv >= 4 ? 2 : lv >= 2 ? 1 : 0); // → nhóm màu: Mới học / Đang nhớ / Nhớ lâu (LEVEL_NAMES)
+  function charRadical(c) {
+    return ZH_RADICALS.find(r => r.r === c || r.alt === c || r.ex.some(e => e[0] === c)) || null;
+  }
+  // Chọn 5 chữ để luyện: chữ đã gặp mà nhớ kém nhất trước, thiếu thì thêm chữ chưa gặp theo thứ tự khoá.
+  function pickChars(pool, n) {
+    const seen = shuffleArr(pool.filter(charSeen)).sort((a, b) => charLevel(a) - charLevel(b));
+    return seen.concat(pool.filter(c => !charSeen(c))).slice(0, n);
+  }
+  // 1 lượt luyện: nhìn chữ chọn pinyin + nghe/nhìn pinyin chọn chữ (trộn lẫn), cuối lượt tô 2 chữ nhớ kém nhất.
+  function charSteps(chars) {
+    const withPy = ALL_CHARS.filter(charPy);
+    const qs = [];
+    chars.forEach(c => {
+      const py = charPy(c), vi = charVi(c);
+      if (py) {
+        qs.push(choice('Chữ này đọc là gì?', { big: c, ch: c, sayAfter: c, reveal: c + ' · ' + py, revealVi: vi },
+          uniqueOptions(py, () => charPy(pick(withPy)), 4)));
+      }
+      qs.push(choice('Nghe và chọn đúng chữ', { big: '🔊', say: c, py, ch: c, reveal: c + ' · ' + py, revealVi: vi },
+        uniqueOptions(c, () => pick(ALL_CHARS), 4)));
+    });
+    return shuffleArr(qs).concat(chars.slice(0, 2).map(c => ({ kind: 'write', char: c })));
+  }
+  function practiceChars(chars, back) {
+    if (!chars.length) return;
+    const run = () => runSession({ lesson: { type: 'quiz', title: 'Luyện chữ Hán', practice: true }, steps: charSteps(chars), back, rebuild: run });
+    run();
+  }
+
+  makeScreen('chars', '<div id="zhChars"></div>', 'tabSentences');
+  makeScreen('char', topbar('zhCharBack') + '<div id="zhChar"></div>');
+  function charsCard() {
+    const n = ALL_CHARS.filter(charSeen).length;
+    const b = el('button', 'zh-exam-card zh-chars-card');
+    b.appendChild(el('span', 'zh-exam-card-icon zh-chars-card-icon', '字'));
+    const t = el('span', 'zh-exam-card-text');
+    t.appendChild(el('strong', null, 'Chữ Hán'));
+    t.appendChild(el('small', null, 'Đã gặp ' + n + '/' + ALL_CHARS.length + ' chữ · xem nét viết, luyện theo nhóm 5 chữ'));
+    b.append(t, el('span', 'settings-chevron', '›'));
+    b.addEventListener('click', openChars);
+    return b;
+  }
+  function openChars() { renderChars(); A.showScreen('zh-chars'); }
+  function charTile(c) {
+    const seen = charSeen(c), lv = charLevel(c);
+    const b = el('button', 'zh-char-tile' + (seen ? '' : ' is-new'));
+    b.setAttribute('aria-label', c + ' ' + charPy(c) + (seen ? ' — ' + LEVEL_NAMES[CHAR_LV(lv)] : ' — chưa gặp'));
+    b.appendChild(el('span', 'zh-char-zh', c));
+    const py = el('small', 'zh-char-py');
+    py.innerHTML = colorPinyin(charPy(c));
+    b.appendChild(py);
+    const bar = el('span', 'zh-char-bar');
+    if (seen) { const f = el('i', 'lv' + CHAR_LV(lv)); f.style.width = ((lv + 1) / 5 * 100) + '%'; bar.appendChild(f); }
+    b.appendChild(bar);
+    b.addEventListener('click', () => openChar(c));
+    return b;
+  }
+  function renderChars() {
+    const box = $('zhChars');
+    box.innerHTML = '';
+    const seenAll = ALL_CHARS.filter(charSeen);
+    const hero = el('div', 'zh-hero');
+    hero.appendChild(el('h1', null, 'Chữ Hán'));
+    hero.appendChild(el('p', null, 'Mọi chữ trong khoá học, xếp theo phần. Chạm vào 1 chữ để xem nét viết, cách đọc và các từ có chữ đó.'));
+    box.appendChild(hero);
+    // Tổng quan: số chữ theo 3 mức nhớ + nút luyện 5 chữ cần ôn nhất.
+    const panel = el('div', 'zh-panel');
+    const counts = [0, 0, 0];
+    seenAll.forEach(c => counts[CHAR_LV(charLevel(c))]++);
+    panel.appendChild(el('div', 'zh-panel-title', 'Đã gặp ' + seenAll.length + '/' + ALL_CHARS.length + ' chữ'));
+    const stack = el('div', 'zh-stack-bar');
+    counts.forEach((n, i) => { if (n) { const s = el('span', 'zh-stack lv' + i); s.style.flexGrow = n; stack.appendChild(s); } });
+    if (!seenAll.length) stack.appendChild(el('span', 'zh-stack'));
+    panel.appendChild(stack);
+    const legend = el('div', 'zh-legend');
+    LEVEL_NAMES.forEach((name, i) => { const s = el('span'); s.innerHTML = '<i class="lv' + i + '"></i>' + esc(name) + ' <b>' + counts[i] + '</b>'; legend.appendChild(s); });
+    panel.appendChild(legend);
+    const go = el('button', 'cta-btn zh-wide-btn', seenAll.length ? '✍️ Luyện 5 chữ cần ôn nhất' : '✍️ Luyện 5 chữ đầu tiên');
+    go.addEventListener('click', () => practiceChars(pickChars(seenAll.length ? ALL_CHARS : PART_CHARS.find(p => p.length) || [], 5), openChars));
+    panel.appendChild(go);
+    box.appendChild(panel);
+    PART_CHARS.forEach((chars, pi) => {
+      if (!chars.length) return;
+      const part = ZH_COURSE[pi];
+      const head = el('div', 'zh-char-part-head');
+      head.style.setProperty('--pc', PART_COLORS[pi % PART_COLORS.length]);
+      const t = el('span', 'zh-char-part-title');
+      t.appendChild(el('strong', null, part.title));
+      t.appendChild(el('small', null, chars.filter(charSeen).length + '/' + chars.length + ' chữ đã gặp'));
+      const pr = el('button', 'ghost-btn zh-mini-btn', 'Luyện 5 chữ');
+      pr.addEventListener('click', () => practiceChars(pickChars(chars, 5), openChars));
+      head.append(t, pr);
+      box.appendChild(head);
+      const grid = el('div', 'zh-char-grid');
+      chars.forEach(c => grid.appendChild(charTile(c)));
+      box.appendChild(grid);
+    });
+  }
+
+  // Chi tiết 1 chữ: nét viết (Hanzi Writer), cách đọc, nghĩa, bộ thủ, các từ có chữ đó.
+  let charWriter = null;
+  function openChar(c) {
+    const box = $('zhChar');
+    box.innerHTML = '';
+    const head = el('div', 'zh-char-head');
+    const hw = el('div', 'zh-char-hw');
+    hw.appendChild(el('span', 'zh-char-fallback', c));
+    head.appendChild(hw);
+    const py = el('div', 'zh-py');
+    py.innerHTML = colorPinyin(charPy(c));
+    head.appendChild(py);
+    if (charVi(c)) head.appendChild(el('div', 'zh-vi', charVi(c)));
+    const seen = charSeen(c);
+    head.appendChild(el('div', 'zh-char-lv', seen ? 'Mức nhớ: ' + LEVEL_NAMES[CHAR_LV(charLevel(c))] : 'Chưa gặp trong bài học'));
+    const btns = el('div', 'zh-btn-row');
+    const bSay = el('button', 'speak-btn', '🔊 Nghe'); bSay.addEventListener('click', () => A.speak(c));
+    const bSlow = el('button', 'speak-btn zh-slow-btn', '🐢 Đọc chậm'); bSlow.addEventListener('click', () => A.speak(c, { slow: true }));
+    const bStroke = el('button', 'speak-btn', '▶ Xem nét'); bStroke.addEventListener('click', () => { if (charWriter) { charWriter.hideCharacter(); charWriter.animateCharacter(); } });
+    btns.append(bSay, bSlow, bStroke);
+    head.appendChild(btns);
+    const write = el('button', 'cta-btn zh-wide-btn', '✍️ Tập viết chữ này');
+    write.addEventListener('click', () => runSession({ lesson: { type: 'quiz', title: 'Tập viết ' + c, practice: true }, steps: [{ kind: 'write', char: c }], back: () => openChar(c) }));
+    head.appendChild(write);
+    box.appendChild(head);
+    const rad = charRadical(c);
+    if (rad) {
+      const p = el('div', 'zh-panel zh-char-rad');
+      p.appendChild(el('div', 'zh-panel-title', 'Bộ thủ'));
+      p.appendChild(el('div', null, rad.r + (rad.alt && rad.alt !== c ? ' (' + rad.alt + ')' : '') + ' · ' + rad.name + ' — ' + rad.vi));
+      box.appendChild(p);
+    }
+    const words = (CHAR_WORDS[c] || []).slice(0, 12);
+    if (words.length) {
+      box.appendChild(el('div', 'section-label', 'Từ có chữ này'));
+      const list = el('div', 'zh-panel zh-list');
+      words.forEach(w => {
+        const r = el('button', 'zh-list-row zh-char-word');
+        r.appendChild(el('span', 'zh-char-word-zh', w.zh));
+        const t = el('span', 'zh-list-text');
+        const wp = el('strong'); wp.innerHTML = colorPinyin(w.py); t.appendChild(wp);
+        t.appendChild(el('small', null, w.vi));
+        r.append(t, el('span', 'zh-char-word-say', '🔊'));
+        r.addEventListener('click', () => A.speak(w.zh));
+        list.appendChild(r);
+      });
+      box.appendChild(list);
+    }
+    A.showScreen('zh-char');
+    window.scrollTo(0, 0);
+    A.speak(c);
+    charWriter = null;
+    loadHanziWriter().then(() => {
+      if (!hw.isConnected) return;
+      hw.innerHTML = '';
+      charWriter = HanziWriter.create(hw, c, Object.assign(writerColors(), { width: 180, height: 180, padding: 12, showOutline: true, strokeAnimationSpeed: 1, delayBetweenStrokes: 220 }));
+      charWriter.hideCharacter();
+      charWriter.animateCharacter();
+    }).catch(() => {}); // không có mạng: giữ chữ tĩnh
+  }
+  $('zhCharBack').addEventListener('click', openChars);
 
   // ---------- Dùng chung cho các tab ----------
   // 1 dòng trong danh sách hành động: biểu tượng · tiêu đề + mô tả · ›. Không có hàm bấm → dòng mờ.
@@ -1492,6 +1793,7 @@
     hero.appendChild(el('h1', null, 'Luyện tập'));
     hero.appendChild(el('p', null, 'Luyện riêng từng kỹ năng, làm lại bao nhiêu lần cũng được — không ảnh hưởng tiến độ khoá học.'));
     box.appendChild(hero);
+    box.appendChild(charsCard());
     if (HAS_EXAM) box.appendChild(examCard());
     const learned = learnedWords();
     const pool = learned.length >= 4 ? learned : COURSE_WORDS.slice(0, 30);

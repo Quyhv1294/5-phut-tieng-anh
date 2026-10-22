@@ -1,7 +1,7 @@
 // Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
 // LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
 // lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v193';
+const CACHE_VERSION = 'v196';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
 // Giọng đọc thu sẵn (assets/tts/): tên file là mã băm của câu, đổi giọng thì đổi thư mục → file không bao giờ
 // đổi nội dung, nên giữ ở cache RIÊNG, không xoá khi tăng CACHE_VERSION (bé khỏi phải tải lại).

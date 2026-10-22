@@ -3089,3 +3089,223 @@
   .cal-legend i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
   .cal-legend i.is-study { background: var(--accent); }
   .cal-legend i.is-freeze { background: color-mix(in srgb, var(--blue) 45%, var(--surface)); }
+
+  /* ================= ĐỢT Z1 — BỘ QUY TẮC THIẾT KẾ PHẦN TIẾNG TRUNG (người lớn) =================
+     Cùng nguyên tắc với phần tiếng Anh ("phẳng, có đáy dày" kiểu Duolingo) nhưng tiết chế hơn cho người lớn:
+     đáy mỏng hơn (3px), bo góc nhỏ hơn, giữ phông Be Vietnam Pro + Khải thư và màu đỏ son.
+     - NÚT CHÍNH: nền đỏ son, chữ trắng · NÚT PHỤ: nền trắng, viền + đáy xám · Ô CHỌN: đang chọn = xanh dương,
+       đúng = xanh ngọc, sai = đỏ · THẺ: viền + đáy xám. Bấm xuống thì lún đúng bằng độ dày đáy. */
+  html.lang-zh-ui {
+    --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-pill: 999px; --edge: 3px;
+    --fs-xs: 13px; --fs-sm: 14px; --fs-md: 16px; --fs-lg: 18px; --fs-xl: 22px; --fs-2xl: 28px;
+    --primary: var(--accent); --primary-edge: color-mix(in srgb, var(--accent) 68%, #000); --on-primary: #FFFFFF;
+    --ok: #2E9C8F; --ok-edge: #1F7268; --ok-ink: #17594F;
+    --pick: #3B82C4; --pick-edge: #2A5F91;
+    --line-strong: color-mix(in srgb, var(--line) 72%, var(--ink-soft));
+    --ok-bg: color-mix(in srgb, var(--ok) 15%, var(--surface));
+    --bad-bg: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    --pick-bg: color-mix(in srgb, var(--pick) 12%, var(--surface));
+  }
+  @media (prefers-color-scheme: dark) {
+    html.lang-zh-ui:not([data-theme="light"]) {
+      --primary-edge: color-mix(in srgb, var(--accent) 55%, #000); --ok: #3DB5A6; --ok-edge: #1D6F65; --ok-ink: #8FE3D7;
+      --pick: #6AA8E8; --pick-edge: #2F5F8F; --line-strong: color-mix(in srgb, var(--line) 60%, var(--ink-soft));
+    }
+  }
+  html.lang-zh-ui[data-theme="dark"] {
+    --primary-edge: color-mix(in srgb, var(--accent) 55%, #000); --ok: #3DB5A6; --ok-edge: #1D6F65; --ok-ink: #8FE3D7;
+    --pick: #6AA8E8; --pick-edge: #2F5F8F; --line-strong: color-mix(in srgb, var(--line) 60%, var(--ink-soft));
+  }
+
+  /* ---------- 1. NÚT CHÍNH ---------- */
+  html.lang-zh-ui :is(.cta-btn, .nav-btn.primary, .confirm-ok-btn) {
+    border: none; border-radius: var(--r-md); min-height: 50px; padding: 12px 20px;
+    background: var(--primary); color: var(--on-primary); font-weight: 700; font-size: var(--fs-lg); line-height: 1.25;
+    box-shadow: 0 var(--edge) 0 var(--primary-edge); margin-bottom: var(--edge);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-zh-ui :is(.cta-btn, .nav-btn.primary, .confirm-ok-btn):disabled {
+    background: var(--line); color: var(--ink-soft); box-shadow: 0 var(--edge) 0 var(--line-strong); opacity: 1;
+  }
+  html.lang-zh-ui .zh-continue { box-shadow: 0 var(--edge) 0 var(--primary-edge); margin-bottom: calc(14px + var(--edge)); }
+  html.lang-zh-ui .zh-today-panel .zh-continue { margin-bottom: var(--edge); }
+
+  /* ---------- 2. NÚT PHỤ (kể cả nút nghe, nút tròn quay lại) ---------- */
+  html.lang-zh-ui :is(.ghost-btn, .nav-btn:not(.primary), .speak-btn) {
+    border: 2px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); color: var(--ink);
+    font-weight: 600; box-shadow: 0 var(--edge) 0 var(--line-strong); margin-bottom: var(--edge);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  html.lang-zh-ui .zh-btn-row .speak-btn {
+    border: 2px solid var(--line-strong); border-radius: var(--r-pill); box-shadow: 0 var(--edge) 0 var(--line-strong); padding: 7px 14px;
+  }
+  html.lang-zh-ui .icon-btn { border: 2px solid var(--line-strong); box-shadow: 0 var(--edge) 0 var(--line-strong); transition: transform .08s ease, box-shadow .08s ease; }
+
+  /* Bấm xuống: lún bằng độ dày đáy. */
+  html.lang-zh-ui :is(.cta-btn, .nav-btn, .confirm-ok-btn, .ghost-btn, .speak-btn, .icon-btn, .zh-continue, .quiz-opt, .zh-match-card, .zh-tile, .zh-cand, .zh-lesson-row, .zh-step-card):active:not(:disabled) {
+    transform: translateY(var(--edge)); box-shadow: 0 0 0 transparent;
+  }
+
+  /* ---------- 3. Ô CHỌN: đáp án, ô ghép cặp, ô chữ sắp xếp, chữ gợi ý ---------- */
+  html.lang-zh-ui :is(.quiz-opt, .zh-match-card, .zh-tile, .zh-cand) {
+    border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink);
+    box-shadow: 0 var(--edge) 0 var(--line-strong); margin-bottom: var(--edge);
+    transition: transform .08s ease, box-shadow .08s ease, background-color .12s ease, border-color .12s ease;
+  }
+  html.lang-zh-ui :is(.quiz-opt, .zh-match-card) { border-radius: var(--r-md); }
+  html.lang-zh-ui :is(.zh-tile, .zh-cand) { border-radius: var(--r-sm); }
+  html.lang-zh-ui :is(.quiz-opt.is-selected, .zh-match-card.is-selected) {
+    border-color: var(--pick); background: var(--pick-bg); box-shadow: 0 var(--edge) 0 var(--pick-edge);
+  }
+  html.lang-zh-ui :is(.quiz-opt.correct, .zh-cand.correct, .zh-match-card.is-matched) {
+    border-color: var(--ok); background: var(--ok-bg); box-shadow: 0 var(--edge) 0 var(--ok-edge);
+  }
+  html.lang-zh-ui .zh-match-card.is-matched { opacity: 0.55; box-shadow: none; transform: translateY(var(--edge)); }
+  html.lang-zh-ui :is(.quiz-opt.wrong, .zh-cand.wrong, .zh-match-card.is-wrong) {
+    border-color: var(--accent); background: var(--bad-bg); box-shadow: 0 var(--edge) 0 var(--primary-edge);
+  }
+  html.lang-zh-ui .quiz-opt:disabled:not(.correct):not(.wrong) { opacity: 0.6; }
+  html.lang-zh-ui .zh-tile.is-picked { background: var(--surface); }
+  html.lang-zh-ui .zh-order-answer { border-color: var(--line-strong); border-radius: var(--r-md); }
+  html.lang-zh-ui .zh-chip.is-active { border-color: var(--pick); background: var(--pick-bg); color: var(--pick-edge); }
+
+  /* ---------- 4. THẺ ---------- */
+  html.lang-zh-ui :is(.zh-panel, .zh-today-panel, .zh-part, .zh-card, .zh-step-card, .zh-lesson-row, .zh-write-box, .confirm-card, .zh-stat) {
+    border: 2px solid var(--line-strong); box-shadow: 0 var(--edge) 0 var(--line-strong);
+  }
+  html.lang-zh-ui :is(.zh-panel, .zh-today-panel, .zh-part, .zh-card) { border-radius: var(--r-lg); }
+  html.lang-zh-ui :is(.zh-step-card, .zh-lesson-row) { border-radius: var(--r-md); transition: transform .08s ease, box-shadow .08s ease; }
+  html.lang-zh-ui .zh-lesson-row.is-next { border-color: var(--accent); box-shadow: 0 var(--edge) 0 var(--primary-edge); }
+  html.lang-zh-ui .zh-lesson-row.is-done { border-color: color-mix(in srgb, var(--ok) 55%, var(--line-strong)); box-shadow: 0 var(--edge) 0 color-mix(in srgb, var(--ok) 55%, var(--line-strong)); }
+  html.lang-zh-ui .zh-part.is-current { border-color: color-mix(in srgb, var(--accent) 60%, var(--line-strong)); }
+
+  /* ---------- Ô nhập liệu, thanh tiến độ ---------- */
+  html.lang-zh-ui .zh-type-input { border: 2px solid var(--line-strong); border-radius: var(--r-md); }
+  html.lang-zh-ui .zh-type-input:focus { outline: none; border-color: var(--pick); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pick) 22%, transparent); }
+  html.lang-zh-ui .progress-track { height: 12px; border: none; background: var(--line); }
+  html.lang-zh-ui .progress-fill { background: var(--primary); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.25); }
+  html.lang-zh-ui .zh-step-count.is-retry { color: var(--accent-ink); }
+
+  /* ================= ĐỢT Z2 — LUỒNG LÀM BÀI: Kiểm tra → dải kết quả → Tiếp tục; màn Xong có số liệu ================= */
+  /* Thanh "Kiểm tra" và dải kết quả ghim ở đáy màn hình, rộng bằng cột nội dung (.app 480px). */
+  html.lang-zh-ui :is(.zh-check-bar, #zhChoiceAns, #zhOrderAns, #zhTypeAns) {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; max-width: none; width: auto;
+    padding: 14px max(18px, calc(50% - 222px)) calc(16px + env(safe-area-inset-bottom));
+  }
+  .zh-check-bar[hidden] { display: none; }
+  html.lang-zh-ui .zh-check-bar { z-index: 55; background: var(--bg); border-top: 2px solid var(--line); }
+  html.lang-zh-ui .zh-check-btn { width: 100%; margin: 0 0 var(--edge); }
+  html.lang-zh-ui :is(#zhChoiceAns, #zhOrderAns, #zhTypeAns) {
+    gap: 4px; border: none; border-top: 3px solid var(--line-strong); border-radius: 22px 22px 0 0;
+    background: var(--surface); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.12);
+    max-height: 60vh; overflow-y: auto; animation: zhSheetIn .24s cubic-bezier(.2, .9, .3, 1.2);
+  }
+  html.lang-zh-ui :is(#zhChoiceAns, #zhOrderAns, #zhTypeAns).is-ok { background: var(--ok-bg); border-top-color: var(--ok); }
+  html.lang-zh-ui :is(#zhChoiceAns, #zhOrderAns, #zhTypeAns).is-no { background: var(--bad-bg); border-top-color: var(--accent); }
+  html.lang-zh-ui .zh-answer .quiz-feedback { font-size: 20px; font-weight: 800; }
+  html.lang-zh-ui .zh-answer.is-ok .quiz-feedback { color: var(--ok-ink); }
+  html.lang-zh-ui .zh-answer.is-no .quiz-feedback { color: var(--accent-ink); }
+  html.lang-zh-ui .zh-answer .zh-reveal { color: var(--ink); }
+  /* Nút "Tiếp tục" theo màu kết quả: xanh khi đúng, đỏ khi sai. */
+  html.lang-zh-ui .zh-answer.is-ok .zh-next-btn { background: var(--ok); box-shadow: 0 var(--edge) 0 var(--ok-edge); }
+  html.lang-zh-ui .zh-answer .zh-next-btn { margin: 8px 0 var(--edge); }
+  /* Chừa chỗ dưới đáy để thanh / dải ghim không che nút và ô chữ cuối trang. */
+  html.lang-zh-ui body:has(.screen.active .zh-check-bar:not([hidden])) .app { padding-bottom: 110px; }
+  html.lang-zh-ui body:has(.screen.active :is(#zhChoiceAns, #zhOrderAns, #zhTypeAns):not([hidden])) .app { padding-bottom: 230px; }
+  @keyframes zhSheetIn { from { transform: translateY(100%); } to { transform: none; } }
+  html.lang-zh-ui .combo-toast { z-index: 61; }
+
+  /* Màn Xong: thẻ số liệu (dùng chung .done-stats với phần tiếng Anh). */
+  html.lang-zh-ui .zh-done { gap: 12px; }
+  html.lang-zh-ui .zh-done .done-stats { margin: 4px 0 8px; }
+  html.lang-zh-ui .done-stat { border-radius: var(--r-md); }
+  html.lang-zh-ui .done-stat strong { font-family: var(--zh-font) !important; font-size: 19px; font-weight: 700; }
+  html.lang-zh-ui .done-stat--teal { border-color: var(--ok); box-shadow: 0 var(--edge) 0 var(--ok-edge); }
+  html.lang-zh-ui .done-stat--gold { box-shadow: 0 var(--edge) 0 color-mix(in srgb, var(--gold) 70%, #000 10%); }
+  html.lang-zh-ui .done-stat--blue { border-color: var(--pick); box-shadow: 0 var(--edge) 0 var(--pick-edge); }
+  html.lang-zh-ui .done-stat--accent { box-shadow: 0 var(--edge) 0 var(--primary-edge); }
+  html.lang-zh-ui .zh-done :is(.cta-btn, .ghost-btn) { width: 100%; max-width: 340px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html.lang-zh-ui :is(#zhChoiceAns, #zhOrderAns, #zhTypeAns) { animation: none; }
+    html.lang-zh-ui :is(.cta-btn, .nav-btn, .ghost-btn, .speak-btn, .quiz-opt, .zh-tile, .zh-continue):active { transform: none; }
+  }
+
+  /* ================= ĐỢT Z3 — CON ĐƯỜNG HỌC TIẾNG TRUNG (zh-course.js unitPath) =================
+     Mỗi phần 1 màu (--pc): dải tiêu đề phần tô màu, các chặng là nút tròn cùng màu đi zíc zắc,
+     sau mỗi 3 chặng có rương quà. Khung con đường dùng chung với phần tiếng Anh (.path-row, .path-node…). */
+  html.lang-zh-ui .zh-part { overflow: visible; }
+  html.lang-zh-ui .zh-part-head { background: var(--pc); color: #fff; border-radius: calc(var(--r-lg) - 2px); }
+  html.lang-zh-ui .zh-part.is-open .zh-part-head { border-radius: calc(var(--r-lg) - 2px) calc(var(--r-lg) - 2px) 0 0; }
+  html.lang-zh-ui .zh-part-head :is(.zh-part-title small, .zh-part-meta small, .zh-part-chev) { color: rgba(255, 255, 255, 0.88); }
+  html.lang-zh-ui .zh-part-head .zh-part-num { background: rgba(255, 255, 255, 0.22); color: #fff; }
+  html.lang-zh-ui .zh-part-head .zh-step-bar { background: rgba(255, 255, 255, 0.3); }
+  html.lang-zh-ui .zh-part-head .zh-step-bar-fill { background: #fff; }
+  html.lang-zh-ui .zh-part-head .zh-lock-why { color: #fff !important; opacity: 0.95; }
+  html.lang-zh-ui .zh-part.is-locked .zh-part-head { background: var(--surface-2); color: var(--ink); }
+  html.lang-zh-ui .zh-part.is-locked .zh-part-head :is(.zh-part-title small, .zh-part-meta small, .zh-part-chev) { color: var(--ink-soft); }
+  html.lang-zh-ui .zh-part.is-locked .zh-part-head .zh-part-num { background: var(--line); }
+  html.lang-zh-ui .zh-part.is-locked .zh-part-head .zh-lock-why { color: var(--accent-ink) !important; }
+  html.lang-zh-ui .zh-part.is-current { border-color: var(--pc); box-shadow: 0 var(--edge) 0 color-mix(in srgb, var(--pc) 70%, #000); }
+  html.lang-zh-ui .zh-part-body { padding: 4px 12px 14px; }
+
+  .zh-path { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 0 8px; }
+  .zh-node { background: var(--pc); color: #fff; }
+  .zh-node.is-done { background: color-mix(in srgb, var(--pc) 88%, #fff); }
+  .zh-node.is-locked { background: var(--line); }
+  html.lang-zh-ui .zh-node.is-current { box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.18), 0 0 0 6px var(--surface), 0 0 0 11px var(--pc); }
+  html.lang-zh-ui .zh-path .path-check { background: var(--ok); border-color: var(--surface); }
+  html.lang-zh-ui .zh-path .path-start { border-color: var(--pc); color: var(--pc); box-shadow: 0 3px 0 var(--pc); }
+  html.lang-zh-ui .zh-path .path-start::after { border-color: var(--pc); }
+  html.lang-zh-ui .zh-path .path-label { background: none; font-size: 14.5px; font-weight: 700; max-width: 170px; line-height: 1.3; }
+  .zh-node-label { display: flex; flex-direction: column; align-items: center; }
+  .zh-node-label small { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .zh-node-label span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .zh-path .is-current-row .zh-node-label small { color: var(--pc); font-weight: 700; }
+  html.lang-zh-ui .zh-path .path-row:has(.zh-node.is-locked) .path-label { color: var(--ink-soft); }
+  html.lang-zh-ui .zh-path .path-chest { border-radius: var(--r-md); }
+  html.lang-zh-ui .zh-skip-btn { border-color: var(--line-strong); color: var(--ink); margin: 6px 0; }
+  html.lang-zh-ui .zh-unit-again { margin: 0 0 14px; }
+  @media (prefers-color-scheme: dark) {
+    html.lang-zh-ui:not([data-theme="light"]) .zh-node.is-done { background: color-mix(in srgb, var(--pc) 75%, #000); }
+  }
+  html.lang-zh-ui[data-theme="dark"] .zh-node.is-done { background: color-mix(in srgb, var(--pc) 75%, #000); }
+
+  /* ================= ĐỢT Z4 — CHỮ HÁN (zh-course.js openChars / openChar) =================
+     Lưới mọi chữ trong khoá theo phần, mỗi ô có thanh độ thuộc; chạm 1 chữ để xem nét viết + các từ chứa nó. */
+  .zh-chars-card-icon {
+    width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    background: var(--accent); color: #fff; font-size: 26px; line-height: 1;
+    font-family: 'LXGW WenKai Screen', 'PingFang SC', 'Noto Sans SC', sans-serif !important;
+  }
+  .zh-char-part-head { display: flex; align-items: center; gap: 10px; margin: 18px 0 8px; padding-left: 12px; border-left: 5px solid var(--pc, var(--accent)); }
+  .zh-char-part-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .zh-char-part-title strong { font-size: 16px; line-height: 1.25; }
+  .zh-char-part-title small { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .zh-mini-btn { flex: none; min-height: 38px !important; padding: 6px 12px !important; font-size: 14px !important; margin-bottom: 3px; }
+  .zh-char-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px; }
+  .zh-char-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; padding: 8px 2px 7px; cursor: pointer;
+    background: var(--surface); color: var(--ink); border: 2px solid var(--line); border-radius: 14px; box-shadow: 0 3px 0 var(--line);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .zh-char-tile:active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
+  .zh-char-tile.is-new { background: var(--surface-2); }
+  .zh-char-tile.is-new .zh-char-zh { opacity: 0.4; }
+  .zh-char-zh { font-family: 'LXGW WenKai Screen', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif !important; font-size: 30px; font-weight: 400 !important; line-height: 1.2; }
+  .zh-char-py { font-size: 12px; font-weight: 700; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .zh-char-bar { width: 70%; height: 5px; margin-top: 3px; border-radius: 999px; background: var(--line); overflow: hidden; display: block; }
+  .zh-char-bar i { display: block; height: 100%; border-radius: 999px; }
+  .zh-char-bar i.lv0 { background: var(--gold); }
+  .zh-char-bar i.lv1 { background: color-mix(in srgb, var(--teal) 55%, var(--surface)); }
+  .zh-char-bar i.lv2 { background: var(--teal); }
+
+  .zh-char-head { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding-bottom: 8px; }
+  .zh-char-hw { width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: var(--surface); border: 2px solid var(--line-strong, var(--line)); box-shadow: 0 3px 0 var(--line-strong, var(--line)); }
+  .zh-char-fallback { font-family: 'LXGW WenKai Screen', 'PingFang SC', 'Noto Sans SC', sans-serif !important; font-size: 96px; font-weight: 400 !important; line-height: 1; }
+  .zh-char-lv { font-size: 13.5px; font-weight: 700; color: var(--ink-soft); }
+  .zh-char-head .zh-wide-btn { width: 100%; max-width: 340px; margin-top: 4px; }
+  .zh-char-rad { margin-top: 8px; font-size: 16px; font-weight: 600; }
+  .zh-char-word-zh { flex: none; min-width: 64px; font-family: 'LXGW WenKai Screen', 'PingFang SC', 'Noto Sans SC', sans-serif !important; font-size: 26px; font-weight: 400 !important; }
+  .zh-char-word-say { flex: none; opacity: 0.7; }
+  .zh-panel .zh-legend + .zh-wide-btn { margin-top: 14px; }
