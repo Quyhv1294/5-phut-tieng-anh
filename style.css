@@ -3351,3 +3351,106 @@
   .zh-tap-glue { white-space: nowrap; }
   .zh-dlg-chat .zh-bubble-zh { font-size: 20px; }
   .zh-chat-list { padding: 3px; } /* chừa chỗ cho viền sáng của câu hiện tại, khỏi bị cắt */
+
+  /* ================= ĐỢT A — BÀI HỌC TRỘN NHIỀU DẠNG CÂU HỎI (app.js lmRender, phần tiếng Anh) =================
+     Dùng chung màn "quiz": chữ / hình / nút nghe ở đầu đổi theo dạng câu; đáp án là hình, chữ hoặc nghĩa tiếng Việt. */
+  .quiz-word.lm-emoji { font-size: 56px; line-height: 1.1; }
+  .quiz-word.lm-emoji.lm-big { font-size: 72px; }
+  .quiz-word.lm-emoji img.emoji-icon { width: 72px; height: 72px; }
+  .quiz-word.lm-vi { font-size: 30px; line-height: 1.2; }
+  .quiz-options.is-text { grid-template-columns: 1fr; grid-auto-rows: min-content; align-content: start; max-width: 340px; gap: 10px; }
+  .quiz-options.is-text .quiz-opt.text-opt { padding: 12px 10px; min-height: 60px; font-size: 26px; line-height: 1.2; }
+  .quiz-opt.vi-opt { font-family: 'Quicksand'; font-weight: 700; font-size: 19px !important; line-height: 1.3; }
+  .lm-spell { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 4px; }
+  .lm-spell[hidden] { display: none; }
+  .quiz-options[hidden] { display: none; }
+  /* Ô đáp án dạng CHỮ / nghĩa tiếng Việt (bài học trộn): thấp, chữ vừa phải — đè luật thẻ tranh to của #quizOptions. */
+  html.lang-en-ui #quizOptions.is-text { max-width: 360px; gap: 12px; }
+  html.lang-en-ui #quizOptions.is-text .quiz-opt { aspect-ratio: auto; min-height: 64px; padding: 12px 14px; font-size: 28px; border-radius: 20px; }
+  html.lang-en-ui #quizOptions.is-text .quiz-opt.vi-opt { font-size: 21px !important; }
+
+  /* ================= ĐỢT B — CẤP ĐỘ CHỦ ĐỀ + "LUYỆN TẬP HÔM NAY" (app.js topicLevel / dailyPracticePlan) ================= */
+  /* 5 chấm cấp độ dưới tên chủ đề đã học trên con đường. */
+  .path-level { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 1px; min-height: 12px; }
+  .path-level i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong, var(--line)); display: block; }
+  .path-level i.on { background: var(--gold); box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 60%, #000 20%); }
+  .path-level.lv5 i.on { background: linear-gradient(135deg, #FFD65C, #FFA21F); }
+  .path-level em { font-style: normal; font-family: 'Baloo 2'; font-weight: 800; font-size: 12px; color: var(--accent-ink); margin-left: 3px; }
+  .path-level.is-due { animation: path-due 2s ease-in-out infinite; }
+  @keyframes path-due { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .path-level.is-due { animation: none; } }
+
+  /* Nút "Luyện tập hôm nay" dưới thẻ "Học nào". */
+  .daily-practice {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; margin: 0 0 calc(12px + var(--edge, 4px)); cursor: pointer; text-align: left;
+    background: var(--surface); color: var(--ink); border: 2px solid var(--line-strong, var(--line)); border-radius: var(--r-lg, 22px);
+    box-shadow: 0 var(--edge, 4px) 0 var(--line-strong, var(--line)); transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .daily-practice[hidden] { display: none; }
+  .daily-practice:active { transform: translateY(var(--edge, 4px)); box-shadow: 0 0 0 transparent; }
+  .daily-practice.is-due { border-color: var(--accent); box-shadow: 0 var(--edge, 4px) 0 var(--accent); }
+  .dp-icon { flex: none; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+  .dp-icon img.emoji-icon { width: 30px; height: 30px; }
+  .dp-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .dp-text strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 19px; }
+  .dp-text small { font-weight: 700; font-size: 14px; color: var(--ink-soft); }
+  .dp-badge { flex: none; min-width: 26px; height: 26px; padding: 0 8px; border-radius: 999px; background: var(--accent); color: #fff; font-family: 'Baloo 2'; font-weight: 800; font-size: 15px; line-height: 26px; text-align: center; }
+  .dp-badge[hidden] { display: none; }
+  .dp-chev { flex: none; font-size: 26px; color: var(--ink-soft); }
+
+  /* Bảng chọn khi bấm chủ đề đã học. */
+  .sheet-overlay { position: fixed; inset: 0; z-index: 300; background: rgba(34, 27, 20, 0.55); display: flex; align-items: flex-end; justify-content: center; }
+  .sheet-overlay[hidden] { display: none; }
+  .sheet-card {
+    width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: stretch; gap: 10px; text-align: center;
+    padding: 20px 18px calc(18px + env(safe-area-inset-bottom)); background: var(--surface);
+    border-radius: 26px 26px 0 0; border-top: 3px solid var(--line-strong, var(--line)); box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+    animation: sheetUp .26s cubic-bezier(.2, .9, .3, 1.1);
+  }
+  .sheet-emoji { font-size: 48px; line-height: 1; }
+  .sheet-emoji img.emoji-icon { width: 56px; height: 56px; }
+  .sheet-card h3 { margin: 0; font-family: 'Baloo 2'; font-weight: 800; font-size: 24px; }
+  .sheet-level { font-weight: 700; font-size: 15px; color: var(--ink-soft); margin-bottom: 4px; }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .sheet-card { animation: none; } }
+
+  /* ================= ĐỢT C — CÂU ĐIỀN TỪ CÒN THIẾU, XẾP CÂU, NGHE VÀ XẾP LẠI CÂU (app.js lmSentStart) ================= */
+  .quiz-word.lm-sent { font-size: 26px; line-height: 1.3; }
+  .quiz-word.lm-sent.lm-vi { font-size: 24px; }
+  .quiz-word.lm-sent.is-filled { color: var(--primary-edge, var(--teal-ink)); }
+  .lm-sentvi { text-align: center; font-weight: 700; font-size: 17px; line-height: 1.4; color: var(--ink-soft); max-width: 360px; margin: -4px auto 0; }
+  .lm-sentvi[hidden], .lm-sent[hidden] { display: none; }
+  .lm-sent { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .lm-sent-answer {
+    width: 100%; min-height: 72px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center;
+    padding: 10px; border: 2px dashed var(--line-strong, var(--line)); border-radius: 18px; background: color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+  .lm-sent-answer.is-correct { border-style: solid; border-color: var(--teal); background: color-mix(in srgb, var(--teal) 14%, var(--surface)); }
+  .lm-sent-answer.is-wrong { border-style: solid; border-color: var(--danger, var(--accent)); background: color-mix(in srgb, var(--danger, var(--accent)) 12%, var(--surface)); }
+  .lm-sent-hint { color: var(--ink-soft); font-weight: 700; font-size: 14px; }
+  .lm-sent-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .lm-tile {
+    padding: 8px 14px; min-height: 48px; cursor: pointer; font-family: 'Baloo 2'; font-weight: 800; font-size: 21px; line-height: 1.2; color: var(--ink);
+    background: var(--surface); border: 2px solid var(--line-strong, var(--line)); border-radius: 14px; box-shadow: 0 3px 0 var(--line-strong, var(--line));
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .lm-tile:active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
+  .lm-tile.is-picked { background: color-mix(in srgb, var(--blue) 18%, var(--surface)); border-color: color-mix(in srgb, var(--blue) 70%, var(--line-strong, var(--line))); }
+  .lm-sent-reveal { width: 100%; text-align: center; font-family: 'Baloo 2'; font-weight: 800; font-size: 20px; color: var(--primary-edge, var(--teal-ink)); }
+  .lm-sent-reveal[hidden] { display: none; }
+  .lm-check { width: 100%; max-width: 360px; }
+
+  /* ================= ĐỢT D — CẨM NANG CHO BA MẸ (data/guide.js) ================= */
+  .parent-guide { margin: 0 0 14px; }
+  .sheet-tip { text-align: left; padding: 10px 12px; border-radius: 14px; font-weight: 600; font-size: 14.5px; line-height: 1.5; color: var(--ink); background: color-mix(in srgb, var(--gold) 16%, var(--surface)); }
+  .sheet-tip[hidden] { display: none; }
+  .guide-card { max-height: 88vh; overflow-y: auto; text-align: left; }
+  .guide-card h3 { text-align: center; }
+  .guide-intro { margin: 0; font-size: 14.5px; font-weight: 600; line-height: 1.5; color: var(--ink-soft); text-align: center; }
+  .guide-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .guide-tabs .goal-chip { padding: 8px 4px; }
+  .guide-list { display: flex; flex-direction: column; gap: 10px; }
+  .guide-item { padding: 12px 14px; border: 2px solid var(--line-strong, var(--line)); border-radius: 16px; background: var(--surface); }
+  .guide-item-head { font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; margin-bottom: 4px; }
+  .guide-item p { margin: 4px 0 0; font-size: 14.5px; font-weight: 600; line-height: 1.5; color: var(--ink); }
+  .parent-guide .settings-label small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--ink-soft); line-height: 1.35; }

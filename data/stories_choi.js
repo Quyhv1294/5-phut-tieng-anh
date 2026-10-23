@@ -120,4 +120,120 @@ const STORY_TOPICS_CHOI = [
       ], answer: 0 },
     ],
   },
+  {
+    id: 'story_choi_farm_visit', label: 'Na và Bo ở trang trại', emoji: '🚜', cls: 't-gold',
+    pages: [
+      { emoji: '🚜', en: 'Na and Bo go to the farm.', vi: 'Na và Bo đi đến trang trại.' },
+      { emoji: '🐄', en: 'They see a cow and a pig.', vi: 'Hai bạn thấy một con bò và một con heo.' },
+      { emoji: '🐔', en: 'The hen has three eggs.', vi: 'Con gà mái có ba quả trứng.' },
+      { emoji: '🐴', en: 'The horse can run fast.', vi: 'Con ngựa chạy rất nhanh.' },
+      { emoji: '🥕', en: 'Bo gives a carrot to the horse.', vi: 'Bo cho con ngựa một củ cà rốt.' },
+      { emoji: '🐑', en: 'The sheep is soft and white.', vi: 'Con cừu mềm và màu trắng.' },
+      { emoji: '😊', en: 'What a fun day on the farm!', vi: 'Một ngày vui ở trang trại!' },
+    ],
+    questions: [
+      { q: 'Con gà mái có mấy quả trứng?', options: [
+        { emoji: '3️⃣', en: 'Three', vi: 'Ba' },
+        { emoji: '2️⃣', en: 'Two', vi: 'Hai' },
+        { emoji: '4️⃣', en: 'Four', vi: 'Bốn' },
+      ], answer: 0 },
+      { q: 'Bo cho con ngựa ăn gì?', options: [
+        { emoji: '🍎', en: 'Apple', vi: 'Quả táo' },
+        { emoji: '🥕', en: 'Carrot', vi: 'Cà rốt' },
+        { emoji: '🍌', en: 'Banana', vi: 'Quả chuối' },
+      ], answer: 1 },
+      { q: 'Con cừu như thế nào?', options: [
+        { emoji: '🐑', en: 'Big and black', vi: 'To và màu đen' },
+        { emoji: '🐑', en: 'Small and red', vi: 'Nhỏ và màu đỏ' },
+        { emoji: '🐑', en: 'Soft and white', vi: 'Mềm và màu trắng' },
+      ], answer: 2 },
+    ],
+  },
+  {
+    id: 'story_choi_sea_trip', label: 'Na đi biển', emoji: '🌊', cls: 't-blue',
+    pages: [
+      { emoji: '🏖️', en: 'Na and Bo go to the beach.', vi: 'Na và Bo đi biển.' },
+      { emoji: '🐚', en: 'Na finds a shell on the sand.', vi: 'Na tìm thấy một chiếc vỏ sò trên cát.' },
+      { emoji: '🦀', en: 'A crab walks by.', vi: 'Một chú cua đi ngang qua.' },
+      { emoji: '🐢', en: 'A turtle swims in the sea.', vi: 'Một chú rùa bơi dưới biển.' },
+      { emoji: '🐬', en: 'Bo sees a dolphin jump.', vi: 'Bo thấy một chú cá heo nhảy lên.' },
+      { emoji: '🌅', en: 'The sun goes down.', vi: 'Mặt trời lặn xuống.' },
+      { emoji: '🥰', en: 'They love the sea!', vi: 'Hai bạn yêu biển lắm!' },
+    ],
+    questions: [
+      { q: 'Na tìm thấy gì trên cát?', options: [
+        { emoji: '🦀', en: 'Crab', vi: 'Con cua' },
+        { emoji: '🐚', en: 'Shell', vi: 'Vỏ sò' },
+        { emoji: '🐢', en: 'Turtle', vi: 'Con rùa' },
+      ], answer: 1 },
+      { q: 'Con vật nào đi ngang qua?', options: [
+        { emoji: '🦈', en: 'Shark', vi: 'Cá mập' },
+        { emoji: '🐋', en: 'Whale', vi: 'Cá voi' },
+        { emoji: '🦀', en: 'Crab', vi: 'Con cua' },
+      ], answer: 2 },
+      { q: 'Bo thấy con gì nhảy lên?', options: [
+        { emoji: '🐬', en: 'Dolphin', vi: 'Cá heo' },
+        { emoji: '🐙', en: 'Octopus', vi: 'Bạch tuộc' },
+        { emoji: '🦑', en: 'Squid', vi: 'Mực' },
+      ], answer: 0 },
+    ],
+  },
+  {
+    id: 'story_choi_tired_bo', label: 'Bo bị mệt', emoji: '🩺', cls: 't-pink',
+    pages: [
+      { emoji: '😴', en: 'Bo is tired today.', vi: 'Hôm nay Bo thấy mệt.' },
+      { emoji: '🍽️', en: 'Bo does not want to eat.', vi: 'Bo không muốn ăn.' },
+      { emoji: '🦊', en: 'Na calls the doctor.', vi: 'Na gọi bác sĩ.' },
+      { emoji: '🧑‍⚕️', en: 'The doctor is kind.', vi: 'Bác sĩ rất hiền.' },
+      { emoji: '💧', en: 'Bo drinks water and takes a rest.', vi: 'Bo uống nước và nghỉ ngơi.' },
+      { emoji: '🛌', en: 'Bo sleeps and feels better.', vi: 'Bo ngủ một giấc và thấy khỏe hơn.' },
+      { emoji: '🤗', en: 'Bo says, "Thank you, Na!"', vi: 'Bo nói: "Cảm ơn Na!"' },
+    ],
+    questions: [
+      { q: 'Lúc đầu Bo cảm thấy thế nào?', options: [
+        { emoji: '🤩', en: 'Excited', vi: 'Háo hức' },
+        { emoji: '😴', en: 'Tired', vi: 'Mệt' },
+        { emoji: '😠', en: 'Angry', vi: 'Tức giận' },
+      ], answer: 1 },
+      { q: 'Na gọi ai đến giúp Bo?', options: [
+        { emoji: '🧑‍🌾', en: 'Farmer', vi: 'Nông dân' },
+        { emoji: '🧑‍✈️', en: 'Pilot', vi: 'Phi công' },
+        { emoji: '🧑‍⚕️', en: 'Doctor', vi: 'Bác sĩ' },
+      ], answer: 2 },
+      { q: 'Cuối truyện Bo nói gì với Na?', options: [
+        { emoji: '🙏', en: 'Thank you', vi: 'Cảm ơn' },
+        { emoji: '😔', en: 'Sorry', vi: 'Xin lỗi' },
+        { emoji: '🙅', en: 'No', vi: 'Không' },
+      ], answer: 0 },
+    ],
+  },
+  {
+    id: 'story_choi_market_day', label: 'Đi chợ cùng Na', emoji: '🛒', cls: 't-mint',
+    pages: [
+      { emoji: '🛒', en: 'Na and Bo go to the market.', vi: 'Na và Bo đi chợ.' },
+      { emoji: '🍅', en: 'Na gets a tomato and a potato.', vi: 'Na lấy một quả cà chua và một củ khoai tây.' },
+      { emoji: '🌽', en: 'Bo likes corn.', vi: 'Bo thích bắp ngô.' },
+      { emoji: '🧅', en: 'Bo does not like onion.', vi: 'Bo không thích hành tây.' },
+      { emoji: '🥒', en: 'They put a cucumber in the bag.', vi: 'Hai bạn bỏ một quả dưa chuột vào túi.' },
+      { emoji: '🎒', en: 'The bag is full.', vi: 'Chiếc túi đã đầy.' },
+      { emoji: '🍲', en: 'They go home and cook soup.', vi: 'Hai bạn về nhà và nấu súp.' },
+    ],
+    questions: [
+      { q: 'Bo thích rau củ nào?', options: [
+        { emoji: '🧅', en: 'Onion', vi: 'Hành tây' },
+        { emoji: '🥔', en: 'Potato', vi: 'Khoai tây' },
+        { emoji: '🌽', en: 'Corn', vi: 'Bắp ngô' },
+      ], answer: 2 },
+      { q: 'Bo không thích gì?', options: [
+        { emoji: '🧅', en: 'Onion', vi: 'Hành tây' },
+        { emoji: '🍅', en: 'Tomato', vi: 'Cà chua' },
+        { emoji: '🥒', en: 'Cucumber', vi: 'Dưa chuột' },
+      ], answer: 0 },
+      { q: 'Cuối cùng hai bạn làm gì?', options: [
+        { emoji: '🏊', en: 'Swim', vi: 'Đi bơi' },
+        { emoji: '🍲', en: 'Cook soup', vi: 'Nấu súp' },
+        { emoji: '🛌', en: 'Sleep', vi: 'Đi ngủ' },
+      ], answer: 1 },
+    ],
+  },
 ];

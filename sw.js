@@ -1,10 +1,10 @@
-// Service Worker giúp app dùng được cả khi mất mạng (offline) sau lần mở đầu tiên.
-// LƯU Ý: mỗi khi cập nhật code (đặc biệt style.css/app.js/data), hãy tăng CACHE_VERSION
-// lên 1 số (v1 -> v2 -> ...) để trình duyệt xoá cache cũ và người dùng nhận bản mới.
-const CACHE_VERSION = 'v197';
+﻿// Service Worker giÃºp app dÃ¹ng Ä‘Æ°á»£c cáº£ khi máº¥t máº¡ng (offline) sau láº§n má»Ÿ Ä‘áº§u tiÃªn.
+// LÆ¯U Ã: má»—i khi cáº­p nháº­t code (Ä‘áº·c biá»‡t style.css/app.js/data), hÃ£y tÄƒng CACHE_VERSION
+// lÃªn 1 sá»‘ (v1 -> v2 -> ...) Ä‘á»ƒ trÃ¬nh duyá»‡t xoÃ¡ cache cÅ© vÃ  ngÆ°á»i dÃ¹ng nháº­n báº£n má»›i.
+const CACHE_VERSION = 'v204';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
-// Giọng đọc thu sẵn (assets/tts/): tên file là mã băm của câu, đổi giọng thì đổi thư mục → file không bao giờ
-// đổi nội dung, nên giữ ở cache RIÊNG, không xoá khi tăng CACHE_VERSION (bé khỏi phải tải lại).
+// Giá»ng Ä‘á»c thu sáºµn (assets/tts/): tÃªn file lÃ  mÃ£ bÄƒm cá»§a cÃ¢u, Ä‘á»•i giá»ng thÃ¬ Ä‘á»•i thÆ° má»¥c â†’ file khÃ´ng bao giá»
+// Ä‘á»•i ná»™i dung, nÃªn giá»¯ á»Ÿ cache RIÃŠNG, khÃ´ng xoÃ¡ khi tÄƒng CACHE_VERSION (bÃ© khá»i pháº£i táº£i láº¡i).
 const TTS_CACHE = '5phut-tts-v1';
 
 importScripts('data/emoji-icons.js');
@@ -40,6 +40,7 @@ const APP_SHELL = [
   './data/sentences_la.js',
   './data/qa_la.js',
   './data/dialogues_la.js',
+  './data/guide.js',
   './data/write_la.js',
   './data/simon_la.js',
   './data/phrases_la.js',
@@ -120,7 +121,7 @@ self.addEventListener('install', event => {
       .then(cache => cache.addAll(APP_SHELL))
       .then(() => caches.open(CACHE_NAME))
       .then(cache => Promise.all(
-        // Icon 3D tải từ CDN ngoài: cache thêm nhưng không chặn cài đặt nếu 1 icon lỗi/mạng chậm.
+        // Icon 3D táº£i tá»« CDN ngoÃ i: cache thÃªm nhÆ°ng khÃ´ng cháº·n cÃ i Ä‘áº·t náº¿u 1 icon lá»—i/máº¡ng cháº­m.
         ICON_URLS.map(url => fetch(url).then(res => { if (res && res.ok) cache.put(url, res); }).catch(() => {}))
       ))
       .then(() => self.skipWaiting())
@@ -141,9 +142,9 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(req.url);
 
-  // Google Apps Script (gửi/xác minh mã OTP email + ghi Google Sheet): luôn đi thẳng ra mạng,
-  // không cache, không phục vụ dữ liệu cũ — bỏ qua service worker hoàn toàn, vì đây là round-trip
-  // xác thực OTP thời gian thực, không thể trả kết quả cũ/cache được.
+  // Google Apps Script (gá»­i/xÃ¡c minh mÃ£ OTP email + ghi Google Sheet): luÃ´n Ä‘i tháº³ng ra máº¡ng,
+  // khÃ´ng cache, khÃ´ng phá»¥c vá»¥ dá»¯ liá»‡u cÅ© â€” bá» qua service worker hoÃ n toÃ n, vÃ¬ Ä‘Ã¢y lÃ  round-trip
+  // xÃ¡c thá»±c OTP thá»i gian thá»±c, khÃ´ng thá»ƒ tráº£ káº¿t quáº£ cÅ©/cache Ä‘Æ°á»£c.
   const isLeadCaptureBackend =
     url.hostname === 'script.google.com' ||
     url.hostname === 'script.googleusercontent.com';
@@ -163,10 +164,10 @@ self.addEventListener('fetch', event => {
   }
 
   if (isAppShellFile) {
-    // Network-first: ưu tiên bản mới nhất khi có mạng, chỉ dùng cache khi mất mạng.
-    // cache: 'no-cache' bắt trình duyệt hỏi lại máy chủ thay vì lấy bản trong HTTP cache — tránh trường
-    // hợp nửa file mới nửa file cũ (vd. zh-course.js mới chạy với app.js cũ). Request điều hướng
-    // (mode 'navigate') không cho tạo lại với tuỳ chọn nên giữ nguyên.
+    // Network-first: Æ°u tiÃªn báº£n má»›i nháº¥t khi cÃ³ máº¡ng, chá»‰ dÃ¹ng cache khi máº¥t máº¡ng.
+    // cache: 'no-cache' báº¯t trÃ¬nh duyá»‡t há»i láº¡i mÃ¡y chá»§ thay vÃ¬ láº¥y báº£n trong HTTP cache â€” trÃ¡nh trÆ°á»ng
+    // há»£p ná»­a file má»›i ná»­a file cÅ© (vd. zh-course.js má»›i cháº¡y vá»›i app.js cÅ©). Request Ä‘iá»u hÆ°á»›ng
+    // (mode 'navigate') khÃ´ng cho táº¡o láº¡i vá»›i tuá»³ chá»n nÃªn giá»¯ nguyÃªn.
     event.respondWith(
       (req.mode === 'navigate' ? fetch(req) : fetch(req, { cache: 'no-cache' })).then(res => {
         const resClone = res.clone();
@@ -175,7 +176,7 @@ self.addEventListener('fetch', event => {
       }).catch(() => caches.match(req))
     );
   } else {
-    // Cache-first: audio, icon, font hầu như không đổi nên ưu tiên tốc độ + hoạt động offline.
+    // Cache-first: audio, icon, font háº§u nhÆ° khÃ´ng Ä‘á»•i nÃªn Æ°u tiÃªn tá»‘c Ä‘á»™ + hoáº¡t Ä‘á»™ng offline.
     event.respondWith(
       caches.match(req).then(cached => {
         if (cached) return cached;

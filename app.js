@@ -662,7 +662,9 @@
     const key = wordKey(word);
     const stat = progress.wordStats[key] || { step: 0, wrongCount: 0, lastSeen: null, nextDue: null };
     if (isCorrect) {
-      stat.step = Math.min(stat.step + 1, REVIEW_INTERVALS.length - 1);
+      // Chỉ lên bậc khi từ mới học hoặc đã đến hạn ôn — hỏi lại cùng ngày không tính, nên cấp độ chủ đề tăng
+      // nhờ ôn cách quãng chứ không nhờ làm đi làm lại 1 lúc.
+      if (!stat.nextDue || stat.nextDue <= toDateStr(new Date())) stat.step = Math.min(stat.step + 1, REVIEW_INTERVALS.length - 1);
       stat.wrongCount = Math.max(0, stat.wrongCount - 1);
     } else {
       stat.step = 0;
@@ -701,6 +703,81 @@
     list.sort((a, b) => b.wrongCount - a.wrongCount);
     return list.slice(0, limit || 12).map(d => d.word);
   }
+  // ---------- CẤP ĐỘ CHỦ ĐỀ (1–5) + "LUYỆN TẬP HÔM NAY" ----------
+  // Bậc nhớ hiệu dụng của 1 từ = bậc ghi nhớ ngắt quãng (0–4) trừ đi số khoảng ôn đã bỏ lỡ (từ để quá hạn lâu thì "phai").
+  // Cấp chủ đề (đã học xong = cấp 1) theo bậc trung bình của các từ: ≥1,5 → 2 · ≥2,5 → 3 · ≥3,5 → 4 · cả chủ đề bậc 4 → 5.
+  const daysBetweenStr = (from, to) => Math.round((Date.UTC(...to.split('-').map((v, i) => i === 1 ? v - 1 : +v)) - Date.UTC(...from.split('-').map((v, i) => i === 1 ? v - 1 : +v))) / 864e5);
+  function wordEffStep(key) {
+    const s = progress.wordStats[key];
+    if (!s) return 0;
+    let step = s.step || 0;
+    if (s.nextDue) {
+      const late = daysBetweenStr(s.nextDue, toDateStr(new Date()));
+      if (late > 0) step -= Math.floor(late / REVIEW_INTERVALS[Math.min(step, REVIEW_INTERVALS.length - 1)]);
+    }
+    return Math.max(0, step);
+  }
+  function topicLevel(topic) {
+    if (!progress.doneTopics[topic.id]) return 0;
+    const mean = topic.words.reduce((n, w) => n + wordEffStep(topic.id + ':' + w.en), 0) / topic.words.length;
+    return mean >= 3.99 ? 5 : mean >= 3.5 ? 4 : mean >= 2.5 ? 3 : mean >= 1.5 ? 2 : 1;
+  }
+  function topicDueCount(topic) {
+    const today = toDateStr(new Date());
+    return topic.words.filter(w => { const s = progress.wordStats[topic.id + ':' + w.en]; return s && s.nextDue && s.nextDue <= today; }).length;
+  }
+  const findVocabTopic = id => TOPICS.concat(CHOI_TOPICS, LA_TOPICS).find(t => t.id === id);
+  // Chụp cấp của mọi chủ đề đã học trước 1 lượt học, so lại sau lượt đó để báo "🎉 lên cấp!".
+  let levelsBefore = {};
+  function levelSnapshot() {
+    const o = {};
+    TOPICS.concat(CHOI_TOPICS, LA_TOPICS).forEach(t => { if (progress.doneTopics[t.id]) o[t.id] = topicLevel(t); });
+    return o;
+  }
+  function announceLevelUps() {
+    const ups = TOPICS.concat(CHOI_TOPICS, LA_TOPICS).filter(t => progress.doneTopics[t.id] && levelsBefore[t.id] !== undefined && topicLevel(t) > levelsBefore[t.id]);
+    ups.slice(0, 2).forEach((t, i) => setTimeout(() => showToast('"' + t.label + '" lên cấp ' + topicLevel(t) + '!', '🎉'), 900 + i * 1800));
+    levelsBefore = {};
+  }
+  // "Luyện tập hôm nay": từ đã đến hạn ôn (quá hạn lâu nhất trước) → từ bé hay sai → nếu vẫn ít thì thêm các từ yếu nhất
+  // trong những chủ đề đã học, tối đa 12 từ.
+  function dailyPracticePlan() {
+    const out = [], seen = new Set();
+    const add = w => { if (w && !seen.has(w) && out.length < 12) { seen.add(w); out.push(w); } };
+    getDueWords(12).forEach(add);
+    getDifficultWords(12).forEach(add);
+    if (out.length < 8) {
+      const learned = [];
+      vocabTopicsOf(reviewClassId()).forEach(t => { if (progress.doneTopics[t.id]) t.words.forEach(w => learned.push({ w, s: wordEffStep(wordKey(w)) })); });
+      shuffle(learned).sort((x, y) => x.s - y.s).forEach(x => { if (out.length < 10) add(x.w); });
+    }
+    return out;
+  }
+  function renderDailyPractice() {
+    const btn = document.getElementById('dailyPracticeBtn');
+    if (!btn || IS_ZH) return;
+    const words = dailyPracticePlan();
+    btn.hidden = words.length < 4;
+    if (btn.hidden) return;
+    const due = getDueWords(999).length;
+    document.getElementById('dpTitle').textContent = due > 0 ? 'Luyện tập hôm nay' : 'Luyện tập thêm';
+    document.getElementById('dpSub').textContent = due > 0 ? due + ' từ cần ôn ngay' : 'Ôn lại những từ bé còn yếu';
+    const badge = document.getElementById('dpBadge');
+    badge.hidden = due === 0;
+    badge.textContent = due > 99 ? '99+' : String(due);
+    btn.classList.toggle('is-due', due > 0);
+  }
+  function startDailyPractice() {
+    const words = dailyPracticePlan();
+    if (words.length < 4) { showToast('Bé học xong ít nhất 1 chủ đề rồi mới luyện tập được nhé!', '💪'); return; }
+    currentTopic = { id: '__daily__', label: 'Luyện tập hôm nay', words };
+    isMixedReview = true;
+    reviewKind = 'daily';
+    ttsPrefetch(words.flatMap(w => [w.en]));
+    startQuiz();
+  }
+  document.getElementById('dailyPracticeBtn').addEventListener('click', startDailyPractice);
+
   function saveProgress(p) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch (e) {}
     // Đồng bộ ngược lên Google Sheet mỗi khi tiến độ thay đổi, để thiết bị khác đăng nhập cùng
@@ -3952,12 +4029,13 @@
       const what = n.retry ? 'học lại nhé!' : n.fresh ? 'học nào!' : 'học tiếp nào!';
       set(name ? name + ' ơi, ' + what : what.charAt(0).toUpperCase() + what.slice(1), n.topic.label);
     }
-    else set((name || 'Bé') + ' học hết rồi, giỏi quá!', '🧠 Ôn tập thông minh');
+    else set((name || 'Bé') + ' học hết rồi, giỏi quá!', '💪 Luyện tập hôm nay');
+    renderDailyPractice();
   }
   document.getElementById('kidContinueBtn').addEventListener('click', () => {
     const n = nextKidLesson();
     if (n) startTopic(n.topic.id);
-    else document.getElementById('smartReviewBtn').click();
+    else startDailyPractice();
   });
   const PARENT_CORNER_KEY = '5phut_parent_corner_open_v1';
   try { document.getElementById('parentCorner').open = localStorage.getItem(PARENT_CORNER_KEY) === '1'; } catch (e) {}
@@ -4003,11 +4081,13 @@
       btn.innerHTML = '<span class="path-emoji">' + (locked ? '🔒' : topic.emoji) + '</span>'
         + (done ? '<span class="path-check" aria-hidden="true">✓</span>' : '');
       btn.addEventListener('click', () => {
+        if (!blocker && done) { openTopicSheet(topic); return; } // đã học: chọn "Luyện nhanh" hay "Học lại từ đầu"
         if (!blocker) { startTopic(topic.id); return; } // "sắp ra mắt": startTopic tự báo
         showToast(reason + '!', '🔒');
         speakVi('Học xong chủ đề ' + blocker.label + ' trước nhé!');
       });
       const r = row(btn, topic.label);
+      if (done && !locked) r.appendChild(levelPips(topic));
       if (current) {
         const tip = document.createElement('span');
         tip.className = 'path-start';
@@ -4030,6 +4110,73 @@
       }
     });
   }
+  // 5 chấm cấp độ dưới tên chủ đề đã học (vàng = đã đạt) + chữ "cần ôn" khi có từ đến hạn.
+  function levelPips(topic) {
+    const lv = topicLevel(topic), due = topicDueCount(topic);
+    const s = document.createElement('span');
+    s.className = 'path-level lv' + lv + (due ? ' is-due' : '');
+    s.setAttribute('aria-label', 'Cấp ' + lv + ' trên 5' + (due ? ', ' + due + ' từ cần ôn' : ''));
+    for (let i = 1; i <= 5; i++) { const d = document.createElement('i'); if (i <= lv) d.className = 'on'; s.appendChild(d); }
+    if (due) { const t = document.createElement('em'); t.textContent = 'cần ôn'; s.appendChild(t); }
+    return s;
+  }
+  // Cẩm nang cho ba mẹ: danh sách mẹo + trò chơi theo chủ đề của từng lớp (3 tab Mầm / Chồi / Lá, mở sẵn lớp đang học).
+  let guideClass = 'mam';
+  function renderGuide() {
+    const tabs = document.getElementById('guideTabs'), list = document.getElementById('guideList');
+    tabs.innerHTML = ''; list.innerHTML = '';
+    [['mam', 'Mầm'], ['choi', 'Chồi'], ['la', 'Lá']].forEach(c => {
+      const b = document.createElement('button');
+      b.className = 'goal-chip' + (guideClass === c[0] ? ' is-active' : '');
+      b.innerHTML = '<strong>' + c[1] + '</strong>';
+      b.addEventListener('click', () => { guideClass = c[0]; renderGuide(); });
+      tabs.appendChild(b);
+    });
+    vocabTopicsOf(guideClass).forEach(t => {
+      const g = typeof PARENT_GUIDE !== 'undefined' ? PARENT_GUIDE[t.id] : null;
+      if (!g) return;
+      const d = document.createElement('div');
+      d.className = 'guide-item';
+      const h = document.createElement('div'); h.className = 'guide-item-head'; h.textContent = t.emoji + ' ' + t.label;
+      const tip = document.createElement('p'); tip.textContent = '💡 ' + g.tip;
+      const play = document.createElement('p'); play.textContent = '🎲 ' + g.play;
+      d.append(h, tip, play);
+      list.appendChild(d);
+    });
+    list.scrollTop = 0;
+  }
+  document.getElementById('guideBtn').addEventListener('click', () => {
+    guideClass = reviewClassId();
+    renderGuide();
+    document.getElementById('guideSheet').hidden = false;
+  });
+  const closeGuide = () => { document.getElementById('guideSheet').hidden = true; };
+  document.getElementById('guideClose').addEventListener('click', closeGuide);
+  document.getElementById('guideSheet').addEventListener('click', e => { if (e.target.id === 'guideSheet') closeGuide(); });
+  let sheetTopic = null;
+  function openTopicSheet(topic) {
+    sheetTopic = topic;
+    const lv = topicLevel(topic), due = topicDueCount(topic);
+    document.getElementById('topicSheetEmoji').textContent = topic.emoji;
+    document.getElementById('topicSheetTitle').textContent = topic.label;
+    document.getElementById('topicSheetLevel').textContent = 'Cấp ' + lv + '/5' + (lv >= 5 ? ' — bé nhớ rất chắc! 🌟' : due ? ' · ' + due + ' từ cần ôn' : ' · luyện cách vài ngày để lên cấp');
+    const g = typeof PARENT_GUIDE !== 'undefined' ? PARENT_GUIDE[topic.id] : null, tipEl = document.getElementById('topicSheetTip');
+    tipEl.hidden = !g;
+    if (g) tipEl.textContent = '💡 Mẹo cho ba mẹ: ' + g.tip;
+    document.getElementById('topicSheet').hidden = false;
+  }
+  const closeTopicSheet = () => { document.getElementById('topicSheet').hidden = true; };
+  document.getElementById('topicSheetClose').addEventListener('click', closeTopicSheet);
+  document.getElementById('topicSheet').addEventListener('click', e => { if (e.target.id === 'topicSheet') closeTopicSheet(); });
+  document.getElementById('topicSheetLearn').addEventListener('click', () => { const t = sheetTopic; closeTopicSheet(); if (t) startTopic(t.id); });
+  document.getElementById('topicSheetPractice').addEventListener('click', () => {
+    const t = sheetTopic ? findVocabTopic(sheetTopic.id) : null;
+    closeTopicSheet();
+    if (!t) return;
+    currentTopic = t; cardIndex = 0; isMixedReview = false;
+    ttsPrefetch(t.words.map(w => w.en));
+    startQuiz();
+  });
   function renderSeqPathSwitch() {
     const b = document.getElementById('seqPathBtn');
     if (!b) return;
@@ -4954,11 +5101,12 @@
   }
 
   function startQuiz() {
+    levelsBefore = levelSnapshot();
     quizIndex = 0;
     quizCorrectCount = 0;
     quizWordStatus = {};
     quizOrder = shuffle(currentTopic.words.map((_, i) => i));
-    renderQuiz();
+    if (IS_ZH) renderQuiz(); else lmStart(quizOrder, false);
     showScreen('quiz');
   }
 
@@ -4966,8 +5114,273 @@
   function startQuizRetry(indices) {
     quizIndex = 0;
     quizOrder = shuffle(indices);
-    renderQuiz();
+    if (IS_ZH) renderQuiz(); else lmStart(quizOrder, true);
     showScreen('quiz');
+  }
+
+  // ---------- BÀI HỌC TRỘN NHIỀU DẠNG CÂU HỎI (phần tiếng Anh) ----------
+  // Sau thẻ học, mỗi từ của chủ đề được hỏi 1 lần bằng 1 dạng câu khác nhau (3 câu đầu luôn dễ để làm quen):
+  //   hearPic  nghe + thấy chữ → chọn hình      picWord  thấy hình → chọn chữ     hearWord  nghe → chọn chữ
+  //   hearOnly nghe (không chữ) → chọn hình     wordVi   thấy chữ → chọn nghĩa    viWord    đọc nghĩa → chọn chữ
+  //   spell    nghe + thấy hình → xếp chữ cái
+  // Lớp Mầm (chưa đọc được) chỉ có dạng hình + âm; lớp Chồi/Lá có đủ. Từ trả lời sai được hỏi lại 1 lần ở cuối bài
+  // (dạng dễ nhất). Kết quả vẫn ghi vào quizWordStatus / recordWordAnswer nên màn tổng kết, sao, ôn tập thông minh
+  // không đổi cách tính.
+  let lm = null; // { steps, i, run, locked, wrong:Set, retryAdded, retryOnly }
+  // Độ khó theo lớp (từ câu thứ 4 trở đi xoay vòng theo danh sách này): Chồi thêm "điền từ còn thiếu" và "xếp câu từ ngân
+  // hàng từ"; Lá thêm cả "nghe rồi xếp lại câu" và ô chữ thừa. Các dạng dùng câu ví dụ (example / exampleVi) có sẵn của từ.
+  const LM_CYCLE_CHOI = ['picWord', 'fillGap', 'wordVi', 'spell', 'sentBank', 'hearWord', 'viWord'];
+  const LM_CYCLE_LA = ['picWord', 'fillGap', 'hearWord', 'spell', 'sentBank', 'wordVi', 'sentHear', 'viWord'];
+  const LM_SENT_KINDS = ['fillGap', 'sentBank', 'sentHear'];
+  const lmSentOk = w => !!(w.example && w.exampleVi && w.example.split(/\s+/).length >= 3 && w.example.split(/\s+/).length <= 8);
+  const lmGapText = w => w.example.replace(new RegExp('\\b' + w.en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'), '_____');
+  const LM_MIN_STEPS = 10; // chủ đề ít từ (VD 6 từ lớp Lá) vẫn đủ ~10 câu: vài từ được hỏi thêm 1 lần bằng dạng khác
+  function lmKindFor(w, p, easy) {
+    let kind = 'hearPic';
+    if (!easy && p >= 3) {
+      if (!isAdvancedVocabWord(w)) kind = p % 2 ? 'hearOnly' : 'hearPic';
+      else { const cyc = wordClassId(w) === 'la' ? LM_CYCLE_LA : LM_CYCLE_CHOI; kind = cyc[(p - 3) % cyc.length]; }
+    }
+    if (kind === 'spell' && !/^[A-Za-z]{2,8}$/.test(w.en)) kind = 'picWord'; // cụm từ / từ dài: không xếp chữ
+    if (LM_SENT_KINDS.includes(kind) && (!lmSentOk(w) || (kind === 'fillGap' && lmGapText(w) === w.example))) kind = 'picWord';
+    return kind;
+  }
+  function lmBuildSteps(indices, easy) {
+    const steps = indices.map((wi, p) => ({ wi, kind: lmKindFor(currentTopic.words[wi], p, easy) }));
+    if (!easy && indices.length >= 4 && indices.length < LM_MIN_STEPS) {
+      shuffle(indices).slice(0, LM_MIN_STEPS - indices.length).forEach((wi, k) => {
+        const w = currentTopic.words[wi], first = steps.find(x => x.wi === wi).kind;
+        let kind = lmKindFor(w, 3 + k + 2, false), g = 0; // bắt đầu từ vòng "khó", khác dạng lần đầu
+        while ((kind === first || kind === 'hearPic') && g++ < 12) kind = lmKindFor(w, 3 + k + 2 + g, false);
+        steps.push({ wi, kind, extra: true });
+      });
+    }
+    return steps;
+  }
+  function lmStart(indices, retryOnly) {
+    lm = { steps: lmBuildSteps(indices, retryOnly), i: 0, run: ((lm && lm.run) || 0) + 1, locked: false, wrong: new Set(), retryAdded: !!retryOnly, retryOnly: !!retryOnly };
+    lmRender();
+  }
+  function lmNext() {
+    const run = lm.run;
+    lm.i++;
+    if (lm.i >= lm.steps.length && !lm.retryAdded && lm.wrong.size) {
+      lm.retryAdded = true; // hỏi lại các từ sai 1 lần, bằng dạng dễ nhất
+      shuffle([...lm.wrong]).forEach(wi => lm.steps.push({ wi, kind: 'hearPic', retry: true }));
+    }
+    if (lm.i < lm.steps.length) lmRender();
+    else if (isMixedReview) finishReviewSession();
+    else showQuizRecap();
+    return run;
+  }
+  const lmPrompt = () => document.querySelector('#screen-quiz .quiz-prompt');
+  function lmOptions(word, kind) {
+    const pool = currentTopic.words.filter(x => x !== word);
+    const n = Math.min(isAdvancedVocabWord(word) ? 4 : 3, pool.length);
+    if (kind === 'wordVi') {
+      const seen = new Set([word.vi]), wrong = [];
+      shuffle(pool).forEach(x => { if (wrong.length < n && !seen.has(x.vi)) { seen.add(x.vi); wrong.push(x); } });
+      return shuffle([word, ...wrong]);
+    }
+    return shuffle([word, ...shuffle(pool).slice(0, n)]);
+  }
+  function lmRender() {
+    const st = lm.steps[lm.i], w = currentTopic.words[st.wi];
+    quizCurrentWordIdx = st.wi;
+    lm.locked = false;
+    document.getElementById('quizProgressFill').style.width = (lm.i / lm.steps.length * 100) + '%';
+    const fb = document.getElementById('quizFeedback'); fb.textContent = ''; fb.className = 'quiz-feedback';
+    document.getElementById('quizFox').classList.remove('is-happy', 'is-sad');
+    const head = document.querySelector('#screen-quiz .quiz-head');
+    const wordEl = document.getElementById('quizWord'), prompt = lmPrompt(), wrap = document.getElementById('quizOptions');
+    const spell = st.kind === 'spell', sentKind = st.kind === 'sentBank' || st.kind === 'sentHear';
+    document.getElementById('lmSpell').hidden = !spell;
+    document.getElementById('lmSent').hidden = !sentKind;
+    document.getElementById('lmSentVi').hidden = true;
+    document.getElementById('quizReplayBtn').hidden = st.kind === 'fillGap' || st.kind === 'sentBank'; // 2 dạng này không nghe trước (lộ đáp án)
+    wrap.hidden = spell || sentKind;
+    wrap.innerHTML = ''; wrap.classList.remove('is-answered', 'is-text', 'is-vi');
+    wordEl.className = 'quiz-word'; wordEl.removeAttribute('data-fit'); wordEl.textContent = '';
+    const pre = st.retry ? '🔁 Làm lại · ' : '';
+    const setEmoji = (txt, big) => { wordEl.textContent = txt; wordEl.classList.add('lm-emoji'); if (big) wordEl.classList.add('lm-big'); };
+    if (st.kind === 'hearPic') {
+      prompt.textContent = pre + 'Đâu là...'; setWordText(wordEl, w); speak(w.en, { leadVi: 'Đâu là' });
+    } else if (st.kind === 'hearOnly') {
+      prompt.textContent = pre + 'Nghe và chọn hình'; setEmoji('🔊', true); speak(w.en, { leadVi: 'Đâu là' });
+    } else if (st.kind === 'picWord') {
+      prompt.textContent = pre + 'Hình này là gì?'; setEmoji(w.emoji, true);
+    } else if (st.kind === 'hearWord') {
+      prompt.textContent = pre + 'Nghe và chọn chữ'; setEmoji('🔊', true); speak(w.en);
+    } else if (st.kind === 'wordVi') {
+      prompt.textContent = pre + 'Từ này nghĩa là gì?'; setWordText(wordEl, w); speak(w.en);
+    } else if (st.kind === 'viWord') {
+      prompt.textContent = pre + 'Tiếng Anh là gì?'; wordEl.textContent = w.vi; wordEl.classList.add('lm-vi');
+    } else if (st.kind === 'fillGap') {
+      prompt.textContent = pre + 'Chọn từ còn thiếu'; wordEl.textContent = lmGapText(w); wordEl.classList.add('lm-sent');
+      const sv = document.getElementById('lmSentVi'); sv.textContent = w.exampleVi; sv.hidden = false;
+    } else if (st.kind === 'sentBank') {
+      prompt.textContent = pre + 'Xếp thành câu tiếng Anh'; wordEl.textContent = w.exampleVi; wordEl.classList.add('lm-vi', 'lm-sent');
+      lmSentStart(st, w); head.dataset.kind = st.kind; return;
+    } else if (st.kind === 'sentHear') {
+      prompt.textContent = pre + 'Nghe và xếp lại câu'; setEmoji('🔊', true); speak(w.example);
+      lmSentStart(st, w); head.dataset.kind = st.kind; return;
+    } else {
+      prompt.textContent = pre + 'Xếp chữ cái thành từ'; setEmoji(w.emoji, false); lmSpellStart(st, w); speak(w.en); head.dataset.kind = st.kind; return;
+    }
+    head.dataset.kind = st.kind;
+    if (st.kind !== 'spell') {
+      const textual = st.kind === 'picWord' || st.kind === 'hearWord' || st.kind === 'viWord' || st.kind === 'wordVi' || st.kind === 'fillGap';
+      wrap.classList.toggle('is-text', textual);
+      lmOptions(w, st.kind === 'fillGap' ? 'picWord' : st.kind).forEach(opt => {
+        const b = document.createElement('button');
+        b.className = 'quiz-opt' + (textual ? ' text-opt' : '');
+        if (st.kind === 'wordVi') { b.textContent = opt.vi; b.classList.add('vi-opt'); }
+        else if (textual) b.textContent = opt.en;
+        else b.textContent = opt.emoji;
+        b.dataset.en = opt.en;
+        b.addEventListener('click', () => lmAnswer(opt.en === w.en, b));
+        wrap.appendChild(b);
+      });
+    }
+  }
+  function lmAnswer(ok, btn, silent) {
+    if (!lm || lm.locked) return;
+    lm.locked = true;
+    const run = lm.run, st = lm.steps[lm.i], w = currentTopic.words[st.wi];
+    document.querySelectorAll('#quizOptions .quiz-opt').forEach(o => o.disabled = true);
+    const fb = document.getElementById('quizFeedback'), fox = document.getElementById('quizFox');
+    if (!isMixedReview) quizWordStatus[st.wi] = ok;
+    recordWordAnswer(w, ok);
+    document.getElementById('quizOptions').classList.add('is-answered');
+    fox.classList.remove('is-happy', 'is-sad'); void fox.offsetWidth;
+    if (ok) {
+      if (btn) btn.classList.add('correct', 'is-hero');
+      fb.textContent = 'Chính xác! 🎉'; fb.className = 'quiz-feedback ok'; sfx('correct');
+      fox.classList.add('is-happy');
+      if (!st.retry && !st.extra) quizCorrectCount++;
+    } else if (silent) { // câu xếp chữ: đã xếp đúng nhưng có lần sai trước đó
+      fb.textContent = 'Xếp đúng rồi! Lần sau mình nhớ ngay nhé 💪'; fb.className = 'quiz-feedback ok';
+      fox.classList.add('is-happy');
+      if (!st.retry) lm.wrong.add(st.wi);
+    } else {
+      if (btn) btn.classList.add('wrong');
+      document.querySelectorAll('#quizOptions .quiz-opt').forEach(o => { if (o.dataset.en === w.en) o.classList.add('reveal'); });
+      fb.textContent = 'Đáp án đúng đây nè! 👆'; fb.className = 'quiz-feedback no'; sfx('wrong');
+      fox.classList.add('is-sad');
+      if (!st.retry) lm.wrong.add(st.wi);
+    }
+    if (st.retry && ok) lm.wrong.delete(st.wi);
+    const sentence = LM_SENT_KINDS.includes(st.kind);
+    if (st.kind === 'fillGap') { const we = document.getElementById('quizWord'); we.textContent = w.example; we.classList.add('is-filled'); }
+    if (!silent) setTimeout(() => speak(sentence ? w.example : w.en), 350);
+    setTimeout(() => { if (lm && lm.run === run) lmNext(); }, sentence ? (ok ? 2600 : 3600) : (ok ? 1400 : 2000));
+  }
+
+  // Câu xếp câu (ngân hàng từ): bấm các từ ở dưới để xếp thành câu tiếng Anh, bấm "Kiểm tra" mới chấm (dạng xếp câu cần
+  // nghĩ nên có nút này; các câu chọn đáp án vẫn chạm là có kết quả ngay). Lớp Lá và dạng nghe có thêm 2 từ thừa.
+  let lmSentTiles = [], lmSentPicked = [];
+  function lmSentStart(st, w) {
+    const toks = w.example.split(/\s+/);
+    const strip = t => t.replace(/[.!?,]/g, '').toLowerCase();
+    const own = new Set(toks.map(strip));
+    let extra = [];
+    if (wordClassId(w) === 'la' || st.kind === 'sentHear') {
+      const pool = [];
+      currentTopic.words.forEach(x => { if (x !== w && x.example) x.example.split(/\s+/).forEach(t => { const s = strip(t); if (s && !own.has(s) && !pool.includes(t.replace(/[.!?,]/g, ''))) pool.push(t.replace(/[.!?,]/g, '')); }); });
+      extra = shuffle(pool).slice(0, 2);
+    }
+    const all = toks.concat(extra).map((t, id) => ({ t, id }));
+    let sh, g = 0;
+    do { sh = shuffle(all); } while (toks.length > 1 && sh.slice(0, toks.length).every((x, i) => x.id === i) && g++ < 20);
+    lmSentTiles = sh; lmSentPicked = [];
+    document.getElementById('lmSentReveal').hidden = true;
+    document.getElementById('lmSentAns').className = 'lm-sent-answer';
+    lmSentDraw();
+  }
+  function lmSentDraw() {
+    const ans = document.getElementById('lmSentAns'), bank = document.getElementById('lmSentBank');
+    ans.innerHTML = ''; bank.innerHTML = '';
+    lmSentPicked.forEach((tile, i) => {
+      const b = document.createElement('button');
+      b.className = 'lm-tile is-picked'; b.textContent = tile.t;
+      b.addEventListener('click', () => { if (lm.locked) return; lmSentPicked.splice(i, 1); lmSentDraw(); });
+      ans.appendChild(b);
+    });
+    if (!lmSentPicked.length) { const p = document.createElement('span'); p.className = 'lm-sent-hint'; p.textContent = 'Chạm các từ bên dưới theo đúng thứ tự'; ans.appendChild(p); }
+    lmSentTiles.forEach(tile => {
+      if (lmSentPicked.includes(tile)) return;
+      const b = document.createElement('button');
+      b.className = 'lm-tile'; b.textContent = tile.t;
+      b.addEventListener('click', () => { if (lm.locked) return; lmSentPicked.push(tile); lmSentDraw(); });
+      bank.appendChild(b);
+    });
+    document.getElementById('lmCheck').disabled = lm.locked || !lmSentPicked.length;
+  }
+  document.getElementById('lmCheck').addEventListener('click', () => {
+    if (!lm || lm.locked || !lmSentPicked.length) return;
+    const st = lm.steps[lm.i], w = currentTopic.words[st.wi];
+    const ok = lmSentPicked.map(t => t.t).join(' ') === w.example;
+    document.getElementById('lmCheck').disabled = true;
+    document.getElementById('lmSentAns').classList.add(ok ? 'is-correct' : 'is-wrong');
+    const rev = document.getElementById('lmSentReveal');
+    rev.textContent = w.example; rev.hidden = ok;
+    lmAnswer(ok, null);
+  });
+
+  // Câu xếp chữ cái: bấm chữ trong ô dưới để điền vào các ô trên; điền đủ mà sai thì rung + xếp lại (đã tính là sai).
+  let lmTiles = [], lmSlots = [], lmMistake = false;
+  function lmSpellStart(st, w) {
+    const letters = w.en.toUpperCase().split('');
+    let sh, g = 0;
+    do { sh = shuffle(letters); } while (letters.length > 1 && sh.join('') === letters.join('') && g++ < 20);
+    lmTiles = sh.map((ch, id) => ({ ch, id, used: false }));
+    lmSlots = new Array(letters.length).fill(null);
+    lmMistake = false;
+    document.querySelector('#screen-quiz .quiz-prompt').textContent = (st.retry ? '🔁 Làm lại · ' : '') + 'Xếp thành từ: ' + w.vi;
+    lmSpellDraw();
+  }
+  function lmSpellDraw() {
+    const slots = document.getElementById('lmSlots'), bank = document.getElementById('lmBank');
+    slots.innerHTML = ''; bank.innerHTML = '';
+    lmSlots.forEach((id, i) => {
+      const t = id !== null ? lmTiles.find(x => x.id === id) : null;
+      const s = document.createElement('button');
+      s.className = 'spelling-slot' + (t ? ' is-filled' : '');
+      s.textContent = t ? t.ch : ''; s.disabled = !t;
+      s.addEventListener('click', () => { if (lm.locked || id === null) return; lmTiles.find(x => x.id === id).used = false; lmSlots[i] = null; lmSpellDraw(); });
+      slots.appendChild(s);
+    });
+    lmTiles.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'spelling-tile'; b.textContent = t.ch; b.hidden = t.used;
+      b.addEventListener('click', () => {
+        if (lm.locked || t.used) return;
+        const e = lmSlots.indexOf(null);
+        if (e === -1) return;
+        t.used = true; lmSlots[e] = t.id; lmSpellDraw();
+        if (lmSlots.every(x => x !== null)) lmSpellCheck();
+      });
+      bank.appendChild(b);
+    });
+  }
+  function lmSpellCheck() {
+    const st = lm.steps[lm.i], w = currentTopic.words[st.wi];
+    const got = lmSlots.map(id => lmTiles.find(x => x.id === id).ch).join('');
+    const slotEls = document.querySelectorAll('#lmSlots .spelling-slot');
+    if (got === w.en.toUpperCase()) {
+      slotEls.forEach(b => b.classList.add('is-correct'));
+      lmAnswer(!lmMistake, null, true);
+      speak(w.en);
+    } else {
+      lmMistake = true;
+      slotEls.forEach(b => b.classList.add('is-wrong')); sfx('wrong');
+      lm.locked = true;
+      const run = lm.run;
+      setTimeout(() => {
+        if (!lm || lm.run !== run) return;
+        lmTiles.forEach(t => { t.used = false; }); lmSlots.fill(null); lm.locked = false; lmSpellDraw();
+      }, 700);
+    }
   }
 
   // ---------- MIXED-TOPIC REVIEW ----------
@@ -5045,7 +5458,8 @@
 
   document.getElementById('quizReplayBtn').addEventListener('click', () => {
     const w = currentTopic && currentTopic.words[quizCurrentWordIdx];
-    if (w) speak(w.en);
+    const st = !IS_ZH && lm && lm.steps[lm.i];
+    if (w) speak(st && st.kind === 'sentHear' ? w.example : w.en);
   });
 
   function handleQuizAnswer(btn, isCorrect) {
@@ -6908,6 +7322,7 @@
     if (passed) progress.topicPassed[currentTopic.id] = true;
     saveProgress(progress);
     updateStreakOnComplete();
+    announceLevelUps();
 
     document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : passed ? 'Giỏi quá!' : 'Cố lên nào!';
     document.getElementById('doneSubtitle').textContent = isAbcTopic
@@ -6926,6 +7341,8 @@
     document.getElementById('parentTip').innerHTML =
       '💬 Ba mẹ thử hỏi bé: "<strong>' + tipWord.vi + '</strong> ' + LANG.lower + ' là gì nhỉ?" (đáp án: <strong>' + tipWord.en + '</strong>)';
 
+    const guide = typeof PARENT_GUIDE !== 'undefined' ? PARENT_GUIDE[currentTopic.id] : null;
+    if (guide) document.getElementById('parentTip').innerHTML += '<br>🎲 <strong>Trò chơi 5 phút:</strong> ' + guide.play;
     document.getElementById('printBtn').hidden = false;
     document.getElementById('printBtn').onclick = () => printTopicFlashcards(currentTopic);
     const replayBtn = document.getElementById('replayBtn');
@@ -6953,18 +7370,21 @@
     if (isPerfect) progress.perfectCount = (progress.perfectCount || 0) + 1;
     saveProgress(progress);
     updateStreakOnComplete();
+    announceLevelUps();
 
     const titleByKind = {
       mixed: 'Ôn tập xong rồi!',
       smart: 'Ôn tập thông minh xong rồi!',
       difficult: 'Luyện từ khó xong rồi!',
+      daily: 'Luyện tập hôm nay xong rồi!',
     };
     const tipByKind = {
       mixed: '💬 Ba mẹ có thể cho bé ôn tập tổng hợp bất cứ lúc nào ở tab Tiến độ nhé!',
       smart: '💬 App sẽ tự nhắc đúng lúc bé sắp quên — cứ ôn đều mỗi khi có từ đến hạn nhé!',
       difficult: '💬 Những từ bé trả lời đúng liên tục sẽ tự rời khỏi danh sách "từ khó" này.',
+      daily: '💬 Mỗi ngày luyện tập vài phút, các chủ đề sẽ lên cấp dần — cấp 5 là bé nhớ rất chắc rồi!',
     };
-    const replayByKind = { mixed: startMixedReview, smart: startSmartReview, difficult: startDifficultReview };
+    const replayByKind = { mixed: startMixedReview, smart: startSmartReview, difficult: startDifficultReview, daily: startDailyPractice };
 
     document.getElementById('doneTitle').textContent = isPerfect ? 'Xuất sắc! 🌟' : titleByKind[reviewKind];
     document.getElementById('doneSubtitle').textContent = 'Bé ôn tập đúng ' + quizCorrectCount + '/' + quizOrder.length + ' câu.';

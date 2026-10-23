@@ -80,6 +80,13 @@
       </span>
       <span class="kid-continue-play" aria-hidden="true">▶</span>
     </button>
+    <!-- Nút "Luyện tập hôm nay": tự chọn từ đến hạn ôn + từ hay sai + từ yếu nhất (app.js dailyPracticePlan) -->
+    <button class="daily-practice" id="dailyPracticeBtn" hidden>
+      <span class="dp-icon" aria-hidden="true">💪</span>
+      <span class="dp-text"><strong id="dpTitle">Luyện tập hôm nay</strong><small id="dpSub"></small></span>
+      <span class="dp-badge" id="dpBadge" hidden></span>
+      <span class="dp-chev" aria-hidden="true">›</span>
+    </button>
     <div class="kid-missions" id="kidMissions">
       <span class="kid-missions-label"></span>
       <span class="kid-missions-icons"></span>
@@ -216,6 +223,14 @@
             <span class="settings-label">Mục tiêu mỗi ngày<small>Vòng vàng quanh ảnh của bé (thẻ "Học nào") đầy lên khi đạt mục tiêu</small></span>
           </div>
           <div class="goal-chips" id="parentGoalChips"></div>
+        </div>
+        <!-- Cẩm nang cho ba mẹ: mẹo + trò chơi 5 phút theo từng chủ đề (data/guide.js, app.js openGuide) -->
+        <div class="settings-group parent-guide">
+          <button class="settings-row" id="guideBtn">
+            <span class="settings-icon">📘</span>
+            <span class="settings-label">Cẩm nang cho ba mẹ<small>Mẹo và trò chơi dạy bé tại nhà theo từng chủ đề</small></span>
+            <span class="settings-chevron" aria-hidden="true">›</span>
+          </button>
         </div>
 
         <!-- Ôn tập, điều kiện lên lớp, chia sẻ: việc ba mẹ chọn giúp bé — gom vào đây cho vùng của bé gọn
@@ -865,7 +880,20 @@
         </div>
       </div>
       <button class="speak-btn quiz-replay-btn" id="quizReplayBtn" aria-label="Nghe lại từ">🔊 Nghe lại</button>
+      <div class="lm-sentvi" id="lmSentVi" hidden></div>
       <div class="quiz-options" id="quizOptions"></div>
+      <!-- Câu "xếp chữ cái" trong bài học trộn (app.js lmRender, kind 'spell') — dùng lại kiểu ô của trò Xếp chữ. -->
+      <div class="lm-spell" id="lmSpell" hidden>
+        <div class="spelling-slots" id="lmSlots"></div>
+        <div class="spelling-bank" id="lmBank"></div>
+      </div>
+      <!-- Câu "xếp câu" (ngân hàng từ / nghe rồi xếp lại) trong bài học trộn — app.js lmSentStart -->
+      <div class="lm-sent" id="lmSent" hidden>
+        <div class="lm-sent-answer" id="lmSentAns"></div>
+        <div class="lm-sent-bank" id="lmSentBank"></div>
+        <div class="lm-sent-reveal" id="lmSentReveal" hidden></div>
+        <button class="cta-btn lm-check" id="lmCheck" disabled>Kiểm tra</button>
+      </div>
       <div class="quiz-feedback" id="quizFeedback"></div>
     </div>
   </section>
@@ -1444,6 +1472,30 @@
   </div>
 </div>
 
+<!-- Chủ đề đã học: chọn "Luyện nhanh" (vào thẳng bài đố, không xem thẻ) hay "Học lại từ đầu" -->
+<div class="sheet-overlay" id="topicSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="topicSheetTitle">
+    <div class="sheet-emoji" id="topicSheetEmoji" aria-hidden="true"></div>
+    <h3 id="topicSheetTitle"></h3>
+    <div class="sheet-level" id="topicSheetLevel"></div>
+    <div class="sheet-tip" id="topicSheetTip" hidden></div>
+    <button class="cta-btn" id="topicSheetPractice">💪 Luyện nhanh</button>
+    <button class="ghost-btn ghost-btn--solid" id="topicSheetLearn">📖 Học lại từ đầu</button>
+    <button class="ghost-btn ghost-btn--muted" id="topicSheetClose">Đóng</button>
+  </div>
+</div>
+
+<!-- Cẩm nang cho ba mẹ (mở từ Góc ba mẹ) -->
+<div class="sheet-overlay" id="guideSheet" hidden>
+  <div class="sheet-card guide-card" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <h3 id="guideTitle">📘 Cẩm nang cho ba mẹ</h3>
+    <p class="guide-intro">Mỗi chủ đề có 1 mẹo dùng từ trong sinh hoạt và 1 trò chơi 5 phút. Ba mẹ chỉ cần chọn 1–2 việc mỗi ngày.</p>
+    <div class="guide-tabs" id="guideTabs"></div>
+    <div class="guide-list" id="guideList"></div>
+    <button class="ghost-btn ghost-btn--solid" id="guideClose">Đóng</button>
+  </div>
+</div>
+
 <div class="confirm-overlay" id="confirmOverlay" hidden>
   <div class="confirm-card">
     <p class="confirm-message" id="confirmMessage"></p>
@@ -1508,6 +1560,7 @@
 <script src="data/sentences_la.js"></script>
 <script src="data/qa_la.js"></script>
 <script src="data/dialogues_la.js"></script>
+<script src="data/guide.js"></script>
 <script src="data/write_la.js"></script>
 <script src="data/simon_la.js"></script>
 <script src="data/phrases_la.js"></script>
