@@ -342,7 +342,7 @@
       topicPassed: topicPassed,
       streak: { count: (p.streak && p.streak.count) || 0, lastDate: (p.streak && p.streak.lastDate) || null, best: (p.streak && p.streak.best) || 0 },
       streakFreezes: p.streakFreezes || 0,
-      dailyMissions: { date: (p.dailyMissions && p.dailyMissions.date) || null, claimed: !!(p.dailyMissions && p.dailyMissions.claimed), stats: (p.dailyMissions && p.dailyMissions.stats) || null },
+      dailyMissions: { date: (p.dailyMissions && p.dailyMissions.date) || null, claimed: !!(p.dailyMissions && p.dailyMissions.claimed), stats: (p.dailyMissions && p.dailyMissions.stats) || null, byClass: (p.dailyMissions && p.dailyMissions.byClass) || null },
       perfectCount: p.perfectCount || 0,
       badges: p.badges || {},
       wordStats: p.wordStats || {},
@@ -1419,8 +1419,12 @@
     if (progress.dailyMissions.date !== todayStr) {
       progress.dailyMissions = { date: todayStr, claimed: false, stats: blankDailyStats() };
     }
-    if (!progress.dailyMissions.stats) progress.dailyMissions.stats = blankDailyStats();
-    return progress.dailyMissions;
+    // Tiến độ nhiệm vụ tính riêng từng lớp (Mầm/Chồi/Lá); dm.stats luôn trỏ tới số liệu của lớp đang xem.
+    const dm = progress.dailyMissions, cls = getActiveClassId();
+    if (!dm.byClass) dm.byClass = {};
+    if (!dm.byClass[cls]) dm.byClass[cls] = dm.stats && !Object.keys(dm.byClass).length ? dm.stats : blankDailyStats();
+    dm.stats = dm.byClass[cls];
+    return dm;
   }
   // LƯU Ý: không tự saveProgress() ở đây — mọi nơi gọi bumpDailyMission() đều tự lưu tiến độ
   // ngay sau đó (addStars() luôn có 1 saveProgress() theo sau ở nơi gọi nó; còn nhánh "Ghép
@@ -3985,8 +3989,7 @@
   // của bé trên thẻ "Học nào" đầy dần theo số bài đã học hôm nay (đếm qua nhiệm vụ ngày "sessions").
   const GOAL_OPTIONS = [[1, '5 phút', '1 bài/ngày'], [2, '10 phút', '2 bài/ngày'], [3, '15 phút', '3 bài/ngày']];
   function lessonsToday() {
-    const dm = progress.dailyMissions;
-    return dm && dm.date === toDateStr(new Date()) && dm.stats ? (dm.stats.sessions || 0) : 0;
+    return ensureDailyMissions().stats.sessions || 0;
   }
   function renderGoalChips(boxId, value, onPick) {
     const box = document.getElementById(boxId);
@@ -5705,7 +5708,7 @@
 
   document.getElementById('backFromQuizRecap').addEventListener('click', () => goHome());
 
-  document.getElementById('backFromQuiz').addEventListener('click', () => showScreen(isMixedReview ? 'progress' : 'home'));
+  document.getElementById('backFromQuiz').addEventListener('click', () => showScreen(isMixedReview && reviewKind !== 'daily' ? 'progress' : 'home'));
 
   // ---------- MATCHING GAME (nối cột: cột trái hình, cột phải chữ, hiện sẵn hết) ----------
   // matchMode: 'learn' (sau flashcard+quiz, được tính sao) hoặc 'practice' (chơi tự do từ tab Trò chơi, không tính sao)
