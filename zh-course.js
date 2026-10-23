@@ -1594,7 +1594,7 @@
     run();
   }
 
-  makeScreen('chars', '<div id="zhChars"></div>', 'tabSentences');
+  makeScreen('chars', topbar('zhCharsBack') + '<div id="zhChars"></div>', 'tabSentences');
   makeScreen('char', topbar('zhCharBack') + '<div id="zhChar"></div>');
   function charsCard() {
     const n = ALL_CHARS.filter(charSeen).length;
@@ -1725,10 +1725,13 @@
     }).catch(() => {}); // không có mạng: giữ chữ tĩnh
   }
   $('zhCharBack').addEventListener('click', openChars);
+  $('zhCharsBack').addEventListener('click', openPractice);
 
   // ---------- HỘI THOẠI CÓ NHÂN VẬT (đợt Z5) ----------
   // Xem từng câu hội thoại hiện dần (có giọng đọc), chạm từ để tra nghĩa; xong thì nhập vai chính đoạn đó.
-  makeScreen('dlg', '<div id="zhDlg"></div>', 'tabSentences');
+  makeScreen('dlg', topbar('zhDlgBack') + '<div id="zhDlg"></div>', 'tabSentences');
+  let dlgPlaying = false; // đang xem 1 đoạn hội thoại (← quay về danh sách) hay đang ở danh sách (← quay về Luyện tập)
+  $('zhDlgBack').addEventListener('click', () => { if (dlgPlaying) openDialogues(); else openPractice(); });
   function allDialogues() {
     if (!HAS_READ) return [];
     return Object.keys(ZH_ROLE).flatMap(k => ZH_ROLE[k].map(d => ({ d, unit: ALL_UNITS.find(u => u.id === k) })));
@@ -1745,6 +1748,7 @@
   }
   function openDialogues() { renderDlgList(); A.showScreen('zh-dlg'); window.scrollTo(0, 0); }
   function renderDlgList() {
+    dlgPlaying = false;
     const box = $('zhDlg');
     box.innerHTML = '';
     const hero = el('div', 'zh-hero');
@@ -1756,6 +1760,7 @@
     box.appendChild(list);
   }
   function playDialogue(d) {
+    dlgPlaying = true;
     const box = $('zhDlg');
     box.innerHTML = '';
     const back = el('button', 'ghost-btn zh-mini-btn zh-dlg-back', '← Danh sách');
