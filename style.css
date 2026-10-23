@@ -3454,3 +3454,60 @@
   .guide-item-head { font-family: 'Baloo 2'; font-weight: 800; font-size: 18px; margin-bottom: 4px; }
   .guide-item p { margin: 4px 0 0; font-size: 14.5px; font-weight: 600; line-height: 1.5; color: var(--ink); }
   .parent-guide .settings-label small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--ink-soft); line-height: 1.35; }
+
+  /* ================= ĐỢT E — SỔ TỪ CỦA BÉ + BÁO CÁO TUẦN QUA EMAIL ================= */
+  html.lang-zh-ui #wordbookBtn { display: none; }
+  .wordbook-btn { width: 100%; margin: 0 0 14px; }
+  .wordbook-wrap { display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; }
+  .wb-hero h2 { margin: 0 0 4px; font-family: 'Baloo 2'; font-weight: 800; font-size: 26px; }
+  .wb-hero p { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.5; color: var(--ink-soft); }
+  .wb-practice { width: 100%; }
+  .wb-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .wb-chips .goal-chip { padding: 8px 4px; }
+  .wb-search {
+    width: 100%; min-height: 48px; padding: 0 14px; border: 2px solid var(--line-strong, var(--line)); border-radius: var(--r-md, 16px);
+    background: var(--surface); color: var(--ink); font-family: 'Quicksand'; font-weight: 700; font-size: 16px;
+  }
+  .wb-search:focus { outline: none; border-color: var(--primary, var(--teal)); }
+  .wb-body { display: flex; flex-direction: column; gap: 6px; }
+  .wb-empty { text-align: center; margin: 18px 0; font-weight: 700; color: var(--ink-soft); }
+  .wb-topic { display: flex; align-items: baseline; justify-content: space-between; margin: 12px 2px 2px; font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; }
+  .wb-topic small { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+  .wb-row {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; text-align: left; cursor: pointer; color: var(--ink);
+    background: var(--surface); border: 2px solid var(--line-strong, var(--line)); border-radius: 16px; box-shadow: 0 3px 0 var(--line-strong, var(--line));
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .wb-row:active { transform: translateY(3px); box-shadow: 0 0 0 transparent; }
+  .wb-emoji { flex: none; font-size: 30px; line-height: 1; width: 38px; text-align: center; }
+  .wb-emoji img.emoji-icon { width: 34px; height: 34px; }
+  .wb-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .wb-text strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 19px; overflow: hidden; text-overflow: ellipsis; }
+  .wb-text small { font-size: 13.5px; font-weight: 700; color: var(--ink-soft); }
+  .wb-tag { flex: none; font-style: normal; font-family: 'Baloo 2'; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--gold) 28%, var(--surface)); color: var(--gold-ink, #7A5410); }
+  .wb-tag.is-hard { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--accent-ink); }
+  .wb-pips { flex: none; display: flex; gap: 3px; }
+  .wb-pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong, var(--line)); display: block; }
+  .wb-pips i.on { background: var(--gold); }
+
+  /* Báo cáo tuần ngay trong app (app.js weeklyReport / openReport). */
+  .parent-report { margin: 0 0 14px; }
+  .parent-report .settings-label small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--ink-soft); line-height: 1.35; }
+  .week-report-banner {
+    display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 12px; padding: 12px 14px; cursor: pointer; text-align: left;
+    background: color-mix(in srgb, var(--gold) 22%, var(--surface)); color: var(--ink); border: 2px solid color-mix(in srgb, var(--gold) 65%, var(--line));
+    border-radius: var(--r-md, 16px); font-family: 'Baloo 2'; font-weight: 800; font-size: 16px; line-height: 1.3;
+  }
+  .week-report-banner[hidden] { display: none; }
+  .wr-emoji { flex: none; font-size: 26px; line-height: 1; }
+  .wr-emoji img.emoji-icon { width: 30px; height: 30px; }
+  .wr-text { flex: 1; min-width: 0; }
+  .wr-arrow { flex: none; font-size: 24px; color: var(--ink-soft); }
+  .report-card { max-height: 88vh; overflow-y: auto; text-align: left; }
+  .report-card h3 { text-align: center; }
+  .report-list { display: flex; flex-direction: column; gap: 6px; }
+  .report-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2, color-mix(in srgb, var(--line) 35%, var(--surface))); font-size: 15px; font-weight: 700; }
+  .report-row strong { font-family: 'Baloo 2'; font-weight: 800; font-size: 16px; text-align: right; }
+  .report-tips { padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--gold) 16%, var(--surface)); }
+  .report-tips-head { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; margin-bottom: 4px; }
+  .report-tips p { margin: 6px 0 0; font-size: 14.5px; font-weight: 600; line-height: 1.5; }

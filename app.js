@@ -381,6 +381,7 @@
       zh: p.zh || {}, // khoá học Tiếng Trung — zh-course.js tự chuẩn hoá các trường bên trong
       dailyGoal: [1, 2, 3].indexOf(p.dailyGoal) >= 0 ? p.dailyGoal : 1, // mục tiêu: số bài / ngày (1 bài ≈ 5 phút)
       studyDays: p.studyDays || backfillStudyDays(p.streak), // ngày đã học: { 'YYYY-MM-DD': 1 | 'f' (dùng khiên) }
+      weeklySeen: p.weeklySeen || '', // ngày ba mẹ xem báo cáo tuần gần nhất (YYYY-MM-DD) — dải báo cáo ở trang chủ hiện lại sau ~7 ngày
       sequentialPath: !!p.sequentialPath, // Góc ba mẹ › "Học theo thứ tự": chủ đề sau mở khi học xong chủ đề trước
       pathChests: p.pathChests || {}, // rương quà trên con đường Từ vựng đã mở: { 'mam-1': true, … } (xem renderTopicPath)
       // Di trú equippedOutfits qua 3 đời schema, cũ nhất trước:
@@ -412,7 +413,7 @@
       choi: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, memoryTopics: {}, writeGroups: {}, lettersWritten: 0, simonPlayed: {}, songsPlayed: {} },
       la: { spellWords: 0, sentencesBuilt: 0, spellTopics: {}, sentenceGroups: {}, qaGroups: {}, dialogueGroups: {}, writeSentGroups: {}, paragraphGroups: {}, memoryTopics: {}, simonPlayed: {}, songsPlayed: {} },
       zh: {},
-      pathChests: {}, sequentialPath: false, dailyGoal: 1, studyDays: {},
+      pathChests: {}, sequentialPath: false, weeklySeen: '', dailyGoal: 1, studyDays: {},
     };
   }
   // Cộng sao: tăng cả số sao bé nhìn thấy/tiêu được (progress.stars) lẫn tổng sao trọn đời ẩn
@@ -814,6 +815,7 @@
     storyQuiz: document.getElementById('screen-story-quiz'),
     quiz: document.getElementById('screen-quiz'),
     quizRecap: document.getElementById('screen-quiz-recap'),
+    wordbook: document.getElementById('screen-wordbook'),
     match: document.getElementById('screen-match'),
     spelling: document.getElementById('screen-spelling'),
     speed: document.getElementById('screen-speed'),
@@ -4121,6 +4123,165 @@
     return s;
   }
   // Cẩm nang cho ba mẹ: danh sách mẹo + trò chơi theo chủ đề của từng lớp (3 tab Mầm / Chồi / Lá, mở sẵn lớp đang học).
+  // ---------- BÁO CÁO TUẦN NGAY TRONG APP ----------
+  // Tính từ progress.studyDays (ngày học) + progress.wordStats (từ đang học / nhớ chắc / đến hạn / hay nhầm). Không gửi
+  // email, không cần mạng: ba mẹ xem ở Góc ba mẹ, và trang chủ có dải nhắc xem khoảng 7 ngày 1 lần.
+  function weeklyReport() {
+    const dayKey = n => toDateStr(new Date(Date.now() - n * 864e5));
+    const study = progress.studyDays || {};
+    let thisWeek = 0, lastWeek = 0, freezes = 0;
+    for (let i = 0; i < 7; i++) {
+      const x = study[dayKey(i)], y = study[dayKey(i + 7)];
+      if (x === 1) thisWeek++; else if (x === 'f') freezes++;
+      if (y === 1) lastWeek++;
+    }
+    const today = toDateStr(new Date());
+    let learned = 0, strong = 0, due = 0;
+    const hard = [];
+    Object.keys(progress.wordStats).forEach(key => {
+      const s = progress.wordStats[key];
+      if (!s || !WORD_BY_KEY.get(key)) return;
+      learned++;
+      if ((s.step || 0) >= 3) strong++;
+      if (s.nextDue && s.nextDue <= today) due++;
+      if ((s.wrongCount || 0) >= DIFFICULT_WRONG_THRESHOLD) hard.push({ w: key.split(':').slice(1).join(':'), n: s.wrongCount });
+    });
+    hard.sort((x, y) => y.n - x.n);
+    const hardList = hard.slice(0, 5).map(x => x.w);
+    const hasDays = Object.keys(study).length > 0;
+    const who = profile && profile.name ? 'bé ' + profile.name.trim() : 'bé';
+    const Who = who.charAt(0).toUpperCase() + who.slice(1);
+    const tips = [];
+    if (hasDays && thisWeek === 0) tips.push('Tuần qua ' + who + ' chưa học ngày nào. Ba mẹ thử hẹn một giờ cố định mỗi ngày (VD sau bữa tối) — chỉ 5 phút thôi ạ.');
+    else if (hasDays && thisWeek <= 2) tips.push(Who + ' học ' + thisWeek + ' ngày tuần qua. Ba mẹ có thể đặt mục tiêu mỗi ngày ở Góc ba mẹ và cùng bé học trước khi ngủ.');
+    if (due >= 5) tips.push('Có ' + due + ' từ đã đến hạn ôn — bấm "Luyện tập hôm nay" ở trang chủ để bé ôn đúng lúc sắp quên.');
+    if (hardList.length) tips.push('Ba mẹ thử cùng bé tập riêng các từ hay nhầm: ' + hardList.join(', ') + '. Dùng từ đó trong câu nói hằng ngày sẽ nhớ nhanh hơn.');
+    if (hasDays && thisWeek >= 5) tips.push(Who + ' học rất đều! Ba mẹ khen bé và nhờ bé "dạy lại" vài từ mới cho ba mẹ nhé.');
+    if (!tips.length) tips.push('Ba mẹ cùng bé học tiếp một chủ đề mới và dành vài phút "Luyện tập hôm nay" để giữ đà nhé.');
+    return { who, hasDays, thisWeek, lastWeek, freezes, learned, strong, due, hardList, tips: tips.slice(0, 2),
+      streak: progress.streak.count || 0, best: progress.streak.best || 0, stars: progress.stars || 0, topics: Object.keys(progress.doneTopics).length };
+  }
+  function renderWeekReportBanner() {
+    const b = document.getElementById('weekReportBanner');
+    if (!b || IS_ZH) return;
+    const r = weeklyReport();
+    const stale = !progress.weeklySeen || daysBetweenStr(progress.weeklySeen, toDateStr(new Date())) >= 7;
+    b.hidden = !(r.hasDays && r.thisWeek >= 2 && stale);
+    if (!b.hidden) document.getElementById('weekReportText').textContent = 'Tuần qua ' + r.who + ' học ' + r.thisWeek + ' ngày — bấm để xem báo cáo';
+  }
+  function openReport() {
+    const r = weeklyReport();
+    const list = document.getElementById('reportList'), tips = document.getElementById('reportTips');
+    list.innerHTML = ''; tips.innerHTML = '';
+    document.getElementById('reportTitle').textContent = '📊 Tuần qua của ' + r.who;
+    const row = (emoji, label, value) => {
+      const d = document.createElement('div'); d.className = 'report-row';
+      const l = document.createElement('span'); l.textContent = emoji + ' ' + label;
+      const v = document.createElement('strong'); v.textContent = value;
+      d.append(l, v); list.appendChild(d);
+    };
+    if (r.hasDays) row('📅', 'Số ngày học (7 ngày qua)', r.thisWeek + '/7' + (r.freezes ? ' (+' + r.freezes + ' khiên)' : '') + ' · tuần trước ' + r.lastWeek + '/7');
+    row('🔥', 'Chuỗi ngày liên tiếp', r.streak + ' ngày' + (r.best > r.streak ? ' (kỷ lục ' + r.best + ')' : ''));
+    row('⭐', 'Tổng số sao', String(r.stars));
+    row('📚', 'Chủ đề đã học xong', String(r.topics));
+    if (r.learned) {
+      row('🔤', 'Từ đang học', String(r.learned));
+      row('🧠', 'Từ nhớ chắc', String(r.strong));
+      row('🔁', 'Từ đến hạn ôn', String(r.due));
+    }
+    if (r.hardList.length) row('⚠️', 'Từ bé hay nhầm', r.hardList.join(', '));
+    const head = document.createElement('div'); head.className = 'report-tips-head'; head.textContent = '💡 Gợi ý tuần này';
+    tips.appendChild(head);
+    r.tips.forEach(t => { const p = document.createElement('p'); p.textContent = t; tips.appendChild(p); });
+    document.getElementById('reportSheet').hidden = false;
+    progress.weeklySeen = toDateStr(new Date()); // đã xem → dải ở trang chủ ẩn ~7 ngày
+    saveProgress(progress);
+    document.getElementById('weekReportBanner').hidden = true;
+  }
+  const closeReport = () => { document.getElementById('reportSheet').hidden = true; };
+  document.getElementById('reportBtn').addEventListener('click', openReport);
+  document.getElementById('weekReportBanner').addEventListener('click', openReport);
+  document.getElementById('reportClose').addEventListener('click', closeReport);
+  document.getElementById('reportSheet').addEventListener('click', e => { if (e.target.id === 'reportSheet') closeReport(); });
+
+  // ---------- SỔ TỪ CỦA BÉ ----------
+  // Mọi từ bé đã học (progress.wordStats), gom theo chủ đề: mức nhớ từng từ (5 chấm = bậc ghi nhớ hiệu dụng + 1), từ nào
+  // đến hạn ôn / hay sai, lọc + tìm; bấm 1 từ để nghe.
+  let wbFilter = 'all', wbQuery = '';
+  function wordbookEntries() {
+    const today = toDateStr(new Date());
+    const out = [];
+    Object.keys(progress.wordStats).forEach(key => {
+      const w = WORD_BY_KEY.get(key), s = progress.wordStats[key];
+      if (!w || !s) return;
+      out.push({ w, topic: WORD_TO_TOPIC.get(w), step: wordEffStep(key), due: !!(s.nextDue && s.nextDue <= today), hard: s.wrongCount >= DIFFICULT_WRONG_THRESHOLD });
+    });
+    return out;
+  }
+  function renderWordbook() {
+    const wrap = document.getElementById('wordbookWrap');
+    wrap.innerHTML = '';
+    const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+    const all = wordbookEntries();
+    const due = all.filter(e => e.due).length, hard = all.filter(e => e.hard).length, strong = all.filter(e => e.step >= 3).length;
+    const hero = mk('div', 'wb-hero');
+    hero.appendChild(mk('h2', null, '📖 Sổ từ của bé'));
+    hero.appendChild(mk('p', null, all.length ? 'Bé đã học ' + all.length + ' từ · ' + strong + ' từ nhớ chắc · ' + due + ' từ cần ôn' : 'Bé chưa học từ nào — học một chủ đề trước, rồi các từ sẽ về đây nhé!'));
+    wrap.appendChild(hero);
+    if (!all.length) return;
+    if (dailyPracticePlan().length >= 4) {
+      const go = mk('button', 'cta-btn wb-practice', '💪 Luyện tập hôm nay');
+      go.addEventListener('click', startDailyPractice);
+      wrap.appendChild(go);
+    }
+    const chips = mk('div', 'wb-chips');
+    [['all', 'Tất cả', all.length], ['due', 'Cần ôn', due], ['hard', 'Hay sai', hard]].forEach(c => {
+      const b = mk('button', 'goal-chip' + (wbFilter === c[0] ? ' is-active' : ''));
+      b.innerHTML = '<strong>' + c[1] + '</strong><small>' + c[2] + ' từ</small>';
+      b.addEventListener('click', () => { wbFilter = c[0]; renderWordbook(); });
+      chips.appendChild(b);
+    });
+    wrap.appendChild(chips);
+    const search = mk('input', 'wb-search');
+    search.type = 'search'; search.placeholder = '🔍 Tìm từ tiếng Anh hoặc nghĩa…'; search.value = wbQuery;
+    wrap.appendChild(search);
+    const body = mk('div', 'wb-body');
+    wrap.appendChild(body);
+    const draw = () => {
+      body.innerHTML = '';
+      const q = wbQuery.trim().toLowerCase();
+      const rows = all.filter(e => (wbFilter === 'all' || (wbFilter === 'due' ? e.due : e.hard)) && (!q || e.w.en.toLowerCase().includes(q) || e.w.vi.toLowerCase().includes(q)));
+      if (!rows.length) { body.appendChild(mk('p', 'wb-empty', wbFilter === 'hard' ? 'Bé chưa có từ nào hay sai — giỏi quá! 🎉' : wbFilter === 'due' ? 'Không có từ nào cần ôn lúc này ✅' : 'Không tìm thấy từ nào.')); return; }
+      TOPICS.concat(CHOI_TOPICS, LA_TOPICS).forEach(t => {
+        const list = rows.filter(e => e.topic === t);
+        if (!list.length) return;
+        const head = mk('div', 'wb-topic');
+        head.appendChild(mk('span', null, t.emoji + ' ' + t.label));
+        if (progress.doneTopics[t.id]) head.appendChild(mk('small', null, 'Cấp ' + topicLevel(t)));
+        body.appendChild(head);
+        list.forEach(e => {
+          const r = mk('button', 'wb-row');
+          r.appendChild(mk('span', 'wb-emoji', e.w.emoji));
+          const tx = mk('span', 'wb-text');
+          tx.appendChild(mk('strong', null, e.w.en));
+          tx.appendChild(mk('small', null, e.w.vi));
+          r.appendChild(tx);
+          if (e.due || e.hard) r.appendChild(mk('em', 'wb-tag' + (e.hard ? ' is-hard' : ''), e.hard ? 'hay sai' : 'cần ôn'));
+          const pips = mk('span', 'wb-pips');
+          pips.setAttribute('aria-label', 'Mức nhớ ' + Math.min(5, e.step + 1) + ' trên 5');
+          for (let i = 1; i <= 5; i++) pips.appendChild(mk('i', i <= e.step + 1 ? 'on' : ''));
+          r.appendChild(pips);
+          r.addEventListener('click', () => speak(e.w.en));
+          body.appendChild(r);
+        });
+      });
+    };
+    search.addEventListener('input', () => { wbQuery = search.value; draw(); });
+    draw();
+  }
+  document.getElementById('wordbookBtn').addEventListener('click', () => { wbFilter = 'all'; wbQuery = ''; renderWordbook(); showScreen('wordbook'); window.scrollTo(0, 0); });
+  document.getElementById('backFromWordbook').addEventListener('click', () => { showScreen('achievements'); setAchievementsMode('progress'); });
+
   let guideClass = 'mam';
   function renderGuide() {
     const tabs = document.getElementById('guideTabs'), list = document.getElementById('guideList');
@@ -4234,6 +4395,7 @@
       renderParentGoal();
       renderTotalStars();
       renderHomeBanners();
+      renderWeekReportBanner();
       renderReviewButtons();
       renderDailyMissions();
       return;

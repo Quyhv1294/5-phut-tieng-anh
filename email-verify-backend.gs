@@ -9,9 +9,9 @@
 //   "Xác thực email" báo "Không gửi được mã..." (Google trả về trang lỗi
 //   "Không tìm thấy hàm tập lệnh: doGet" thay vì JSON).
 //
-//   PHẦN 2 — sendInactivityReminders()/sendWeeklyDigest(): 2 hàm chạy theo
+//   PHẦN 2 — sendInactivityReminders(): hàm chạy theo
 //   lịch (Time-driven Trigger, tự cấu hình riêng, KHÔNG liên quan doGet) để
-//   nhắc học qua email khi nghỉ học lâu, và gửi báo cáo tuần — riêng cho
+//   nhắc học qua email khi nghỉ học lâu — riêng cho
 //   tiếng Anh (cột Progress) và Tiếng Trung (cột ProgressZh).
 //
 // Nếu project đã có sẵn 1 hàm doGet() khác từ trước (kể cả bản
@@ -39,7 +39,7 @@ const CONFIG = {
   // Lưu + Deploy (New version). Trigger có chạy cũng không gửi gì khi đang tắt.
   REMINDERS_ENABLED: false,
   INACTIVE_DAYS_THRESHOLD: 2,   // bao nhiêu ngày không học liên tiếp thì gửi email nhắc
-  APP_URL: 'https://quyhv1294.github.io/5-phut-tieng-anh/', // địa chỉ app (GitHub Pages) — dùng trong email nhắc học / báo cáo tuần
+  APP_URL: 'https://quyhv1294.github.io/5-phut-tieng-anh/', // địa chỉ app (GitHub Pages) — dùng trong email nhắc học
 };
 
 // Cột theo đúng thứ tự sẽ tự tạo trên sheet "Progress" nếu sheet chưa có/chưa
@@ -599,79 +599,13 @@ function zhStats_(progress) {
   };
 }
 
-// ---------- 2b) BÁO CÁO TUẦN ----------
-// Gắn vào 1 Time-driven Trigger chạy 1 lần/tuần (VD Chủ nhật 20h) — trigger riêng, tách khỏi
-// sendInactivityReminders() để 2 việc không phụ thuộc lịch của nhau. Mỗi ngôn ngữ đang học
-// (đã có ít nhất 1 buổi học) nhận 1 báo cáo riêng.
-function sendWeeklyDigest() {
-  const sh = readProgressSheet_();
-  if (!sh) return;
-  let sentCount = 0;
-
-  for (let r = 1; r < sh.data.length; r++) {
-    const email = sh.data[r][sh.emailCol];
-    if (!email) continue;
-    ['en', 'zh'].forEach(function (lang) {
-      if (sh.cols[lang] === -1) return;
-      const progress = parseProgress_(sh.data[r][sh.cols[lang]]);
-      if (!progress || !progress.streak || !progress.streak.lastDate) return; // chưa học lần nào, chưa có gì để báo cáo
-
-      const mail = lang === 'zh' ? zhDigestMail_(progress) : enDigestMail_(progress);
-      try {
-        MailApp.sendEmail({ to: email, subject: mail.subject, body: mail.body, name: mail.from });
-        sentCount++;
-      } catch (e) {
-        Logger.log('Gửi báo cáo tuần thất bại cho ' + email + ' (' + lang + '): ' + e);
-      }
-    });
-  }
-
-  Logger.log('Đã gửi ' + sentCount + ' báo cáo tuần.');
-}
-
-function enDigestMail_(progress) {
-  const doneTopicsCount = progress.doneTopics ? Object.keys(progress.doneTopics).length : 0;
-  return {
-    from: CONFIG.FROM_NAME,
-    subject: '📊 Báo cáo tuần học tiếng Anh của bé',
-    body:
-      'Chào ba mẹ,\n\n' +
-      'Tổng kết tiến độ học của bé tính tới hôm nay:\n' +
-      '⭐ Tổng số sao: ' + (progress.stars || 0) + '\n' +
-      '📚 Số chủ đề đã học xong: ' + doneTopicsCount + '\n' +
-      '🔥 Chuỗi ngày học liên tiếp hiện tại: ' + (progress.streak.count || 0) + ' ngày\n\n' +
-      'Ba mẹ cùng bé vào học tiếp để giữ đà nhé!\n' +
-      '👉 ' + CONFIG.APP_URL +
-      '\n\n— ' + CONFIG.FROM_NAME,
-  };
-}
-
-function zhDigestMail_(progress) {
-  const z = zhStats_(progress);
-  return {
-    from: CONFIG.FROM_NAME_ZH,
-    subject: '📊 Báo cáo tuần học tiếng Trung của bạn',
-    body:
-      'Chào bạn,\n\n' +
-      'Tổng kết tiến độ khoá Tiếng Trung tính tới hôm nay:\n' +
-      '🗺️ Số chặng đã xong: ' + z.units + '\n' +
-      '🔤 Số từ đã học: ' + z.words + '\n' +
-      '🔁 Số từ đến hạn ôn: ' + z.due + '\n' +
-      '⭐ Tổng số sao: ' + z.stars + '\n' +
-      '🔥 Chuỗi ngày học liên tiếp hiện tại: ' + z.streak + ' ngày\n\n' +
-      (z.due > 0 ? 'Vào tab "Ôn tập" để ôn các từ đến hạn trước khi học bài mới nhé!\n' : 'Vào học tiếp để giữ đà nhé!\n') +
-      '👉 ' + CONFIG.APP_URL +
-      '\n\n— ' + CONFIG.FROM_NAME_ZH,
-  };
-}
-
 // ============================================================================
 // CÁCH CÀI ĐẶT (làm 1 lần):
 // 1. Mở Google Sheet dùng để lưu dữ liệu (hoặc mở thẳng project Apps Script
 //    đang gắn với Web App URL trong data/sheets-config.js) — Extensions >
 //    Apps Script.
 // 2. Nếu project đang có code cũ (VD chỉ có sendInactivityReminders/
-//    sendWeeklyDigest như hiện tại, không có doGet) — XOÁ HẾT code cũ trong
+//    như hiện tại, không có doGet) — XOÁ HẾT code cũ trong
 //    file đó, dán TOÀN BỘ nội dung file này đè vào (trừ khối comment hướng
 //    dẫn cuối cùng).
 // 3. Sửa CONFIG.APP_URL thành domain thật bạn đang host, kiểm tra
@@ -686,8 +620,7 @@ function zhDigestMail_(progress) {
 //    email.
 // 6. (Tuỳ chọn) Bật nhắc học tự động: vào Triggers (icon ⏰ bên trái) > Add
 //    Trigger > chọn hàm sendInactivityReminders, loại "Time-driven" > "Day
-//    timer" > khung giờ muốn gửi (VD 19:00-20:00); thêm 1 trigger khác cho
-//    sendWeeklyDigest, loại "Week timer", chọn 1 ngày trong tuần. Chạy thử
+//    timer" > khung giờ muốn gửi (VD 19:00-20:00). Chạy thử
 //    bằng tay (nút ▶ Run) trước khi bật trigger để kiểm tra log không lỗi.
 //    MailApp có hạn ngạch ~100 email/ngày cho tài khoản Gmail thường.
 // ============================================================================

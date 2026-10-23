@@ -100,6 +100,13 @@
       <span class="wb-arrow">→</span>
     </button>
 
+    <!-- Báo cáo tuần ngay trong app: hiện 1 lần mỗi ~7 ngày khi bé có học (app.js renderWeekReportBanner) -->
+    <button class="week-report-banner" id="weekReportBanner" hidden>
+      <span class="wr-emoji" aria-hidden="true">📊</span>
+      <span class="wr-text" id="weekReportText"></span>
+      <span class="wr-arrow" aria-hidden="true">›</span>
+    </button>
+
     <div class="reminder-banner" id="reminderBanner" hidden>
       <span class="reminder-emoji" id="reminderEmoji">📚</span>
       <span id="reminderText">Hôm nay bé chưa học bài nào — chọn 1 chủ đề bên dưới để bắt đầu nhé!</span>
@@ -223,6 +230,13 @@
             <span class="settings-label">Mục tiêu mỗi ngày<small>Vòng vàng quanh ảnh của bé (thẻ "Học nào") đầy lên khi đạt mục tiêu</small></span>
           </div>
           <div class="goal-chips" id="parentGoalChips"></div>
+        </div>
+        <div class="settings-group parent-report">
+          <button class="settings-row" id="reportBtn">
+            <span class="settings-icon">📊</span>
+            <span class="settings-label">Báo cáo tuần của bé<small>Bé học mấy ngày, từ nào nhớ chắc, từ nào hay nhầm</small></span>
+            <span class="settings-chevron" aria-hidden="true">›</span>
+          </button>
         </div>
         <!-- Cẩm nang cho ba mẹ: mẹo + trò chơi 5 phút theo từng chủ đề (data/guide.js, app.js openGuide) -->
         <div class="settings-group parent-guide">
@@ -421,6 +435,7 @@
             <div class="summary-label">🔥 Kỷ lục chuỗi ngày</div>
           </div>
         </div>
+        <button class="ghost-btn wordbook-btn" id="wordbookBtn">📖 Sổ từ của bé</button>
         <div class="streak-cal" id="streakCal" hidden></div>
         <div class="level-card">
           <span id="levelEmoji">🌱</span>
@@ -896,6 +911,14 @@
       </div>
       <div class="quiz-feedback" id="quizFeedback"></div>
     </div>
+  </section>
+
+  <!-- ============ SỔ TỪ CỦA BÉ (app.js renderWordbook) ============ -->
+  <section class="screen" id="screen-wordbook">
+    <div class="card-topbar">
+      <button class="icon-btn" id="backFromWordbook" aria-label="Quay lại">←</button>
+    </div>
+    <div class="wordbook-wrap" id="wordbookWrap"></div>
   </section>
 
   <!-- ============ QUIZ RECAP SCREEN (tổng kết đúng/sai) ============ -->
@@ -1482,6 +1505,16 @@
     <button class="cta-btn" id="topicSheetPractice">💪 Luyện nhanh</button>
     <button class="ghost-btn ghost-btn--solid" id="topicSheetLearn">📖 Học lại từ đầu</button>
     <button class="ghost-btn ghost-btn--muted" id="topicSheetClose">Đóng</button>
+  </div>
+</div>
+
+<!-- Báo cáo tuần của bé (mở từ Góc ba mẹ hoặc dải báo cáo ở trang chủ) -->
+<div class="sheet-overlay" id="reportSheet" hidden>
+  <div class="sheet-card report-card" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+    <h3 id="reportTitle">📊 Tuần qua của bé</h3>
+    <div class="report-list" id="reportList"></div>
+    <div class="report-tips" id="reportTips"></div>
+    <button class="ghost-btn ghost-btn--solid" id="reportClose">Đóng</button>
   </div>
 </div>
 
