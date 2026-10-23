@@ -2943,6 +2943,8 @@
     fetch(url).catch(() => {});
   }
 
+  // Gõ lại vào form thì xoá dòng báo lỗi cũ (nếu không, lỗi "nhập tên" còn nguyên khi trình duyệt chặn ở ô tuổi).
+  document.getElementById('profileForm').addEventListener('input', () => showProfileFormError(''));
   document.getElementById('profileForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const name = document.getElementById('profileNameInput').value.trim();
