@@ -5708,7 +5708,16 @@
 
   document.getElementById('backFromQuizRecap').addEventListener('click', () => goHome());
 
-  document.getElementById('backFromQuiz').addEventListener('click', () => showScreen(isMixedReview && reviewKind !== 'daily' ? 'progress' : 'home'));
+  // Đã trả lời ít nhất 1 câu thì hỏi lại trước khi thoát — bấm nhầm nút ← không mất cả bài (giống khoá học tiếng Trung).
+  function confirmLeaveLesson(unfinished) {
+    if (!unfinished) return Promise.resolve(true);
+    return showConfirmDialog('Thoát bài này? Kết quả đang làm dở sẽ không được lưu.', { okLabel: 'Thoát', cancelLabel: 'Học tiếp', danger: true });
+  }
+  document.getElementById('backFromQuiz').addEventListener('click', () => {
+    confirmLeaveLesson(lm && lm.i > 0 && lm.i < lm.steps.length).then(ok => {
+      if (ok) showScreen(isMixedReview && reviewKind !== 'daily' ? 'progress' : 'home');
+    });
+  });
 
   // ---------- MATCHING GAME (nối cột: cột trái hình, cột phải chữ, hiện sẵn hết) ----------
   // matchMode: 'learn' (sau flashcard+quiz, được tính sao) hoặc 'practice' (chơi tự do từ tab Trò chơi, không tính sao)
@@ -5851,7 +5860,10 @@
   }
 
   document.getElementById('backFromMatch').addEventListener('click', () => {
-    showScreen(matchMode === 'practice' ? 'games' : 'home');
+    // Nối cặp sau bài học (learn) là bước cuối để được tính sao + hoàn thành chủ đề → hỏi lại trước khi thoát.
+    confirmLeaveLesson(matchMode === 'learn' && document.querySelectorAll('#matchGridLeft .match-card.is-matched').length > 0).then(ok => {
+      if (ok) showScreen(matchMode === 'practice' ? 'games' : 'home');
+    });
   });
   document.getElementById('matchReplayBtn').addEventListener('click', () => startMatchGame());
   document.getElementById('matchOtherTopicBtn').addEventListener('click', () => showScreen('games'));
