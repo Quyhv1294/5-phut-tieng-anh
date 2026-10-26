@@ -1340,7 +1340,8 @@
   }
 
   // ---------- STREAK & DAILY REMINDER ----------
-  function toDateStr(d) { return d.toISOString().slice(0, 10); }
+  // Ngày YYYY-MM-DD theo giờ MÁY người dùng (không phải UTC): ở Việt Nam ngày mới bắt đầu lúc 0:00 chứ không phải 7:00 sáng.
+  function toDateStr(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
   // Gọi khi bé hoàn thành xong 1 chủ đề trong ngày (finishTopic).
   function updateStreakOnComplete() {
@@ -4132,7 +4133,7 @@
   // Tính từ progress.studyDays (ngày học) + progress.wordStats (từ đang học / nhớ chắc / đến hạn / hay nhầm). Không gửi
   // email, không cần mạng: ba mẹ xem ở Góc ba mẹ, và trang chủ có dải nhắc xem khoảng 7 ngày 1 lần.
   function weeklyReport() {
-    const dayKey = n => toDateStr(new Date(Date.now() - n * 864e5));
+    const dayKey = n => { const d = new Date(); d.setDate(d.getDate() - n); return toDateStr(d); };
     const study = progress.studyDays || {};
     let thisWeek = 0, lastWeek = 0, freezes = 0;
     for (let i = 0; i < 7; i++) {
@@ -4871,7 +4872,7 @@
   }
   const ZH_VOICE_WARN_KEY = '5phut_zh_voice_warned_v1';
   function warnZhVoice() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toDateStr(new Date());
     try { if (localStorage.getItem(ZH_VOICE_WARN_KEY) === today) return; localStorage.setItem(ZH_VOICE_WARN_KEY, today); } catch (e) {}
     openZhVoiceHelp();
   }

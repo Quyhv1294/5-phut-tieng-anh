@@ -40,8 +40,10 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-  const todayStr = () => new Date().toISOString().slice(0, 10);
-  function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+  // Ngày theo giờ máy người dùng (không phải UTC) để "hôm nay" đổi đúng lúc 0:00 giờ địa phương.
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const todayStr = () => ymd(new Date());
+  function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
 
   // ---------- Tô màu thanh điệu ----------
   // Tách pinyin thành âm tiết, tô màu theo dấu thanh: 1 đỏ · 2 cam · 3 xanh lá · 4 xanh dương (thanh nhẹ giữ màu chữ).
@@ -409,7 +411,7 @@
 
     // Hôm qua có học mà hôm nay chưa → nhắc giữ chuỗi ngày liên tiếp.
     const yd = new Date(); yd.setDate(yd.getDate() - 1);
-    if (streak.count >= 1 && streak.lastDate === yd.toISOString().slice(0, 10)) {
+    if (streak.count >= 1 && streak.lastDate === ymd(yd)) {
       panel.appendChild(el('div', 'zh-streak-warn', '🔥 Học 1 bài hôm nay để giữ chuỗi ' + streak.count + ' ngày.'));
     }
     const due = dueWords().length;
