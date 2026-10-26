@@ -134,6 +134,15 @@
     西: { py: 'xī', vi: 'tây' }, 草: { py: 'cǎo', vi: 'cỏ' }, 球: { py: 'qiú', vi: 'bóng' }, 门: { py: 'mén', vi: 'cửa' },
     床: { py: 'chuáng', vi: 'giường' }, 云: { py: 'yún', vi: 'mây' }, 风: { py: 'fēng', vi: 'gió' }, 雪: { py: 'xuě', vi: 'tuyết' },
   });
+  // Các chữ chỉ xuất hiện ở âm đọc nhẹ trong từ ghép (VD 关系 guānxi, 朋友 péngyou) — pinyin tách từ từ sẽ mất dấu thanh,
+  // nên khai báo thanh điệu gốc của chữ khi đứng riêng.
+  Object.assign(CHAR_INFO, {
+    系: { py: 'xì', vi: 'hệ, liên hệ' }, 友: { py: 'yǒu', vi: 'bạn' }, 候: { py: 'hòu', vi: 'lúc, thời gian' }, 服: { py: 'fú', vi: 'quần áo; phục' },
+    识: { py: 'shí', vi: 'biết, nhận ra' }, 欢: { py: 'huān', vi: 'vui, thích' }, 亮: { py: 'liàng', vi: 'sáng' }, 睛: { py: 'jīng', vi: 'con ngươi (眼睛: mắt)' },
+    巴: { py: 'bā', vi: 'miệng (嘴巴), đuôi' }, 朵: { py: 'duǒ', vi: 'đoá, bông' }, 膊: { py: 'bó', vi: 'cánh tay (胳膊)' }, 萄: { py: 'táo', vi: 'nho (葡萄)' },
+    筝: { py: 'zhēng', vi: 'đàn tranh; diều (风筝)' }, 匙: { py: 'chí', vi: 'thìa, chìa (钥匙)' }, 息: { py: 'xī', vi: 'nghỉ, hơi thở' }, 方: { py: 'fāng', vi: 'phương; vuông' },
+    得: { py: 'dé', vi: 'được, đạt' }, 诉: { py: 'sù', vi: 'kể, tố (告诉)' },
+  });
 
   // ---------- Tiến độ ----------
   function Z() {
@@ -292,10 +301,20 @@
   relabel('tabSentences', '🎯', 'Luyện tập');
   relabel('tabShare', '📖', 'Thư viện');
   tabbar.insertBefore($('tabShare'), $('tabAchievements'));
-  let allowShare = false;
+  let allowShare = false, tabLeaveOk = false;
   tabbar.addEventListener('click', e => {
     const b = e.target.closest('.tab-btn');
     if (!b) return;
+    // Đang làm bài thi thử: bấm sang tab khác sẽ huỷ bài → hỏi lại trước (giống nút ←), đồng ý thì bấm lại tab đó.
+    if (!tabLeaveOk && EX && !EX.done && $('screen-zh-exam').classList.contains('active')) {
+      e.stopPropagation();
+      A.confirm('Thoát bài thi? Bài đang làm sẽ không được chấm.', { okLabel: 'Thoát', danger: true }).then(ok => {
+        if (!ok) return;
+        stopExam();
+        tabLeaveOk = true; b.click(); tabLeaveOk = false;
+      });
+      return;
+    }
     const route = { tabHome: goHome, tabGames: openReview, tabSentences: openPractice, tabShare: openLibrary }[b.id];
     if (!route || (b.id === 'tabShare' && allowShare)) return;
     e.stopPropagation();
@@ -2204,7 +2223,24 @@
   function libSearch(q, out) {
     const fq = fold(q), qk = pinyinKey(q);
     const has = s => fold(s).includes(fq);
-    const words = COURSE_WORDS.filter(w => w.zh.includes(q) || has(w.vi) || (qk && w.key.startsWith(qk)));
+    // Xếp theo độ khớp (chữ Hán trùng > pinyin đúng cả dấu > nghĩa trùng > pinyin không dấu đúng / bắt đầu bằng từ khoá > nghĩa chứa từ khoá), cùng điểm thì giữ thứ tự khoá học.
+    const ql = q.toLowerCase().trim(), qp = ql.replace(/[\s’']/g, '');
+    const wordScore = w => {
+      const vi = w.vi.toLowerCase();
+      if (w.zh === q) return 0;
+      if (w.py.toLowerCase().replace(/[\s’']/g, '') === qp) return 0.5;
+      if (vi === ql) return 1;
+      if (qk && w.key === qk) return 1.5;
+      if (w.zh.startsWith(q)) return 2;
+      if (w.zh.includes(q)) return 2.5;
+      if (vi.split(/[\s,;()/]+/).includes(ql)) return 3;
+      if (qk && w.key.startsWith(qk)) return 3.5;
+      if (vi.includes(ql)) return 4;
+      if (fold(w.vi).startsWith(fq)) return 4.5;
+      return 5;
+    };
+    const words = COURSE_WORDS.filter(w => w.zh.includes(q) || has(w.vi) || (qk && w.key.startsWith(qk)))
+      .map((w, i) => ({ w, i, sc: wordScore(w) })).sort((a, b) => a.sc - b.sc || a.i - b.i).map(x => x.w);
     const rads = ZH_RADICALS.filter(r => r.r === q || r.alt === q || has(r.name) || has(r.vi) || (qk && pinyinKey(r.py) === qk));
     const gram = [];
     LIB_GRAMMAR.forEach(id => STEP_LESSONS[id].items.forEach(it => {
@@ -2215,6 +2251,7 @@
     if (words.length) {
       out.appendChild(el('div', 'section-label', 'Từ vựng · ' + words.length));
       out.appendChild(wordTiles(words.slice(0, 120)));
+      if (words.length > 120) out.appendChild(el('p', 'zh-panel-note', 'Đang hiện 120/' + words.length + ' từ khớp nhất — gõ thêm để lọc kỹ hơn.'));
     }
     if (rads.length) {
       out.appendChild(el('div', 'section-label', 'Bộ thủ · ' + rads.length));
