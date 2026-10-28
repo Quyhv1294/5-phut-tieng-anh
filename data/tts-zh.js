@@ -1,4 +1,4 @@
 // TỰ SINH bởi tools/tts/generate.mjs — KHÔNG sửa tay. Danh sách câu tiếng Trung đã có file giọng đọc
 // (assets/tts/zh/<dir>/<mã>.mp3); câu nào không có ở đây thì app dùng giọng đọc của máy.
 const TTS_ZH = { dir: "gemini-kore-v1", voice: "Gemini Kore",
-  clips: "" };
+  clips: "10uxvs0q9ig 111gchk5b1s 13ie8xp0lfn 13n5yzbv52p 13tee823niu 18c4qlz8487 18emy0d6sqo 18zcttcry9r 1awy1m4yicp 1fdrafwcuwt 1gweyagxas3 1hjarhyteiy 1i33fz98upe 1jlaojuj2th 1jxwj1fjcyd 1obgtumrdd5 1ovuci1u3ey 1rl3oh7vai5 1sm9p9cmjql 1t04kut72dm 1x5tydhcr3y 1zeu9d78y1h 1zz0utn3c8a 1zzyw8epis1 22iucivimd3 22k6t9tspno 22poohdlf60 2325kv387gp 23jvq8t9acx 25big6yx4jf 25ytf0ki8lh 269s9x9bqf4 2a07vpuymhd 2drwmey8kjb 2erze7fpj2o 2fbh1boizvr 2uapom0vfu 67vdi229s7 7ejdcfr8jg 7n33234kfx 8gi3l4m8lo aom0d3ypeu ba5h5mycw3 d1t3q8hjeg d5og02bvnl dm716do32f etzosfculo gqy58cxzoq kiealu65pk mb5re1dqpu nu9914dxio o3kjovcb2d paik6pyiyi qdi3gnu52m s3zmz3hdi2 t672pmpl7j y5rmx347ak ykbgjxm4cc" };
