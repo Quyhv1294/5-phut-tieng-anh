@@ -1383,6 +1383,7 @@
     noteGuestLessonDone();
     if (usedFreeze) showToast('🛡️ ' + (IS_ZH ? 'Bạn' : 'Bé') + ' lỡ mất 1 ngày nhưng đã dùng khiên để giữ chuỗi ' + progress.streak.count + ' ngày!', '🛡️');
     bumpDailyMission('sessions');
+    sendHeartbeat();
     if (!IS_ZH && lessonsToday() === progress.dailyGoal) setTimeout(() => showToast('Bé đã đạt mục tiêu hôm nay (' + progress.dailyGoal + ' bài)!', '🎯'), 2200);
   }
 
@@ -7958,6 +7959,28 @@
       + '&platform=' + encodeURIComponent(feedbackPlatform());
     fetch(url).then(r => r.json()).then(d => { if (d && d.ok) { try { localStorage.setItem(VISIT_LOGGED_KEY, '1'); } catch (e) {} } }).catch(() => {});
   })();
+
+  // Nhịp hoạt động: mỗi máy / ngày một dòng (mở app + số bài hôm nay) để đo người quay lại.
+  // Chỉ gửi mã máy, khoá học, lớp, số bài — không email, không tên. Gửi lại chỉ khi số bài đổi.
+  const HEARTBEAT_KEY = '5phut_hb_v1';
+  function sendHeartbeat() {
+    try {
+      if (!backendConfigured()) return;
+      const day = toDateStr(new Date());
+      const n = lessonsToday();
+      const sig = day + '|' + n;
+      if (localStorage.getItem(HEARTBEAT_KEY) === sig) return;
+      localStorage.setItem(HEARTBEAT_KEY, sig);
+      fetch(SHEETS_CONFIG.webAppUrl + '?action=logActive'
+        + '&deviceId=' + encodeURIComponent(deviceId)
+        + '&day=' + day
+        + '&lang=' + LEARN_LANG
+        + '&src=' + encodeURIComponent(trafficSource())
+        + '&cls=' + encodeURIComponent(IS_ZH ? 'zh' : (getActiveClassId() || ''))
+        + '&sessions=' + n).catch(() => {});
+    } catch (e) {}
+  }
+  sendHeartbeat();
 
   // ---------- OFFLINE SUPPORT ----------
   // Đăng ký service worker để app + audio + icon dùng lại được kể cả khi mất mạng

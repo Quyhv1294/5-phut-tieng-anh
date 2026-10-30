@@ -118,6 +118,9 @@ function doGet(e) {
       case 'logVisit':
         result = handleLogVisit_(e.parameter);
         break;
+      case 'logActive':
+        result = handleLogActive_(e.parameter);
+        break;
       default:
         result = { ok: false, error: 'unknown_action' };
     }
@@ -388,6 +391,88 @@ function handleLogVisit_(p) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ---------- action=logActive ----------
+// Nhịp hoạt động: 1 dòng / máy / ngày (cập nhật số bài trong ngày). Không có email hay tên.
+const ACTIVE_SHEET_NAME = 'Active';
+const ACTIVE_HEADERS = ['Day', 'DeviceId', 'Lang', 'Class', 'Sessions', 'FirstSeen', 'LastSeen', 'Source'];
+
+function handleLogActive_(p) {
+  const deviceId = String(p.deviceId || '').slice(0, 64);
+  const day = String(p.day || '');
+  if (!deviceId || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return { ok: false, error: 'missing_params' };
+  // Chỉ nhận ngày gần hôm nay (chống ghi bậy ngày xa); múi giờ máy có thể lệch ±1 ngày.
+  const diff = Math.abs(new Date(day + 'T12:00:00Z').getTime() - Date.now()) / 86400000;
+  if (diff > 2) return { ok: false, error: 'bad_day' };
+  const sessions = Math.max(0, Math.min(99, parseInt(p.sessions, 10) || 0));
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(ACTIVE_SHEET_NAME);
+    if (!sheet) sheet = ss.insertSheet(ACTIVE_SHEET_NAME);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(ACTIVE_HEADERS);
+      sheet.setFrozenRows(1);
+      sheet.getRange(1, 1, 1, ACTIVE_HEADERS.length).setFontWeight('bold');
+      sheet.getRange('A:A').setNumberFormat('@');
+    }
+    const lastRow = sheet.getLastRow();
+    const now = new Date();
+    if (lastRow >= 2) {
+      const fromRow = Math.max(2, lastRow - 999);
+      const rows = sheet.getRange(fromRow, 1, lastRow - fromRow + 1, 2).getValues();
+      for (let i = rows.length - 1; i >= 0; i--) {
+        if (String(rows[i][0]) === day && String(rows[i][1]) === deviceId) {
+          const row = fromRow + i;
+          sheet.getRange(row, 5).setValue(sessions);
+          sheet.getRange(row, 7).setValue(now);
+          return { ok: true, updated: true };
+        }
+      }
+    }
+    sheet.appendRow([day, deviceId, safeCell_(p.lang, 4), safeCell_(p.cls, 8), sessions, now, now, safeCell_(p.src || '', 40)]);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Chạy tay trong trình soạn Apps Script (Run ▶ activityReport) → xem kết quả ở Execution log.
+// Số máy mới / máy hoạt động theo ngày, và tỷ lệ quay lại sau 1 ngày, 7 ngày.
+function activityReport() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(ACTIVE_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) { Logger.log('Chưa có dữ liệu trong tab Active.'); return; }
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+  const days = {};            // ngày → { deviceId: sessions }
+  const firstDay = {};        // deviceId → ngày đầu tiên thấy
+  rows.forEach(function (r) {
+    const d = String(r[0]), id = String(r[1]);
+    (days[d] = days[d] || {})[id] = Number(r[4]) || 0;
+    if (!firstDay[id] || d < firstDay[id]) firstDay[id] = d;
+  });
+  const dayList = Object.keys(days).sort();
+  const addDays = function (d, n) { const t = new Date(d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  Logger.log('Ngày | máy hoạt động | máy mới | có học ≥1 bài');
+  dayList.forEach(function (d) {
+    const ids = Object.keys(days[d]);
+    Logger.log(d + ' | ' + ids.length + ' | ' + ids.filter(function (id) { return firstDay[id] === d; }).length
+      + ' | ' + ids.filter(function (id) { return days[d][id] >= 1; }).length);
+  });
+  const last = dayList[dayList.length - 1];
+  [1, 7].forEach(function (n) {
+    let base = 0, back = 0;
+    Object.keys(firstDay).forEach(function (id) {
+      const target = addDays(firstDay[id], n);
+      if (target > last) return;   // chưa đủ ngày để biết
+      base++;
+      if (days[target] && days[target][id] !== undefined) back++;
+    });
+    Logger.log('Quay lại đúng ngày thứ ' + n + ': ' + back + '/' + base + (base ? ' (' + Math.round(100 * back / base) + '%)' : ''));
+  });
+  Logger.log('Tổng số máy đã từng hoạt động: ' + Object.keys(firstDay).length);
 }
 
 // Cắt độ dài + chặn "chèn công thức" (ô bắt đầu bằng = + - @ sẽ bị Google Sheet hiểu là công thức,
