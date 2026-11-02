@@ -3515,12 +3515,12 @@
   /* ĐỌC THEO: bé bấm mic đọc to (xem lmSpeakStart trong app.js) */
   .quiz-options.is-speak { display: flex; flex-direction: column; align-items: center; gap: 14px; }
   .lm-mic { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 150px; height: 150px; border-radius: 50%; border: 0; cursor: pointer;
-    background: var(--green, #58cc02); color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 16px; box-shadow: 0 6px 0 rgba(0,0,0,.18); }
-  .lm-mic:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+    background: var(--primary, #238074); color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px; box-shadow: 0 6px 0 var(--primary-edge, #175A51); }
+  .lm-mic:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--primary-edge, #175A51); }
   .lm-mic-ico { font-size: 52px; line-height: 1; }
-  .lm-mic.is-listening { background: #ff6b6b; animation: lmMicPulse 1s ease-in-out infinite; }
+  .lm-mic.is-listening { background: #C23B3B; box-shadow: 0 6px 0 #8F2A2A; animation: lmMicPulse 1s ease-in-out infinite; }
   .lm-mic:disabled { cursor: default; }
-  .lm-mic-skip { border: 0; background: none; color: var(--muted, #777); font-weight: 700; font-size: 15px; padding: 8px 14px; cursor: pointer; text-decoration: underline; }
+  .lm-mic-skip { border: 0; background: none; color: var(--ink-soft); font-weight: 700; font-size: 15px; padding: 8px 14px; cursor: pointer; text-decoration: underline; }
   @keyframes lmMicPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
   @media (prefers-reduced-motion: reduce) { .lm-mic.is-listening { animation: none; } }
 
@@ -3565,3 +3565,6 @@
   html.lang-en-ui .kid-missions-label { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 14.5px; }
   html.lang-en-ui .kid-missions-label b { font-size: 19px; margin-right: 0; }
   html.lang-en-ui .kid-missions-label small { display: inline; font-size: 13px; }
+
+  /* Nút dạng liên kết / biểu tượng nhỏ vẫn đủ 44px để bấm */
+  .account-link-btn, .donate-copy-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
