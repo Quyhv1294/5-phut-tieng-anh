@@ -1829,7 +1829,7 @@
   .zh-done .ghost-btn, .zh-done .cta-btn { min-width: 220px; }
 
   /* Màu thanh điệu (tô trên pinyin): 1 đỏ · 2 cam · 3 xanh lá · 4 xanh dương · thanh nhẹ giữ màu chữ */
-  :root { --tone1: #D93B30; --tone2: #E07B12; --tone3: #2E9A4E; --tone4: #2F6FD0; }
+  :root { --tone1: #C5362C; --tone2: #A1590D; --tone3: #247A3E; --tone4: #2C68C4; } /* màu thanh điệu đạt >= 4.5:1 trên nền sáng (trước: 2.7–4.1:1) */
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tone1: #FF7A70; --tone2: #FFB057; --tone3: #6BD48A; --tone4: #79A8FF; } }
   :root[data-theme="dark"] { --tone1: #FF7A70; --tone2: #FFB057; --tone3: #6BD48A; --tone4: #79A8FF; }
   .tone-1 { color: var(--tone1); } .tone-2 { color: var(--tone2); } .tone-3 { color: var(--tone3); } .tone-4 { color: var(--tone4); }
@@ -3580,3 +3580,5 @@
   .zh-goal-toggle { display: inline-flex; align-items: center; min-height: 44px; padding: 2px 4px; }
   .zh-skip-btn { min-height: 44px; }
   html.lang-zh-ui .zh-btn-row .speak-btn { min-height: 44px; } /* "Nghe / Nghe chậm / Nghe lại": trước cao 37px */
+  .zh-py-btn { min-height: 44px; }
+  .quiz-opt .word-py { font-size: max(12px, 0.62em); } /* pinyin dưới chữ Hán trong ô chọn: không nhỏ hơn 12px */
