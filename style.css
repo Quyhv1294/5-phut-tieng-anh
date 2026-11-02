@@ -3511,3 +3511,16 @@
   .report-tips { padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--gold) 16%, var(--surface)); }
   .report-tips-head { font-family: 'Baloo 2'; font-weight: 800; font-size: 17px; margin-bottom: 4px; }
   .report-tips p { margin: 6px 0 0; font-size: 14.5px; font-weight: 600; line-height: 1.5; }
+
+  /* ĐỌC THEO: bé bấm mic đọc to (xem lmSpeakStart trong app.js) */
+  .quiz-options.is-speak { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .lm-mic { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 150px; height: 150px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--green, #58cc02); color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 16px; box-shadow: 0 6px 0 rgba(0,0,0,.18); }
+  .lm-mic:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  .lm-mic-ico { font-size: 52px; line-height: 1; }
+  .lm-mic.is-listening { background: #ff6b6b; animation: lmMicPulse 1s ease-in-out infinite; }
+  .lm-mic:disabled { cursor: default; }
+  .lm-mic-skip { border: 0; background: none; color: var(--muted, #777); font-weight: 700; font-size: 15px; padding: 8px 14px; cursor: pointer; text-decoration: underline; }
+  @keyframes lmMicPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  @media (prefers-reduced-motion: reduce) { .lm-mic.is-listening { animation: none; } }
+

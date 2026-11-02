@@ -346,6 +346,7 @@
       perfectCount: p.perfectCount || 0,
       badges: p.badges || {},
       wordStats: p.wordStats || {},
+      speak: { tried: (p.speak && p.speak.tried) || 0, ok: (p.speak && p.speak.ok) || 0, words: (p.speak && p.speak.words) || {} }, // "Đọc theo": số lượt bé đọc / đọc đúng (xem lmSpeakStart)
       placedPieces: p.placedPieces || {},
       outfitsSeen: p.outfitsSeen || {},
       placement: (p.placement && PLACEMENT_LEVELS[p.placement.level]) ? p.placement : null,
@@ -5324,9 +5325,15 @@
         steps.push({ wi, kind, extra: true });
       });
     }
+    // "Đọc theo" (Chồi/Lá, từ đơn): 2 từ cuối bài, bé tự bấm mic đọc. Không tính đúng/sai của bài học.
+    if (!easy && !isMixedReview && speakAvailable()) {
+      shuffle(indices.filter(wi => { const w = currentTopic.words[wi]; return wordClassId(w) !== 'mam' && /^[A-Za-z]{3,10}$/.test(w.en); }))
+        .slice(0, 2).forEach(wi => steps.push({ wi, kind: 'speak', extra: true }));
+    }
     return steps;
   }
   function lmStart(indices, retryOnly) {
+    lmSpeakAbort();
     lm = { steps: lmBuildSteps(indices, retryOnly), i: 0, run: ((lm && lm.run) || 0) + 1, locked: false, wrong: new Set(), retryAdded: !!retryOnly, retryOnly: !!retryOnly };
     lmRender();
   }
@@ -5354,6 +5361,7 @@
     return shuffle([word, ...shuffle(pool).slice(0, n)]);
   }
   function lmRender() {
+    lmSpeakAbort();
     const st = lm.steps[lm.i], w = currentTopic.words[st.wi];
     quizCurrentWordIdx = st.wi;
     lm.locked = false;
@@ -5368,7 +5376,7 @@
     document.getElementById('lmSentVi').hidden = true;
     document.getElementById('quizReplayBtn').hidden = st.kind === 'fillGap' || st.kind === 'sentBank'; // 2 dạng này không nghe trước (lộ đáp án)
     wrap.hidden = spell || sentKind;
-    wrap.innerHTML = ''; wrap.classList.remove('is-answered', 'is-text', 'is-vi');
+    wrap.innerHTML = ''; wrap.classList.remove('is-answered', 'is-text', 'is-vi', 'is-speak');
     wordEl.className = 'quiz-word'; wordEl.removeAttribute('data-fit'); wordEl.textContent = '';
     const pre = st.retry ? '🔁 Làm lại · ' : '';
     const setEmoji = (txt, big) => { wordEl.textContent = txt; wordEl.classList.add('lm-emoji'); if (big) wordEl.classList.add('lm-big'); };
@@ -5387,6 +5395,8 @@
     } else if (st.kind === 'fillGap') {
       prompt.textContent = pre + 'Chọn từ còn thiếu'; wordEl.textContent = lmGapText(w); wordEl.classList.add('lm-sent');
       const sv = document.getElementById('lmSentVi'); sv.textContent = w.exampleVi; sv.hidden = false;
+    } else if (st.kind === 'speak') {
+      lmSpeakStart(st, w, prompt, wordEl, wrap); head.dataset.kind = st.kind; return;
     } else if (st.kind === 'sentBank') {
       prompt.textContent = pre + 'Xếp thành câu tiếng Anh'; wordEl.textContent = w.exampleVi; wordEl.classList.add('lm-vi', 'lm-sent');
       lmSentStart(st, w); head.dataset.kind = st.kind; return;
@@ -5550,6 +5560,116 @@
         lmTiles.forEach(t => { t.used = false; }); lmSlots.fill(null); lm.locked = false; lmSpellDraw();
       }, 700);
     }
+  }
+
+  // ---------- ĐỌC THEO (bé đọc to, máy nghe) ----------
+  // Chỉ lớp Chồi/Lá, từ đơn, ở cuối bài học. Dùng Web Speech API của trình duyệt (Chrome/Android tốt nhất; iPhone chập chờn;
+  // trình duyệt trong Zalo/Facebook không có) — âm thanh được gửi cho dịch vụ của trình duyệt (Google), app KHÔNG lưu bản ghi âm.
+  // Máy chỉ biết "nghe ra từ gì", không chấm từng âm → chấm rộng rãi (chấp nhận từ đồng âm / sai 1–2 chữ cái), tối đa 3 lần thử,
+  // không bao giờ báo "sai": hết lượt thì cho bé nghe lại mẫu rồi sang câu tiếp. Kết quả không ảnh hưởng sao / đúng-sai của bài học.
+  const SPEAK_CONSENT_KEY = '5phut_speak_consent_v1';
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SPEAK_HOMO = { two: 'to too', too: 'to two', one: 'won', eight: 'ate', ate: 'eight', four: 'for', see: 'sea', sea: 'see', blue: 'blew', red: 'read', sun: 'son', son: 'sun',
+    bear: 'bare', pear: 'pair', pair: 'pear', hair: 'hare', tail: 'tale', meat: 'meet', right: 'write', eye: 'i', nose: 'knows', flower: 'flour', deer: 'dear', bee: 'be' };
+  let speakBroken = false, speakDeclined = false, lmRec = null;
+  function speakConsent() { try { return localStorage.getItem(SPEAK_CONSENT_KEY) || ''; } catch (e) { return ''; } }
+  function speakAvailable() {
+    return !IS_ZH && !!SpeechRec && !speakBroken && !speakDeclined && navigator.onLine !== false
+      && !/FBAN|FBAV|FB_IAB|Instagram|Zalo|Line\/|Messenger|TikTok/i.test(navigator.userAgent);
+  }
+  function lmSpeakAbort() { if (lmRec) { const r = lmRec; lmRec = null; try { r.abort(); } catch (e) {} } }
+  function editDist(a, b) {
+    const d = []; for (let i = 0; i <= a.length; i++) d.push([i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  }
+  function speakMatches(target, alts) {
+    const t = target.toLowerCase().replace(/[^a-z]/g, '');
+    const tol = t.length >= 7 ? 2 : t.length >= 4 ? 1 : 0;
+    const homo = (SPEAK_HOMO[t] || '').split(' ').filter(Boolean);
+    return alts.some(a => {
+      const words = String(a).toLowerCase().replace(/[^a-z ]/g, '').split(/\s+/).filter(Boolean);
+      return words.concat(words.join('')).filter(Boolean).some(c => c === t || homo.includes(c) || editDist(c, t) <= tol);
+    });
+  }
+  function recordSpeak(w, ok) {
+    const sp = progress.speak || (progress.speak = { tried: 0, ok: 0, words: {} });
+    const k = w.en.toLowerCase(), e = sp.words[k] || (sp.words[k] = { t: 0, o: 0 });
+    sp.tried++; e.t++;
+    if (ok) { sp.ok++; e.o++; }
+    saveProgress(progress);
+  }
+  function lmSpeakStart(st, w, prompt, wordEl, wrap) {
+    lmSpeakAbort();
+    prompt.textContent = (st.retry ? '🔁 Làm lại · ' : '') + 'Bé đọc to nhé!';
+    setWordText(wordEl, w);
+    wrap.classList.add('is-speak');
+    const run = lm.run, idx = lm.i;
+    const live = () => !!lm && lm.run === run && lm.i === idx;
+    const fb = document.getElementById('quizFeedback'), fox = document.getElementById('quizFox');
+    let finished = false, listening = false, tries = 0;
+    const next = delay => setTimeout(() => { if (live()) lmNext(); }, delay);
+    const finish = (ok, record) => {
+      if (finished) return; finished = true; lmSpeakAbort();
+      wrap.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      if (record) recordSpeak(w, ok);
+      fox.classList.remove('is-happy', 'is-sad'); void fox.offsetWidth;
+      if (ok) { fb.textContent = 'Giỏi quá! 🎉'; fb.className = 'quiz-feedback ok'; sfx('correct'); fox.classList.add('is-happy'); next(1500); }
+      else { fb.textContent = 'Mình nghe cô đọc cùng nhé 👂'; fb.className = 'quiz-feedback'; setTimeout(() => { if (live()) speak(w.en); }, 300); next(2400); }
+    };
+    const bail = msg => { // máy không nghe được (không cho dùng micro, mất mạng…): bỏ qua êm, không ghi nhận
+      speakBroken = true;
+      if (finished) return; finished = true; lmSpeakAbort();
+      wrap.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      fb.textContent = msg; fb.className = 'quiz-feedback'; next(2200);
+    };
+    const mic = document.createElement('button');
+    mic.className = 'lm-mic'; mic.innerHTML = '<span class="lm-mic-ico">🎤</span><span class="lm-mic-txt">Bấm rồi đọc to</span>';
+    const skip = document.createElement('button');
+    skip.className = 'lm-mic-skip'; skip.textContent = 'Bỏ qua';
+    skip.addEventListener('click', () => { if (!finished && live()) { finished = true; lmSpeakAbort(); lmNext(); } });
+    const setMic = (listen, txt) => { mic.classList.toggle('is-listening', listen); mic.querySelector('.lm-mic-txt').textContent = txt; mic.disabled = listen; };
+    const handle = (alts, err) => {
+      listening = false; if (!live() || finished) return;
+      if (/not-allowed|service-not-allowed|network|audio-capture|language-not-supported/.test(err || '')) { bail('Máy chưa nghe được bé. Mình sang câu tiếp nhé!'); return; }
+      if (alts && alts.length && speakMatches(w.en, alts)) { finish(true, true); return; }
+      if (++tries >= 3) { finish(false, true); return; }
+      fb.textContent = !alts ? 'Bé nói to hơn một chút nhé 🎤' : 'Gần đúng rồi, bé thử lại nhé 💪'; fb.className = 'quiz-feedback';
+      setMic(false, 'Thử lại');
+    };
+    const listen = () => {
+      if (finished || listening || !live()) return;
+      stopClip(); try { window.speechSynthesis.cancel(); } catch (e) {}
+      let rec, err = '', got = false;
+      try { rec = new SpeechRec(); } catch (e) { bail('Máy chưa nghe được bé. Mình sang câu tiếp nhé!'); return; }
+      rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+      rec.onresult = ev => {
+        got = true; const alts = [];
+        for (let i = 0; i < ev.results.length; i++) for (let k = 0; k < ev.results[i].length; k++) alts.push(ev.results[i][k].transcript);
+        handle(alts, '');
+      };
+      rec.onerror = ev => { err = ev.error || ''; };
+      rec.onend = () => { // bị huỷ chủ động (abort) thì lmRec đã đổi → bỏ qua
+        const mine = lmRec === rec; if (mine) lmRec = null;
+        if (got || !mine) return;
+        handle(null, err === 'no-speech' || err === 'aborted' ? '' : err);
+      };
+      lmRec = rec; listening = true; fb.textContent = ''; fb.className = 'quiz-feedback';
+      setMic(true, 'Bé đọc đi…');
+      try { rec.start(); } catch (e) { lmRec = null; bail('Máy chưa nghe được bé. Mình sang câu tiếp nhé!'); return; }
+      setTimeout(() => { if (lmRec === rec) { try { rec.stop(); } catch (e) {} } }, 6000);
+    };
+    mic.addEventListener('click', listen);
+    const begin = () => { wrap.appendChild(mic); wrap.appendChild(skip); speak(w.en); };
+    if (speakConsent() === 'yes') { begin(); return; }
+    lm.locked = true; // chờ ba mẹ đồng ý
+    showConfirmDialog('Bé sẽ đọc to để máy chấm. Giọng của bé được gửi tới dịch vụ nhận biết lời nói của trình duyệt (Google); app không lưu bản ghi âm. Ba mẹ đồng ý cho bé dùng micro không?', { okLabel: 'Đồng ý', cancelLabel: 'Để sau' }).then(yes => {
+      if (!live()) return;
+      lm.locked = false;
+      if (yes) { try { localStorage.setItem(SPEAK_CONSENT_KEY, 'yes'); } catch (e) {} begin(); }
+      else { speakDeclined = true; finished = true; lmNext(); }
+    });
   }
 
   // ---------- MIXED-TOPIC REVIEW ----------
