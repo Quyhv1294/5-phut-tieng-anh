@@ -5417,6 +5417,7 @@
         else if (textual) b.textContent = opt.en;
         else b.textContent = opt.emoji;
         b.dataset.en = opt.en;
+        if (!textual) b.setAttribute('aria-label', opt.en);
         b.addEventListener('click', () => lmAnswer(opt.en === w.en, b));
         wrap.appendChild(b);
       });
