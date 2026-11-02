@@ -2488,7 +2488,7 @@
   :root.lang-zh-ui {
     --bg: #F7F4EE; --surface: #FFFFFF; --surface-2: #F3EEE6; --line: #E7DFD2;
     --ink: #24201B; --ink-soft: #6F665B;
-    --accent: #D9453B; --accent-ink: #A8261E; --gold: #E5B04A; --gold-ink: #7A5410;
+    --accent: #C93A31; --accent-ink: #A8261E; /* accent đậm hơn một chút: chữ trắng trên nút đỏ đạt 5.1:1 (trước 4.3:1) */ --gold: #E5B04A; --gold-ink: #7A5410;
     --shadow: 0 2px 10px rgba(36, 32, 27, 0.08);
     --zh-font: 'Be Vietnam Pro', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'LXGW WenKai Screen', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
   }
@@ -3237,7 +3237,7 @@
   html.lang-zh-ui .zh-part { overflow: visible; }
   html.lang-zh-ui .zh-part-head { background: var(--pc); color: #fff; border-radius: calc(var(--r-lg) - 2px); }
   html.lang-zh-ui .zh-part.is-open .zh-part-head { border-radius: calc(var(--r-lg) - 2px) calc(var(--r-lg) - 2px) 0 0; }
-  html.lang-zh-ui .zh-part-head :is(.zh-part-title small, .zh-part-meta small, .zh-part-chev) { color: rgba(255, 255, 255, 0.88); }
+  html.lang-zh-ui .zh-part-head :is(.zh-part-title small, .zh-part-meta small, .zh-part-chev) { color: #fff; }
   html.lang-zh-ui .zh-part-head .zh-part-num { background: rgba(255, 255, 255, 0.22); color: #fff; }
   html.lang-zh-ui .zh-part-head .zh-step-bar { background: rgba(255, 255, 255, 0.3); }
   html.lang-zh-ui .zh-part-head .zh-step-bar-fill { background: #fff; }
@@ -3568,3 +3568,15 @@
 
   /* Nút dạng liên kết / biểu tượng nhỏ vẫn đủ 44px để bấm */
   .account-link-btn, .donate-copy-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* ĐỢT UX 4 — khoá Tiếng Trung + chip ý kiến */
+  /* Chip đang chọn: trước đây chữ đỏ đậm trên nền đỏ (1.6:1 ở Tiếng Trung, 2.6:1 ở tiếng Anh) → nền nhạt, viền và chữ đậm */
+  .feedback-chip.selected, html.lang-en-ui .feedback-chip.selected, html.lang-zh-ui .feedback-chip.selected {
+    border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent-ink);
+  }
+  .feedback-chip { min-height: 44px; }
+  .settings-danger-btn { min-height: 44px; }
+  /* Liên kết nhỏ "Mục tiêu / Pinyin: Đổi": vùng bấm đủ 44px, chữ không đổi */
+  .zh-goal-toggle { display: inline-flex; align-items: center; min-height: 44px; padding: 2px 4px; }
+  .zh-skip-btn { min-height: 44px; }
+  html.lang-zh-ui .zh-btn-row .speak-btn { min-height: 44px; } /* "Nghe / Nghe chậm / Nghe lại": trước cao 37px */

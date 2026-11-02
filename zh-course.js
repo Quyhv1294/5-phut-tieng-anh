@@ -517,7 +517,7 @@
   // Con đường các chặng của 1 phần (kiểu Duolingo): nút tròn theo màu của phần đi zíc zắc, chặng đang học to
   // hơn + nhãn "Bắt đầu" / "Học tiếp", chặng xong có dấu ✓, sau mỗi 3 chặng có 1 rương quà (+5 sao).
   // Dùng chung kiểu .path-row / .path-node / .path-chest với con đường của phần tiếng Anh (style.css).
-  const PART_COLORS = ['#D9453B', '#E08A1E', '#2E9C8F', '#3B82C4', '#8A5CC7'];
+  const PART_COLORS = ['#D04239', '#A66616', '#268177', '#3678B4', '#8A5CC7']; // chữ trắng trên mỗi màu đạt >= 4.5:1
   const PATH_X = [0, 1, 2, 1, 0, -1, -2, -1];
   const CHEST_EVERY = 3, CHEST_STARS = 5;
   function unitPath(part, next) {
