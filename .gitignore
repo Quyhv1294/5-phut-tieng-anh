@@ -10,3 +10,8 @@ tools/tts/gemini-api-key.txt
 tools/tts/node_modules/
 tools/tts/samples/
 tools/tts/generate*.log
+
+# Skill cai qua npx (khong dua len GitHub Pages)
+.agents/
+.claude/
+skills-lock.json

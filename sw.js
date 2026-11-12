@@ -1,7 +1,7 @@
 ﻿// Service Worker giÃºp app dÃ¹ng Ä‘Æ°á»£c cáº£ khi máº¥t máº¡ng (offline) sau láº§n má»Ÿ Ä‘áº§u tiÃªn.
 // LÆ¯U Ã: má»—i khi cáº­p nháº­t code (Ä‘áº·c biá»‡t style.css/app.js/data), hÃ£y tÄƒng CACHE_VERSION
 // lÃªn 1 sá»‘ (v1 -> v2 -> ...) Ä‘á»ƒ trÃ¬nh duyá»‡t xoÃ¡ cache cÅ© vÃ  ngÆ°á»i dÃ¹ng nháº­n báº£n má»›i.
-const CACHE_VERSION = 'v232';
+const CACHE_VERSION = 'v234';
 const CACHE_NAME = '5phut-cache-' + CACHE_VERSION;
 // Giá»ng Ä‘á»c thu sáºµn (assets/tts/): tÃªn file lÃ  mÃ£ bÄƒm cá»§a cÃ¢u, Ä‘á»•i giá»ng thÃ¬ Ä‘á»•i thÆ° má»¥c â†’ file khÃ´ng bao giá»
 // Ä‘á»•i ná»™i dung, nÃªn giá»¯ á»Ÿ cache RIÃŠNG, khÃ´ng xoÃ¡ khi tÄƒng CACHE_VERSION (bÃ© khá»i pháº£i táº£i láº¡i).
@@ -13,6 +13,12 @@ const APP_SHELL = [
   './',
   './index.html',
   './style.css',
+  './assets/fonts/baloo2-latin.woff2',
+  './assets/fonts/baloo2-latin-ext.woff2',
+  './assets/fonts/baloo2-vietnamese.woff2',
+  './assets/fonts/quicksand-latin.woff2',
+  './assets/fonts/quicksand-latin-ext.woff2',
+  './assets/fonts/quicksand-vietnamese.woff2',
   './app.js',
   './manifest.json',
   './data/topics.js',

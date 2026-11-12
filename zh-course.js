@@ -251,14 +251,14 @@
     '<button class="speak-btn zh-slow-btn" id="zhChoiceSlow" hidden aria-label="Nghe chậm">🐢 Nghe chậm</button></div>' +
     '<div class="quiz-options zh-quiz-options" id="zhChoiceOptions"></div>' +
     checkBar('zhChoiceCheckBar', 'zhChoiceCheck') +
-    '<div class="zh-answer" id="zhChoiceAns" hidden><div class="quiz-feedback" id="zhChoiceFeedback"></div>' +
+    '<div class="zh-answer" id="zhChoiceAns" hidden><div class="quiz-feedback" id="zhChoiceFeedback" role="status" aria-live="polite"></div>' +
       '<div class="zh-answer-key" id="zhChoiceKey"></div><div class="zh-reveal" id="zhChoiceReveal"></div>' +
       '<button class="nav-btn primary zh-next-btn" id="zhChoiceNext">Tiếp tục</button></div>' +
     kbdHint('1–4 chọn đáp án · Enter kiểm tra / đi tiếp · Space nghe lại') + '</div>');
   makeScreen('match',
     topbar('zhMatchBack', 'zhMatchFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt">Nối chữ với nghĩa đúng</div>' +
-    '<div class="zh-match" id="zhMatchGrid"></div><div class="quiz-feedback" id="zhMatchFeedback"></div></div>');
+    '<div class="zh-match" id="zhMatchGrid"></div><div class="quiz-feedback" id="zhMatchFeedback" role="status" aria-live="polite"></div></div>');
   makeScreen('order',
     topbar('zhOrderBack', 'zhOrderFill') +
     '<div class="quiz-wrap"><div class="quiz-prompt" id="zhOrderPrompt">Sắp xếp thành câu đúng:</div>' +
@@ -268,7 +268,7 @@
     '<div class="zh-order-answer" id="zhOrderAnswer"></div>' +
     '<div class="zh-order-tiles" id="zhOrderTiles"></div>' +
     checkBar('zhOrderCheckBar', 'zhOrderCheck') +
-    '<div class="zh-answer" id="zhOrderAns" hidden><div class="quiz-feedback" id="zhOrderFeedback"></div><div class="zh-reveal" id="zhOrderReveal"></div>' +
+    '<div class="zh-answer" id="zhOrderAns" hidden><div class="quiz-feedback" id="zhOrderFeedback" role="status" aria-live="polite"></div><div class="zh-reveal" id="zhOrderReveal"></div>' +
       '<button class="nav-btn primary zh-next-btn" id="zhOrderNext">Tiếp tục</button></div>' +
     kbdHint('Phím số chọn ô · Backspace bỏ ô cuối · Enter kiểm tra / đi tiếp') + '</div>');
   makeScreen('write',
@@ -283,7 +283,7 @@
     '<div class="zh-big" id="zhTypeBig"></div><div class="zh-vi" id="zhTypeVi"></div>' +
     '<input class="zh-type-input" id="zhTypeInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="vd: nihao">' +
     '<div class="zh-candidates" id="zhTypeCands"></div><button class="ghost-btn zh-type-hint" id="zhTypeHint">💡 Gợi ý pinyin</button>' +
-    '<div class="zh-answer" id="zhTypeAns" hidden><div class="quiz-feedback" id="zhTypeFeedback"></div><div class="zh-reveal" id="zhTypeReveal"></div>' +
+    '<div class="zh-answer" id="zhTypeAns" hidden><div class="quiz-feedback" id="zhTypeFeedback" role="status" aria-live="polite"></div><div class="zh-reveal" id="zhTypeReveal"></div>' +
       '<button class="nav-btn primary zh-next-btn" id="zhTypeNext" hidden>Tiếp tục</button></div>' +
     kbdHint('Gõ pinyin · phím số hoặc Enter chọn chữ') + '</div>');
   makeScreen('done',

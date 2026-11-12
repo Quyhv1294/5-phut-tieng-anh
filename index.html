@@ -42,19 +42,19 @@
 
     <nav class="tabbar" id="tabbar">
       <button class="tab-btn active" id="tabHome" aria-label="Học">
-        <span class="tab-icon">📚</span><span>Học</span>
+        <span class="tab-icon" aria-hidden="true">📚</span><span>Học</span>
       </button>
       <button class="tab-btn" id="tabGames" aria-label="Trò chơi">
-        <span class="tab-icon">🎮</span><span>Trò chơi</span>
+        <span class="tab-icon" aria-hidden="true">🎮</span><span>Trò chơi</span>
       </button>
       <button class="tab-btn" id="tabSentences" aria-label="Câu">
-        <span class="tab-icon">💬</span><span>Câu</span>
+        <span class="tab-icon" aria-hidden="true">💬</span><span>Câu</span>
       </button>
       <button class="tab-btn" id="tabAchievements" aria-label="Thành tích">
-        <span class="tab-icon">🏆</span><span>Thành tích</span>
+        <span class="tab-icon" aria-hidden="true">🏆</span><span>Thành tích</span>
       </button>
       <button class="tab-btn" id="tabShare" aria-label="Chia sẻ tiến độ">
-        <span class="tab-icon">📤</span><span>Chia sẻ</span>
+        <span class="tab-icon" aria-hidden="true">📤</span><span>Chia sẻ</span>
       </button>
     </nav>
   </div>
@@ -812,7 +812,7 @@
       <div class="reverse-emoji" id="phonicsQuizEmoji">🐱</div>
       <button class="speak-btn" id="phonicsQuizReplayBtn">🔊 Nghe lại từ</button>
       <div class="quiz-options" id="phonicsQuizOptions"></div>
-      <div class="quiz-feedback" id="phonicsQuizFeedback"></div>
+      <div class="quiz-feedback" id="phonicsQuizFeedback" role="status" aria-live="polite"></div>
     </div>
   </section>
 
@@ -838,7 +838,7 @@
     <div class="quiz-wrap">
       <p class="fillblank-sentence" id="grammarQuizSentence"></p>
       <div class="quiz-options" id="grammarQuizOptions"></div>
-      <div class="quiz-feedback" id="grammarQuizFeedback"></div>
+      <div class="quiz-feedback" id="grammarQuizFeedback" role="status" aria-live="polite"></div>
     </div>
   </section>
 
@@ -876,7 +876,7 @@
     <div class="quiz-wrap">
       <div class="quiz-prompt" id="storyQuizQuestion">Câu hỏi?</div>
       <div class="quiz-options story-options" id="storyQuizOptions"></div>
-      <div class="quiz-feedback" id="storyQuizFeedback"></div>
+      <div class="quiz-feedback" id="storyQuizFeedback" role="status" aria-live="polite"></div>
     </div>
   </section>
 
@@ -909,7 +909,7 @@
         <div class="lm-sent-reveal" id="lmSentReveal" hidden></div>
         <button class="cta-btn lm-check" id="lmCheck" disabled>Kiểm tra</button>
       </div>
-      <div class="quiz-feedback" id="quizFeedback"></div>
+      <div class="quiz-feedback" id="quizFeedback" role="status" aria-live="polite"></div>
     </div>
   </section>
 
@@ -946,7 +946,7 @@
       <div class="reverse-emoji" id="reverseEmoji">🍎</div>
       <div class="quiz-word" id="reverseWord">Quả táo</div>
       <div class="quiz-options reverse-options" id="reverseOptions"></div>
-      <div class="quiz-feedback" id="reverseFeedback"></div>
+      <div class="quiz-feedback" id="reverseFeedback" role="status" aria-live="polite"></div>
     </div>
     <div class="match-done-wrap" id="reverseDoneWrap" hidden>
       <div class="big-star">🎉</div>
@@ -968,7 +968,7 @@
       <div class="fillblank-sentence" id="fillBlankSentence">I carry my ____.</div>
       <div class="fillblank-vi" id="fillBlankVi">Con mang cặp sách.</div>
       <div class="quiz-options reverse-options" id="fillBlankOptions"></div>
-      <div class="quiz-feedback" id="fillBlankFeedback"></div>
+      <div class="quiz-feedback" id="fillBlankFeedback" role="status" aria-live="polite"></div>
     </div>
     <div class="match-done-wrap" id="fillBlankDoneWrap" hidden>
       <div class="big-star">🎉</div>
@@ -1013,7 +1013,7 @@
       <button class="ghost-btn spelling-listen-btn" id="spellingListenBtn">🔊 Nghe lại</button>
       <div class="spelling-slots" id="spellingSlots"></div>
       <div class="spelling-bank" id="spellingBank"></div>
-      <div class="quiz-feedback" id="spellingFeedback"></div>
+      <div class="quiz-feedback" id="spellingFeedback" role="status" aria-live="polite"></div>
     </div>
     <div class="match-done-wrap" id="spellingDoneWrap" hidden>
       <div class="big-star">🎉</div>
@@ -1036,7 +1036,7 @@
       <button class="ghost-btn spelling-listen-btn" id="sbListenBtn">🔊 Nghe câu</button>
       <div class="sb-slots" id="sbSlots"></div>
       <div class="sb-bank" id="sbBank"></div>
-      <div class="quiz-feedback" id="sbFeedback"></div>
+      <div class="quiz-feedback" id="sbFeedback" role="status" aria-live="polite"></div>
     </div>
     <div class="match-done-wrap" id="sbDoneWrap" hidden>
       <div class="big-star">🎉</div>
@@ -1086,7 +1086,7 @@
       </div>
       <div class="quiz-prompt">Con sẽ trả lời gì?</div>
       <div class="quiz-options" id="laDlgOptions"></div>
-      <div class="quiz-feedback" id="laDlgFeedback"></div>
+      <div class="quiz-feedback" id="laDlgFeedback" role="status" aria-live="polite"></div>
     </div>
     <div class="match-done-wrap" id="laDlgDoneWrap" hidden>
       <div class="big-star">🎉</div>
@@ -1112,7 +1112,7 @@
       <div class="fillblank-vi" id="laWriteVi">Con thích tiết Toán.</div>
       <input type="text" class="write-input" id="laWriteInput" placeholder="Gõ câu tiếng Anh vào đây..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       <button class="cta-btn" id="laWriteSubmitBtn">✅ Kiểm tra</button>
-      <div class="quiz-feedback" id="laWriteFeedback"></div>
+      <div class="quiz-feedback" id="laWriteFeedback" role="status" aria-live="polite"></div>
       <div class="write-answer" id="laWriteAnswer" hidden></div>
       <button class="ghost-btn ghost-btn--solid" id="laWriteNextBtn" hidden>Câu tiếp theo →</button>
     </div>
@@ -1155,7 +1155,7 @@
       <div class="quiz-prompt">Bé nghe và chọn chữ đúng nhé!</div>
       <button class="speak-btn" id="sightReplayBtn">🔊 Nghe lại</button>
       <div class="quiz-options" id="sightOptions"></div>
-      <div class="quiz-feedback" id="sightFeedback"></div>
+      <div class="quiz-feedback" id="sightFeedback" role="status" aria-live="polite"></div>
     </div>
   </section>
 
@@ -1196,7 +1196,7 @@
         <button class="simon-btn simon-btn--yes" id="simonYesBtn">🙋 Làm theo!</button>
         <button class="simon-btn simon-btn--no" id="simonNoBtn">🙅 Đứng yên!</button>
       </div>
-      <div class="quiz-feedback" id="simonFeedback"></div>
+      <div class="quiz-feedback" id="simonFeedback" role="status" aria-live="polite"></div>
     </div>
     <div class="match-done-wrap" id="simonDoneWrap" hidden>
       <div class="big-star">🎉</div>
@@ -1220,7 +1220,7 @@
         <button class="ghost-btn" id="writeClearBtn">🧽 Xoá</button>
         <button class="cta-btn" id="writeDoneBtn">✅ Xong</button>
       </div>
-      <div class="quiz-feedback" id="writeFeedback"></div>
+      <div class="quiz-feedback" id="writeFeedback" role="status" aria-live="polite"></div>
     </div>
     <div class="match-done-wrap" id="writeDoneWrap" hidden>
       <div class="big-star">🎉</div>

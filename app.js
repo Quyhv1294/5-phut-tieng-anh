@@ -910,7 +910,11 @@
   }
 
   function setActiveTab(name) {
-    document.querySelectorAll('#tabbar .tab-btn').forEach(b => b.classList.toggle('active', b.id === TAB_FOR_SCREEN[name]));
+    document.querySelectorAll('#tabbar .tab-btn').forEach(b => {
+      const on = b.id === TAB_FOR_SCREEN[name];
+      b.classList.toggle('active', on);
+      if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
   }
 
   // Trượt viên "thumb" của segment-toggle (kiểu iOS) tới đúng vị trí nút đang active.
@@ -4654,6 +4658,23 @@
     });
   applyThemeUI();
 
+  // Màu thanh trình duyệt (theme-color) theo màu nền thật của app: đổi cùng chế độ sáng/tối và khoá Anh/Trung.
+  function syncThemeColor() {
+    const m = getComputedStyle(document.body).backgroundColor.match(/[\d.]+/g);
+    if (!m || (m[3] !== undefined && +m[3] === 0)) return;
+    const hex = '#' + m.slice(0, 3).map(n => Math.round(+n).toString(16).padStart(2, '0')).join('');
+    let tag = document.querySelector('meta[name="theme-color"]');
+    if (!tag) { tag = document.createElement('meta'); tag.name = 'theme-color'; document.head.appendChild(tag); }
+    if (tag.content !== hex) tag.content = hex;
+  }
+  syncThemeColor();
+  // nền body có hiệu ứng chuyển màu nên đọc lại sau khi nó xong
+  new MutationObserver(() => { syncThemeColor(); setTimeout(syncThemeColor, 450); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq.addEventListener) mq.addEventListener('change', syncThemeColor);
+  }
+
   // ---------- NGÔN NGỮ BÉ HỌC (Cài đặt) ---------- (xem LEARN_LANG ở đầu file)
   // Bảng chọn: mỗi tiếng 1 dòng có lá cờ — bấm tiếng nào thì chuyển ngay sang tiếng đó (tải lại trang).
   // Lá cờ vẽ bằng SVG vì emoji cờ (🇬🇧 🇨🇳) không hiện được trên Windows (chỉ ra chữ "GB", "CN").
@@ -8084,6 +8105,72 @@
   // Nhịp hoạt động: mỗi máy / ngày một dòng (mở app + số bài hôm nay) để đo người quay lại.
   // Chỉ gửi mã máy, khoá học, lớp, số bài — không email, không tên. Gửi lại chỉ khi số bài đổi.
   const HEARTBEAT_KEY = '5phut_hb_v1';
+  // ===== LỚP PHỦ / HỘP THOẠI: bàn phím & trình đọc màn hình =====
+  // Mọi lớp phủ tĩnh mở/đóng bằng thuộc tính hidden → theo dõi thuộc tính đó thay vì sửa từng nơi gọi.
+  // Khi mở: chuyển focus vào hộp, giữ Tab trong hộp, khoá phần nền (.app) bằng inert, Esc = nút đóng/huỷ.
+  // Khi đóng: trả focus về nút đã mở hộp.
+  (function initLayerA11y() {
+    const SEL = '.confirm-overlay, .sheet-overlay, .share-overlay, .onboarding-overlay, .loading-overlay';
+    const DISMISS = {
+      langOverlay: 'langCloseBtn', installOverlay: 'installCloseBtn', zhVoiceOverlay: 'zhVoiceCloseBtn',
+      saveProgressOverlay: 'saveProgressLater', topicSheet: 'topicSheetClose', reportSheet: 'reportClose',
+      guideSheet: 'guideClose', confirmOverlay: 'confirmCancelBtn', shareOverlay: 'shareCloseBtn',
+      certificateOverlay: 'certificateCloseBtn',
+    };
+    const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+    const stack = [];
+    const isShown = e => e.getClientRects().length > 0;
+    const appRoot = () => document.querySelector('.app');
+
+    function open(el) {
+      if (stack.some(s => s.el === el)) return;
+      stack.push({ el, opener: document.activeElement });
+      const root = appRoot(); if (root) root.inert = true;
+      const card = el.firstElementChild || el;
+      if (!card.hasAttribute('role') && el.id !== 'loadingOverlay') {
+        const h = card.querySelector('h2, h3, .confirm-message');
+        card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true');
+        if (h && h.textContent.trim()) card.setAttribute('aria-label', h.textContent.trim().slice(0, 80));
+      }
+      if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1');
+      const target = [...card.querySelectorAll(FOCUSABLE)].find(isShown) || card;
+      requestAnimationFrame(() => { try { target.focus({ preventScroll: true }); } catch (e) {} });
+    }
+    function close(el) {
+      const i = stack.findIndex(s => s.el === el);
+      if (i < 0) return;
+      const { opener } = stack.splice(i, 1)[0];
+      if (stack.length) return;
+      const root = appRoot(); if (root) root.inert = false;
+      if (opener && opener !== document.body && document.contains(opener)) {
+        try { opener.focus({ preventScroll: true }); } catch (e) {}
+      }
+    }
+    function sync(el) { if (el.hidden) close(el); else open(el); }
+
+    document.querySelectorAll(SEL).forEach(el => { if (!el.hidden) open(el); });
+    new MutationObserver(list => {
+      for (const m of list) if (m.target.matches && m.target.matches(SEL)) sync(m.target);
+    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+
+    document.addEventListener('keydown', e => {
+      const top = stack[stack.length - 1];
+      if (!top) return;
+      if (e.key === 'Escape') {
+        const btn = DISMISS[top.el.id] && document.getElementById(DISMISS[top.el.id]);
+        if (btn && isShown(btn)) { e.preventDefault(); btn.click(); }
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = [...top.el.querySelectorAll(FOCUSABLE)].filter(isShown);
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0], last = items[items.length - 1];
+      if (!top.el.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && (document.activeElement === first || document.activeElement === top.el.firstElementChild)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  })();
+
   function sendHeartbeat() {
     try {
       if (!backendConfigured()) return;
